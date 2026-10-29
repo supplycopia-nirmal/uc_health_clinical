@@ -233,6 +233,11 @@ def serve_logo():
         logo_path = BASE_DIR / "SC_Logo.png"
     return FileResponse(logo_path)
 
+@app.get("/swarm_cqo.js")
+def serve_swarm_js():
+    js_path = WEB_DIR / "swarm_cqo.js"
+    return FileResponse(js_path, media_type="application/javascript", headers={"Cache-Control": "no-cache, must-revalidate"})
+
 @lru_cache(maxsize=1) 
 def _get_procedures_cached():
     if df.empty or 'unified_procedure' not in df.columns: return []
