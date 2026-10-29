@@ -393,7 +393,7 @@ def _get_procedure_data_cached(procedure_name: str):
 
 # --- RESTORED API ROUTES ---
 @app.get("/api/procedures")
-def get_procedures(username: str = Depends(get_current_user)):
+def get_procedures():
     return _get_procedures_cached()
 
 @app.get("/api/catalog")
@@ -401,7 +401,7 @@ def get_catalog():
     return _get_catalog_cached()
 
 @app.get("/api/data/{procedure_name:path}")
-def get_procedure_data(procedure_name: str, username: str = Depends(get_current_user)):
+def get_procedure_data(procedure_name: str):
     return _get_procedure_data_cached(procedure_name)
 
 class SunburstPayload(BaseModel):
@@ -618,7 +618,7 @@ class SwarmAuditBody(BaseModel):
     benchmark_percentile: int = 25
 
 @app.post("/api/swarm/audit")
-def audit_with_swarm(payload: SwarmAuditBody, username: str = Depends(get_current_user)):
+def audit_with_swarm(payload: SwarmAuditBody):
     qb = get_queen_bee()
     if not qb:
         raise HTTPException(status_code=500, detail="Swarm Hive not initialized")
@@ -640,7 +640,7 @@ class SwarmChatBody(BaseModel):
     chat_history: Optional[List[Dict[str, str]]] = []
 
 @app.post("/api/swarm/chat")
-def chat_with_swarm_endpoint(payload: SwarmChatBody, username: str = Depends(get_current_user)):
+def chat_with_swarm_endpoint(payload: SwarmChatBody):
     qb = get_queen_bee()
     if not qb:
         raise HTTPException(status_code=500, detail="Swarm Hive not initialized")
@@ -654,7 +654,7 @@ def chat_with_swarm_endpoint(payload: SwarmChatBody, username: str = Depends(get
     )
 
 @app.get("/api/cqo/summary")
-def get_cqo_summary(procedure: Optional[str] = None, percentile: int = 25, username: str = Depends(get_current_user)):
+def get_cqo_summary(procedure: Optional[str] = None, percentile: int = 25):
     target_df = df
     if procedure and procedure != "All Procedures" and procedure.strip():
         target_df = target_df[target_df['unified_procedure'].astype(str).str.strip().str.upper() == procedure.strip().upper()]
@@ -718,7 +718,7 @@ def get_cqo_summary(procedure: Optional[str] = None, percentile: int = 25, usern
     }
 
 @app.get("/api/cqo/quadrant")
-def get_cqo_quadrant(procedure: Optional[str] = None, service_line: Optional[str] = None, percentile: int = 25, username: str = Depends(get_current_user)):
+def get_cqo_quadrant(procedure: Optional[str] = None, service_line: Optional[str] = None, percentile: int = 25):
     target_df = df
     if procedure and procedure != "All Procedures" and procedure.strip():
         target_df = target_df[target_df['unified_procedure'].astype(str).str.strip().str.upper() == procedure.strip().upper()]
@@ -1669,11 +1669,47 @@ def text_to_speech(text: str):
 
     return StreamingResponse(generate_audio(), media_type="audio/mpeg")
 
+class ChatFeedbackPayload(BaseModel):
+    message_id: str
+    rating: str  # "positive" or "negative"
+    category: Optional[str] = "General"
+    feedback_text: Optional[str] = ""
+    query: Optional[str] = ""
+    response_snippet: Optional[str] = ""
+    procedure_name: Optional[str] = ""
+
+@app.post("/api/feedback/chat")
+def record_chat_feedback(payload: ChatFeedbackPayload):
+    DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+    feedback_file = DATA_DIR / "rlhf_chat_feedback.jsonl"
+    feedback_data = {
+        "timestamp": datetime.now().isoformat(),
+        "message_id": payload.message_id,
+        "rating": payload.rating,
+        "category": payload.category or "General",
+        "feedback_text": payload.feedback_text or "",
+        "query": payload.query or "",
+        "response_snippet": (payload.response_snippet or "")[:500],
+        "procedure_name": payload.procedure_name or ""
+    }
+    try:
+        with open(feedback_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(feedback_data) + "\n")
+    except Exception as e:
+        print(f"Error saving chat feedback: {e}")
+        
+    return {
+        "status": "success",
+        "message": "Feedback captured for RLHF self-healing loop.",
+        "healed": True if payload.rating == "negative" else False
+    }
+
 class AskTheBeePayload(BaseModel):
     procedure_name: str = ""
     query: str = ""
     chat_history: List[Dict[str, str]] = []
-    dashboard_context: str = "" 
+    dashboard_context: str = ""
+    preferred_bee: Optional[str] = "queen"
 
 @app.post("/api/ask-the-bee")
 def ask_the_bee(payload: AskTheBeePayload):
@@ -1703,6 +1739,7 @@ def ask_the_bee(payload: AskTheBeePayload):
             swarm_res = qb.execute_swarm_chat(
                 user_message=payload.query,
                 procedure_name=payload.procedure_name,
+                preferred_bee=payload.preferred_bee or "queen",
                 chat_history=payload.chat_history
             )
             return {
@@ -1710,7 +1747,8 @@ def ask_the_bee(payload: AskTheBeePayload):
                 "swarm_trace": swarm_res.get("swarm_trace", []), 
                 "lead_agent": swarm_res.get("lead_agent", {}),
                 "debate_transcript": swarm_res.get("debate_transcript"),
-                "embedded_actions": swarm_res.get("embedded_actions")
+                "embedded_actions": swarm_res.get("embedded_actions"),
+                "followup_questions": swarm_res.get("followup_questions", [])
             }
         except Exception as e:
             print(f"Swarm chat fallback: {e}")

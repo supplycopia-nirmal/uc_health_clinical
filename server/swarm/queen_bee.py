@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from typing import Dict, Any, List, Optional
 from .schemas import (
     AgentPersona, SwarmTraceStep, SwarmMessage, 
@@ -246,6 +247,31 @@ class QueenBee:
                 message_type="consensus"
             ))
 
+        # 1. Retrieve Self-Healing Memory (past user & clinician feedback)
+        healing_memory = []
+        feedback_file = Path(__file__).resolve().parent.parent.parent / "data" / "rlhf_chat_feedback.jsonl"
+        if feedback_file.exists():
+            try:
+                with open(feedback_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if line.strip():
+                            record = json.loads(line)
+                            if record.get("rating") == "negative" and record.get("feedback_text"):
+                                cat = record.get("category", "General")
+                                txt = record.get("feedback_text")
+                                healing_memory.append(f"- [Issue Category: {cat}]: User clinical correction: '{txt}'")
+            except Exception as e:
+                pass
+
+        healing_prompt_addon = ""
+        if healing_memory:
+            recent_corrections = "\n".join(healing_memory[-6:])
+            healing_prompt_addon = f"""
+            CRITICAL SELF-HEALING MEMORY (PAST USER CORRECTIONS & FEEDBACK - ADAPT ACCORDINGLY):
+            {recent_corrections}
+            Ensure your response strictly accounts for and honors these user corrections so the previous issue does not recur.
+            """
+
         # Generate response using LLM
         prompt = f"""
         You are '{lead_bee.name}' ({lead_bee.role}), an autonomous agent in the UC Health Bee Swarm.
@@ -258,28 +284,58 @@ class QueenBee:
         
         {f'Participating Bees in Swarm: {[b.name for b in participating]}' if len(participating) > 1 else ''}
         
+        {healing_prompt_addon}
+
         Provide an insightful, highly polished, data-grounded response formatted in clean Markdown.
         Include clear clinical or operational takeaways and recommend actionable next steps.
         Do not use vague phrases. Address the user directly as a senior UC Health healthcare executive.
+
+        At the very end of your response, provide exactly 2 subsequent follow-up questions that naturally continue this conversation thread.
+        Format them on their own lines as:
+        FOLLOWUP: <question 1>
+        FOLLOWUP: <question 2>
         """
+
+        reply_text = ""
+        followup_questions = []
 
         try:
             resp = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=[{"role": "user", "content": prompt}]
             )
-            reply_text = resp.choices[0].message.content
+            raw_reply = resp.choices[0].message.content or ""
+            
+            # Extract follow-up questions
+            cleaned_lines = []
+            for line in raw_reply.splitlines():
+                if line.strip().startswith("FOLLOWUP:"):
+                    q = line.replace("FOLLOWUP:", "").strip()
+                    if q:
+                        followup_questions.append(q)
+                else:
+                    cleaned_lines.append(line)
+            
+            reply_text = "\n".join(cleaned_lines).strip()
         except Exception as e:
             reply_text = f"**{lead_bee.avatar} {lead_bee.name}:** I have reviewed your inquiry regarding `{procedure_name}`. At the {benchmark_percentile}th percentile benchmark, we are tracking positive alignment across clinical quality and contract spend."
+
+        # Ensure exactly 2 high-quality contextual follow-ups if LLM omitted them
+        if len(followup_questions) < 2:
+            default_followups = [
+                f"Which surgeons at UC Health are driving the highest cost variance for {procedure_name}?",
+                f"What are the verified apples-to-apples substitutions to eliminate off-contract leakage in {procedure_name}?"
+            ]
+            followup_questions = (followup_questions + default_followups)[:2]
 
         traces.append(SwarmTraceStep(
             step_id=2,
             agent_id=lead_bee.id,
             agent_name=lead_bee.name,
             agent_avatar=lead_bee.avatar,
-            action="Response Formulated",
+            action="Response Formulated with Self-Healing Intelligence",
             status="completed",
-            thought=f"Synthesized response from {lead_bee.name} with full clinical and financial context.",
+            thought=f"Synthesized response from {lead_bee.name} incorporating {len(healing_memory)} self-healing feedback constraints and generated 2 contextual follow-ups.",
             timestamp="Just now"
         ))
 
@@ -293,5 +349,7 @@ class QueenBee:
                 {"title": "Audit Procedure with Swarm", "prompt": f"Audit {procedure_name} with all bees"},
                 {"title": "Find Off-Contract Leakage", "prompt": f"Show off-contract leakage for {procedure_name}"},
                 {"title": "Verify Clinical Substitutions", "prompt": f"What are verified substitutions for {procedure_name}?"}
-            ]
+            ],
+            "followup_questions": followup_questions
         }
+

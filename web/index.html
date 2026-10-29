@@ -15,6 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>window.API_BASE = "/api";</script>
     <script src="swarm_cqo.js"></script>
     
     <style>
@@ -215,22 +216,24 @@
         #chat-toggle-btn { position: fixed; bottom: 30px; right: 30px; background-color: #fff; color: var(--text-dark); border: 1px solid var(--card-border); border-radius: 50px; padding: 8px 16px 8px 8px; font-size: 13px; font-weight: 600; font-family: inherit; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; z-index: 10000; transition: transform 0.2s, color 0.2s; display: flex; align-items: center; gap: 8px; }
         #chat-toggle-btn:hover { transform: translateY(-2px); color: var(--brand-red); }
         
-        #chatbot-container { position: fixed; bottom: 80px; right: 30px; width: 360px; height: 550px; background-color: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.12); display: none; flex-direction: column; z-index: 10000; overflow: hidden; border: 1px solid var(--card-border); transition: width 0.3s ease, height 0.3s ease, bottom 0.3s ease, right 0.3s ease; }
-        #chatbot-container.chat-maximized { width: 80vw !important; height: 80vh !important; bottom: 10vh !important; right: 10vw !important; z-index: 10005 !important; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5), 0 8px 30px rgba(0, 0, 0, 0.2) !important; }
+        #chatbot-container { position: fixed; bottom: 80px; right: 30px; width: 440px; max-width: calc(100vw - 40px); height: 620px; max-height: calc(100vh - 100px); background-color: #fff; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.18); display: none; flex-direction: column; z-index: 10000; overflow: hidden; border: 1px solid var(--card-border); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        /* Enhanced Lightbox Maximized View */
+        #chatbot-container.chat-maximized { width: 92vw !important; height: 90vh !important; max-width: 1400px !important; max-height: 94vh !important; top: 5vh !important; left: 4vw !important; right: auto !important; bottom: auto !important; z-index: 10005 !important; box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65), 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important; border-radius: 16px !important; }
         
         #chat-header { background-color: #fff; color: var(--text-dark); border-bottom: 1px solid var(--card-border); padding: 12px 16px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
         .header-actions { display: flex; align-items: center; gap: 12px; }
-        .header-actions button { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; transition: color 0.2s; line-height: 1; }
+        .header-actions button { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; transition: color 0.2s; line-height: 1; font-size: 16px; }
         .header-actions button:hover { color: var(--brand-red); }
         #chat-refresh-btn { font-size: 18px; font-weight: bold; }
         #chat-refresh-btn:hover { transform: rotate(180deg); transition: transform 0.3s; }
         #chat-expand-btn { font-size: 17px; }
         #chat-close-btn { font-size: 22px; }
 
-        #chat-messages { flex: 1; padding: 16px; overflow-y: auto; background-color: var(--bg-body); display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
-        .chat-msg { max-width: 85%; padding: 10px 14px; border-radius: 8px; line-height: 1.4; word-wrap: break-word; }
+        #chat-messages { flex: 1; padding: 16px; overflow-y: auto; overflow-x: hidden; background-color: var(--bg-body); display: flex; flex-direction: column; gap: 12px; font-size: 13px; box-sizing: border-box; }
+        .chat-msg { max-width: 95%; padding: 12px 16px; border-radius: 8px; line-height: 1.5; word-break: break-word; overflow-wrap: break-word; box-sizing: border-box; }
         .msg-user { background-color: var(--brand-red); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .msg-bot { background-color: #fff; color: var(--text-dark); align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid var(--card-border); box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .msg-bot { background-color: #fff; color: var(--text-dark); align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid var(--card-border); box-shadow: 0 1px 3px rgba(0,0,0,0.03); width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
         .msg-system { background-color: transparent; color: var(--text-muted); align-self: center; font-size: 11px; font-style: italic; }
         
         .msg-bot p { margin: 0 0 8px 0; }
@@ -240,10 +243,31 @@
         .msg-bot h1, .msg-bot h2, .msg-bot h3, .msg-bot h4 { margin: 10px 0 6px 0; color: var(--text-dark); font-size: 1.1em; }
         .msg-bot hr { border: 0; border-top: 1px solid var(--card-border); margin: 10px 0; }
         
-        .msg-bot table { display: block; overflow-x: auto; white-space: nowrap; max-width: 100%; margin: 8px 0; border-radius: 4px; border: 1px solid var(--card-border); }
-        #chatbot-container.chat-maximized .msg-bot table { white-space: normal; }
+        .msg-bot pre, .msg-bot code { white-space: pre-wrap; word-break: break-word; max-width: 100%; }
+        .msg-bot table { display: block; overflow-x: auto; max-width: 100%; margin: 8px 0; border-radius: 4px; border: 1px solid var(--card-border); font-size: 11.5px; }
+        #chatbot-container.chat-maximized .msg-bot table { display: table; width: 100%; }
         .msg-bot th { position: static; background-color: #f8fafc; border-bottom: 1px solid var(--card-border); font-size: 11px; }
         .msg-bot td { background-color: #fff; border-bottom: 1px solid #f1f5f9; }
+
+        /* Conversation Starters */
+        .chat-starters-container { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .starter-card { background: #fff; border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--text-dark); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .starter-card:hover { border-color: var(--brand-red); color: var(--brand-red); transform: translateX(3px); background: #fff9f9; }
+
+        /* Follow-up Questions */
+        .chat-followups-container { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--card-border); display: flex; flex-direction: column; gap: 6px; }
+        .chat-followup-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-followup-chip { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px 10px; font-size: 11.5px; font-family: inherit; color: #1e293b; cursor: pointer; text-align: left; transition: all 0.2s; line-height: 1.3; }
+        .btn-followup-chip:hover { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; transform: translateY(-1px); }
+
+        /* Feedback Mechanism */
+        .msg-feedback-bar { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 6px; border-top: 1px solid #f1f5f9; font-size: 11px; color: var(--text-muted); }
+        .btn-thumb { background: none; border: 1px solid var(--card-border); border-radius: 4px; padding: 2px 6px; font-size: 11px; cursor: pointer; transition: 0.2s; line-height: 1; font-family: inherit; }
+        .btn-thumb:hover { background: #f1f5f9; border-color: #cbd5e1; }
+        .feedback-issue-card { margin-top: 8px; background: #fff; border: 1px solid #fecaca; border-radius: 6px; padding: 10px; font-size: 11.5px; display: flex; flex-direction: column; gap: 6px; }
+        .feedback-category-select, .feedback-text-input { width: 100%; box-sizing: border-box; border: 1px solid var(--card-border); border-radius: 4px; padding: 5px 8px; font-size: 11.5px; font-family: inherit; outline: none; }
+        .feedback-text-input { resize: none; height: 50px; }
+        .feedback-category-select:focus, .feedback-text-input:focus { border-color: var(--brand-red); }
 
         #chat-input-area { padding: 12px 16px; background: #fff; border-top: 1px solid var(--card-border); display: flex; gap: 8px; align-items: center; }
         #chat-input { flex: 1; padding: 8px 12px; border: 1px solid var(--card-border); border-radius: 20px; outline: none; font-size: 13px; font-family: inherit; transition: border-color 0.2s; }
@@ -1074,6 +1098,7 @@
             $('.select2').select2({ width: '100%' });
             loadProcedures();
             loadCatalog(); 
+            clearChatMemory(); 
 
             $('#hospital-select, #surgeon-select, #outlier-select').on('change', function() {
                 if (window.isUpdatingFilters) return; // Guard clause to prevent infinite loops
@@ -1390,11 +1415,10 @@
 
         function clearChatMemory() {
             window.chatMemory = [];
-            let greetingHTML = window.currentProcedure 
-                ? `🐝 <b>Memory cleared!</b> I am ready to help you analyze the supply chain data for <b>${window.currentProcedure}</b>. What would you like to explore next?`
-                : `🐝 <b>Memory cleared!</b> Please select a procedure from the top dropdown, and ask me any question about the data.`;
-                
-            document.getElementById('chat-messages').innerHTML = `<div class="chat-msg msg-bot">${greetingHTML}</div>`;
+            const chatMessages = document.getElementById('chat-messages');
+            if (chatMessages && typeof getGreetingWithStarters === 'function') {
+                chatMessages.innerHTML = getGreetingWithStarters(window.currentProcedure);
+            }
             
             if (window.currentAudio) {
                 window.currentAudio.pause();
@@ -1896,6 +1920,155 @@
             return ctx;
         }
 
+        window.chatTurnContexts = {};
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+        function escapeAttr(str) {
+            if (!str) return '';
+            return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function getGreetingWithStarters(procedure) {
+            const proc = procedure || window.currentProcedure;
+            const header = proc
+                ? `🐝 <b>Welcome to Ask The Bee Multi-Agent Intelligence!</b><br><span style="color:#475569; font-size: 12px;">Active Cohort: <b>${escapeHtml(proc)}</b>. How can our clinical swarm assist you today?</span>`
+                : `🐝 <b>Welcome to Ask The Bee!</b><br><span style="color:#475569; font-size: 12px;">Select a surgical procedure from the top dropdown, or pick a starter below:</span>`;
+
+            return `
+                <div class="chat-msg msg-bot" style="animation: fadeIn 0.3s ease;">
+                    <div style="font-size: 13px; line-height: 1.45; margin-bottom: 12px;">
+                        ${header}
+                    </div>
+                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Recommended Conversation Starters:</div>
+                    <div class="chat-starters-container">
+                        <div class="starter-card" onclick="sendStarterPrompt('What are the biggest cost variance drivers across surgeons for this procedure?')">
+                            <div style="font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                                <span>📊</span> Cost Variance Drivers
+                            </div>
+                            <div style="color: #64748b; font-size: 11px; margin-top: 2px;">Analyze cost outliers, price spread, and primary supplies driving variance.</div>
+                        </div>
+                        <div class="starter-card" onclick="sendStarterPrompt('Which surgeons are our top Clinical Champions delivering high quality at low cost?')">
+                            <div style="font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                                <span>🏆</span> Clinical Champions & Value Quadrant
+                            </div>
+                            <div style="color: #64748b; font-size: 11px; margin-top: 2px;">Identify physicians operating below benchmark with high quality scores.</div>
+                        </div>
+                        <div class="starter-card" onclick="sendStarterPrompt('Where is our highest off-contract spend leakage occurring across facilities?')">
+                            <div style="font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                                <span>💸</span> Contract Compliance & Leakage
+                            </div>
+                            <div style="color: #64748b; font-size: 11px; margin-top: 2px;">Pinpoint off-contract manufacturer purchases and missed tier savings.</div>
+                        </div>
+                        <div class="starter-card" onclick="sendStarterPrompt('How much can we save by standardizing core surgical packs and hold lists?')">
+                            <div style="font-weight: 600; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+                                <span>📦</span> Pack & Tray Standardization
+                            </div>
+                            <div style="color: #64748b; font-size: 11px; margin-top: 2px;">Review standard BOM opportunities and eliminate non-essential line items.</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function sendStarterPrompt(promptText) {
+            const input = document.getElementById('chat-input');
+            if (input) {
+                input.value = promptText;
+                sendChatMessage();
+            }
+        }
+
+        function askFollowupQuestion(btn) {
+            const msgId = btn.getAttribute('data-msgid');
+            const idx = parseInt(btn.getAttribute('data-fidx'), 10);
+            let question = "";
+            if (msgId && window.chatTurnContexts[msgId] && window.chatTurnContexts[msgId].followups) {
+                question = window.chatTurnContexts[msgId].followups[idx] || btn.innerText.replace(/^💬\s*/, '');
+            } else {
+                question = btn.innerText.replace(/^💬\s*/, '');
+            }
+            const input = document.getElementById('chat-input');
+            if (input) {
+                input.value = question;
+                sendChatMessage();
+            }
+        }
+
+        async function submitChatRating(msgId, rating, btn) {
+            const bar = document.getElementById(`feedback_bar_${msgId}`);
+            if (bar) {
+                bar.innerHTML = `<span style="color: #16a34a; font-weight: 600;">✓ Thanks for the feedback!</span>`;
+            }
+            const ctx = window.chatTurnContexts[msgId] || {};
+            try {
+                await fetch(`${API_BASE}/feedback/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message_id: msgId,
+                        rating: rating,
+                        category: "Positive",
+                        feedback_text: "User marked response as helpful",
+                        query: ctx.query || "",
+                        response_snippet: (ctx.reply || "").slice(0, 300),
+                        procedure_name: ctx.procedure || window.currentProcedure || ""
+                    })
+                });
+            } catch (e) {
+                console.error("Failed to submit rating", e);
+            }
+        }
+
+        function openIssueFeedback(msgId) {
+            const box = document.getElementById(`issue_box_${msgId}`);
+            if (box) box.style.display = 'block';
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function closeIssueFeedback(msgId) {
+            const box = document.getElementById(`issue_box_${msgId}`);
+            if (box) box.style.display = 'none';
+        }
+
+        async function submitIssueFeedback(msgId) {
+            const cat = document.getElementById(`issue_cat_${msgId}`)?.value || "Other";
+            const txt = document.getElementById(`issue_text_${msgId}`)?.value.trim() || "";
+            const box = document.getElementById(`issue_box_${msgId}`);
+            const bar = document.getElementById(`feedback_bar_${msgId}`);
+            const ctx = window.chatTurnContexts[msgId] || {};
+
+            if (box) {
+                box.innerHTML = `
+                    <div style="color: #059669; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                        <span>✅</span> Feedback submitted. The Bee Swarm has adapted and will honor this correction in subsequent responses!
+                    </div>
+                `;
+            }
+            if (bar) bar.style.display = 'none';
+
+            try {
+                await fetch(`${API_BASE}/feedback/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message_id: msgId,
+                        rating: "negative",
+                        category: cat,
+                        feedback_text: txt || `User flagged issue with category: ${cat}`,
+                        query: ctx.query || "",
+                        response_snippet: (ctx.reply || "").slice(0, 300),
+                        procedure_name: ctx.procedure || window.currentProcedure || ""
+                    })
+                });
+            } catch (e) {
+                console.error("Failed to submit issue feedback", e);
+            }
+        }
+
         async function sendChatMessage() {
             const inputField = document.getElementById('chat-input');
             const message = inputField.value.trim();
@@ -1936,7 +2109,7 @@
                 });
                 
                 const data = await res.json();
-                document.getElementById('chat-loading').remove();
+                document.getElementById('chat-loading')?.remove();
                 
                 const botMsgDiv = document.createElement('div');
                 botMsgDiv.className = 'chat-msg msg-bot';
@@ -1947,12 +2120,22 @@
                 
                 // Play audio if enabled
                 playTTS(data.reply); 
+
+                // Unique turn ID & context cache for feedback
+                const msgId = 'msg_' + Date.now();
+                const primaryBee = (data.lead_agent && data.lead_agent.name) ? `${data.lead_agent.avatar || '🐝'} ${data.lead_agent.name}` : (data.primary_bee || "👑 Queen Bee");
+                
+                window.chatTurnContexts[msgId] = {
+                    query: message,
+                    reply: data.reply,
+                    procedure: window.currentProcedure || "",
+                    lead_bee: primaryBee
+                };
                 
                 // Persona Badge Header
-                const primaryBee = (data.lead_agent && data.lead_agent.name) ? `${data.lead_agent.avatar || '🐝'} ${data.lead_agent.name}` : (data.primary_bee || "👑 Queen Bee");
                 let beeHeaderHTML = `<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 11px; font-weight: 700; color: #ea580c; text-transform: uppercase;">
-                    <span>${primaryBee}</span>
-                    ${data.contributing_bees && data.contributing_bees.length > 0 ? `<span style="font-weight: 500; color: var(--text-muted); text-transform: none;">(with ${data.contributing_bees.join(', ')})</span>` : ''}
+                    <span>${escapeHtml(primaryBee)}</span>
+                    ${data.contributing_bees && data.contributing_bees.length > 0 ? `<span style="font-weight: 500; color: var(--text-muted); text-transform: none;">(with ${escapeHtml(data.contributing_bees.join(', '))})</span>` : ''}
                 </div>`;
                 
                 // Safe Markdown Serialization (ChatGPT Typing Effect)
@@ -1973,7 +2156,7 @@
                         
                         i++;
                         chatMessages.scrollTop = chatMessages.scrollHeight;
-                        setTimeout(typeWriter, isTag ? 0 : 12);
+                        setTimeout(typeWriter, isTag ? 0 : 8);
                     } else {
                         let finalHTML = beeHeaderHTML + currentHTML;
                         
@@ -1983,7 +2166,7 @@
                                 <details style="margin-top: 10px; background: #fff7ed; border: 1px solid #ffedd5; border-radius: 6px; padding: 6px 10px;">
                                     <summary style="font-size: 11px; font-weight: 700; color: #c2410c; cursor: pointer;">🐝 View Swarm Deliberation (${data.debate_transcript.length} turns)</summary>
                                     <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 11px; line-height: 1.4;">
-                                        ${data.debate_transcript.map(d => `<div style="border-bottom: 1px dashed #fed7aa; padding-bottom: 4px;"><strong>${d.sender_name || d.sender}:</strong> ${d.content}</div>`).join('')}
+                                        ${data.debate_transcript.map(d => `<div style="border-bottom: 1px dashed #fed7aa; padding-bottom: 4px;"><strong>${escapeHtml(d.sender_name || d.sender)}:</strong> ${escapeHtml(d.content)}</div>`).join('')}
                                     </div>
                                 </details>
                             `;
@@ -1996,13 +2179,63 @@
                                 <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px;">
                                     ${actionList.map(act => {
                                         const label = typeof act === 'object' ? (act.title || act.label || act.action) : act;
-                                        return `<button class="btn-chat-action" onclick="executeSwarmAction('${label}')" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">⚡ ${label}</button>`;
+                                        return `<button class="btn-chat-action" onclick="executeSwarmAction('${escapeAttr(label)}')" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">⚡ ${escapeHtml(label)}</button>`;
                                     }).join('')}
                                 </div>
                             `;
                         }
                         
+                        // Subsequent Questions (Follow-ups)
+                        const followups = (data.followup_questions && data.followup_questions.length > 0) ? data.followup_questions : [
+                            `How does our surgeon cost compare to the 25th percentile benchmark?`,
+                            `What specific cross-manufacturer substitutions can generate immediate savings?`
+                        ];
+                        finalHTML += `
+                            <div class="chat-followups-container" style="margin-top: 12px; padding-top: 8px; border-top: 1px dashed #cbd5e1; display: flex; flex-direction: column; gap: 5px;">
+                                <div style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Continue the Conversation:</div>
+                                ${followups.slice(0, 2).map((q, idx) => `
+                                    <button class="btn-followup-chip" data-msgid="${msgId}" data-fidx="${idx}" onclick="askFollowupQuestion(this)">
+                                        💬 ${escapeHtml(q)}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        `;
+                        // Store the followups for retrieval without inline quoting issues
+                        window.chatTurnContexts[msgId].followups = followups.slice(0, 2);
+
+                        // Feedback Bar with Self-Healing Loop
+                        finalHTML += `
+                            <div class="msg-feedback-bar" id="feedback_bar_${msgId}" style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 6px; font-size: 11px; color: #94a3b8;">
+                                <span style="font-size: 10.5px;">Was this response clinically accurate and helpful?</span>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <button class="btn-thumb" title="Accurate & Helpful" onclick="submitChatRating('${msgId}', 'positive', this)">👍</button>
+                                    <button class="btn-thumb" title="Inaccurate or Has Issue" onclick="openIssueFeedback('${msgId}')">👎</button>
+                                </div>
+                            </div>
+                            <div id="issue_box_${msgId}" class="feedback-issue-card" style="display: none; margin-top: 8px; padding: 10px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; font-size: 11.5px;">
+                                <div style="font-weight: 700; color: #9f1239; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                                    <span>🛠️ Help The Bee Swarm Self-Heal</span>
+                                    <span style="cursor: pointer; color: #94a3b8;" onclick="closeIssueFeedback('${msgId}')">&times;</span>
+                                </div>
+                                <div style="color: #475569; margin-bottom: 6px; font-size: 11px;">Select the issue category so our agents learn and do not repeat it:</div>
+                                <select id="issue_cat_${msgId}" style="width: 100%; padding: 5px 8px; border-radius: 4px; border: 1px solid #f43f5e; margin-bottom: 6px; font-size: 11px; background: #fff; color: #0f172a;">
+                                    <option value="Non-Equivalent Comparison">Non-Equivalent Clinical Comparison (apples-to-oranges)</option>
+                                    <option value="Inaccurate Cost or Math">Inaccurate Cost, Math or Benchmark Variance</option>
+                                    <option value="Missed Clinical Nuance">Missed Clinical Nuance or Surgeon Context</option>
+                                    <option value="Hallucination / Factually Incorrect">Hallucination or Factually Incorrect Fact</option>
+                                    <option value="Too Vague or Incomplete">Too Vague or Incomplete Analysis</option>
+                                    <option value="Other">Other / General Quality Issue</option>
+                                </select>
+                                <textarea id="issue_text_${msgId}" rows="2" placeholder="Explain what was incorrect or what the AI should remember next time..." style="width: 100%; box-sizing: border-box; padding: 6px; border-radius: 4px; border: 1px solid #cbd5e1; font-family: inherit; font-size: 11px; margin-bottom: 6px;"></textarea>
+                                <div style="display: flex; justify-content: flex-end; gap: 6px;">
+                                    <button onclick="closeIssueFeedback('${msgId}')" style="background: none; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; color: #475569;">Cancel</button>
+                                    <button onclick="submitIssueFeedback('${msgId}')" style="background: #e11d48; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">Submit & Self-Heal</button>
+                                </div>
+                            </div>
+                        `;
+
                         botMsgDiv.innerHTML = finalHTML;
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
                     }
                 }
                 
@@ -2010,7 +2243,7 @@
                 
             } catch (err) {
                 console.error(err);
-                document.getElementById('chat-loading').remove();
+                document.getElementById('chat-loading')?.remove();
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'chat-msg msg-bot';
                 errorDiv.style.color = '#e64552';
@@ -2157,6 +2390,11 @@
             if (tabName === 'CQOTab') {
                 if (typeof fetchCQOSummary === 'function') fetchCQOSummary();
                 if (typeof renderValueQuadrant === 'function') renderValueQuadrant(window.activeBenchmark || 25);
+                setTimeout(() => {
+                    if (window.Plotly && document.getElementById('cqo-quadrant-plot')) {
+                        try { Plotly.Plots.resize('cqo-quadrant-plot'); } catch(e){}
+                    }
+                }, 150);
             } else if (tabName === 'SwarmTab') {
                 if (typeof fetchSwarmPersonas === 'function') fetchSwarmPersonas();
             } else if (tabName === 'CompareCardsTab' && currentCompareData && currentCompareData.length > 0) {

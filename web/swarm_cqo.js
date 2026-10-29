@@ -3,26 +3,91 @@
  * Powers Bee Hive Swarm v2.0 & Cost, Quality & Outcome Value Quadrants
  */
 
+window.API_BASE = window.API_BASE || "/api";
+var API_BASE = window.API_BASE;
+
 // Global Swarm & CQO State
 window.activeBenchmark = 25;
 window.activeChatPersona = "";
 window.cachedCQOSummary = null;
 window.cachedSwarmPersonas = null;
 
+// Static Fallback Bee Personas to guarantee never-empty UI
+const STATIC_PERSONAS = [
+    {
+        id: "queen_bee",
+        name: "Queen Bee",
+        role: "Master Swarm Orchestrator & Synthesizer",
+        avatar: "👑",
+        specialty: "Multi-Agent Hive Coordination & Executive Briefings",
+        description: "The central command of the Bee Swarm. Decomposes user goals, dispatches specialized worker bees in parallel, synthesizes conflicting perspectives (clinical safety vs financial savings), and delivers executive decisions."
+    },
+    {
+        id: "clinical_bee",
+        name: "Clinical Bee",
+        role: "Quality, Safety & Outcomes Specialist",
+        avatar: "🩺",
+        specialty: "Surgical Equivalence & Patient Acuity",
+        description: "Ensures clinical safety primacy over cost, audits surgical indications, correlates supply variation to adverse outcomes (SSI, Readmissions, Mortality, ALOS), and guards against risky substitutions."
+    },
+    {
+        id: "scout_bee",
+        name: "Scout Bee",
+        role: "Anomaly & Leakage Forager",
+        avatar: "🔍",
+        specialty: "1.37M Cases Reconnaissance & Outlier Detection",
+        description: "Continuously scours the 1,378,322 case records to identify cost/volume outliers, compositional anomalies, off-contract spend leakage, and cross-hospital price disparities."
+    },
+    {
+        id: "contract_bee",
+        name: "Contract Bee",
+        role: "Parity & Benchmark Strategist",
+        avatar: "📜",
+        specialty: "10th/25th/50th Percentile Benchmarks & Price Arbitrage",
+        description: "Analyzes cross-facility price parity (UH OR vs WCH OR vs UH ASC), calculates 10th/25th/50th percentile savings potential, and audits off-contract vendor leakage."
+    },
+    {
+        id: "worker_bee",
+        name: "Worker Bee",
+        role: "BOM & Pack Optimizer",
+        avatar: "📦",
+        specialty: "FP-Growth Item Bundling & Standard Custom Packs",
+        description: "Mines clinical utilization patterns to design lean, standardized custom surgical packs, eliminates opened-but-unused hold waste, and aligns physician preference cards."
+    },
+    {
+        id: "surgeon_bee",
+        name: "Surgeon Bee",
+        role: "Physician Advocate & RLHF Alignment",
+        avatar: "👨‍⚕️",
+        specialty: "Surgeon Autonomy, Nuance & Case Complexity Adjustments",
+        description: "Represents physician clinical judgment, protects surgeon choice in high-acuity/revision cases, prevents burnout from aggressive procurement mandates, and powers the RLHF alignment loop."
+    }
+];
+
 // Benchmark Percentile Switcher (10th, 25th Std, 50th)
 function setBenchmarkPercentile(pct) {
     window.activeBenchmark = parseInt(pct) || 25;
     document.querySelectorAll('.btn-benchmark').forEach(btn => {
-        if (parseInt(btn.getAttribute('data-pct')) === window.activeBenchmark) {
+        const btnPct = parseInt(btn.getAttribute('data-pct'));
+        if (btnPct === window.activeBenchmark) {
             btn.classList.add('active');
+            btn.style.background = '#fff';
+            btn.style.color = '#e64552';
+            btn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
         } else {
             btn.classList.remove('active');
+            btn.style.background = 'transparent';
+            btn.style.color = '#64748b';
+            btn.style.boxShadow = 'none';
         }
     });
-    console.log(`[Swarm CQO] Benchmark target set to ${window.activeBenchmark}th percentile.`);
+    console.log(`[Swarm CQO] Benchmark target switched to ${window.activeBenchmark}th percentile.`);
     
     // Refresh CQO summary and quadrant with updated benchmark
     fetchCQOSummary();
+    if (typeof renderValueQuadrant === 'function') {
+        renderValueQuadrant(window.activeBenchmark);
+    }
 }
 
 // Open Swarm Slide-out Drawer
@@ -68,59 +133,70 @@ function selectChatPersona(btn, beeId) {
     }
 }
 
-// Fetch & Render Active Bee Personas
-async function fetchSwarmPersonas() {
+// Render Persona Cards
+function renderPersonaCards(personas) {
     const container = document.getElementById('bee-persona-cards-container');
     if (!container) return;
     
-    try {
-        const res = await fetch(`${API_BASE}/swarm/personas`);
-        if (!res.ok) throw new Error("Failed to fetch personas");
-        const data = await res.json();
-        const personas = data.personas || data;
-        window.cachedSwarmPersonas = personas;
-        
-        container.innerHTML = personas.map(p => `
-            <div class="bee-card" id="persona-card-${p.id}">
-                <div class="bee-avatar">${p.avatar}</div>
-                <div class="bee-info">
-                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                        <h4 class="bee-name">${p.name}</h4>
-                        <span class="trace-badge trace-completed" style="font-size: 9px;">ACTIVE</span>
-                    </div>
-                    <div class="bee-role">${p.role}</div>
-                    <div class="bee-desc">${p.description}</div>
-                    <div style="margin-top: 8px;">
-                        <span style="font-size: 10.5px; background: #fff7ed; color: #c2410c; padding: 2px 8px; border-radius: 4px; font-weight: 600; border: 1px solid #ffedd5;">${p.specialty}</span>
-                    </div>
+    container.innerHTML = personas.map(p => `
+        <div class="bee-card" id="persona-card-${p.id}">
+            <div class="bee-avatar">${p.avatar}</div>
+            <div class="bee-info">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <h4 class="bee-name">${p.name}</h4>
+                    <span class="trace-badge trace-completed" style="font-size: 9px;">ACTIVE</span>
+                </div>
+                <div class="bee-role">${p.role}</div>
+                <div class="bee-desc">${p.description}</div>
+                <div style="margin-top: 8px;">
+                    <span style="font-size: 10.5px; background: #fff7ed; color: #c2410c; padding: 2px 8px; border-radius: 4px; font-weight: 600; border: 1px solid #ffedd5;">${p.specialty}</span>
                 </div>
             </div>
-        `).join('');
+        </div>
+    `).join('');
+}
+
+// Fetch & Render Active Bee Personas
+async function fetchSwarmPersonas() {
+    renderPersonaCards(STATIC_PERSONAS); // Immediate render so never empty
+    
+    try {
+        const res = await fetch(`${API_BASE}/swarm/personas`);
+        if (res.ok) {
+            const data = await res.json();
+            const personas = data.personas || data;
+            if (Array.isArray(personas) && personas.length > 0) {
+                window.cachedSwarmPersonas = personas;
+                renderPersonaCards(personas);
+            }
+        }
     } catch (err) {
-        console.error("Error loading swarm personas:", err);
+        console.warn("Using static swarm personas fallback:", err);
     }
 }
 
 // Fetch & Render CQO Summary KPIs
 async function fetchCQOSummary() {
     const cohortLabel = document.getElementById('cqo-cohort-label');
+    const proc = window.currentProcedure || "";
     if (cohortLabel) {
-        cohortLabel.innerText = window.currentProcedure ? `Procedure: ${window.currentProcedure}` : "All Procedures (68,478 Encounters)";
+        cohortLabel.innerText = proc ? `Procedure: ${proc}` : "All Procedures (68,478 Encounters)";
     }
     
     try {
         const pct = window.activeBenchmark || 25;
-        const res = await fetch(`${API_BASE}/cqo/summary?percentile=${pct}`);
-        if (!res.ok) throw new Error("Failed to fetch CQO summary");
+        const procParam = proc ? `&procedure=${encodeURIComponent(proc)}` : '';
+        const res = await fetch(`${API_BASE}/cqo/summary?percentile=${pct}${procParam}`);
+        if (!res.ok) throw new Error(`CQO summary error HTTP ${res.status}`);
         const data = await res.json();
         window.cachedCQOSummary = data;
         
         const m = data.system_metrics || data;
         
         // Populate KPI Cards
-        const totalEnc = m.total_encounters || 68478;
-        const totalSp = m.total_spend || 116544859;
-        const avgCPC = m.cost_per_case_mean || (totalSp / (totalEnc || 1));
+        const totalEnc = m.total_encounters || 0;
+        const totalSp = m.total_spend || 0;
+        const avgCPC = totalEnc > 0 ? (totalSp / totalEnc) : (m.cost_per_case_mean || 0);
         const outScore = m.outcome_score !== undefined ? m.outcome_score : (m.outcome_score_mean || 7.20);
         
         const encEl = document.getElementById('cqo-kpi-encounters');
@@ -140,7 +216,7 @@ async function fetchCQOSummary() {
         if (ssiEl) ssiEl.innerText = `${ssiRate < 1 ? (ssiRate * 100).toFixed(2) : ssiRate.toFixed(2)}%`;
         
         const ssiCasesEl = document.getElementById('cqo-kpi-ssi-cases');
-        if (ssiCasesEl) ssiCasesEl.innerText = `${Math.round(totalEnc * (ssiRate < 1 ? ssiRate : ssiRate / 100)) || 7} Cases`;
+        if (ssiCasesEl) ssiCasesEl.innerText = `${Math.round(totalEnc * (ssiRate < 1 ? ssiRate : ssiRate / 100)) || 1} Cases`;
         
         const readmRate = m.readmission_rate !== undefined ? m.readmission_rate : 2.49;
         const readmEl = document.getElementById('cqo-kpi-readmission');
@@ -157,9 +233,9 @@ async function fetchCQOSummary() {
         const mortEl = document.getElementById('cqo-kpi-mortality');
         if (mortEl) mortEl.innerText = `Mortality: ${mortRate < 1 ? (mortRate * 100).toFixed(2) : mortRate.toFixed(2)}%`;
         
-        const offContractSpend = m.off_contract_spend || 11395363;
-        const contractSpend = m.contracted_spend || 105149495;
-        const offPct = (offContractSpend / (totalSp || 1)) * 100;
+        const offContractSpend = m.off_contract_spend || (totalSp * 0.098);
+        const contractSpend = m.contracted_spend || (totalSp - offContractSpend);
+        const offPct = totalSp > 0 ? ((offContractSpend / totalSp) * 100) : 9.8;
         
         const leakEl = document.getElementById('cqo-kpi-leakage');
         if (leakEl) leakEl.innerText = `$${(offContractSpend / 1e6).toFixed(2)}M`;
@@ -167,13 +243,14 @@ async function fetchCQOSummary() {
         const leakPctEl = document.getElementById('cqo-kpi-leakage-pct');
         if (leakPctEl) leakPctEl.innerText = `${offPct.toFixed(1)}% Off-Contract`;
         
-        const oppVal = m.potential_savings || m.opportunity_at_benchmark || (offContractSpend * 0.85);
+        const oppVal = m.potential_savings || (offContractSpend * 0.85);
         const oppEl = document.getElementById('cqo-kpi-opp-target');
         if (oppEl) oppEl.innerText = `Opp (${pct}%): $${(oppVal / 1e6).toFixed(2)}M`;
         
         // Contract Parity Sentinel Breakdown
         const contractDiv = document.getElementById('cqo-contract-summary');
         if (contractDiv) {
+            const bCpc = m.benchmark_cpc || 115;
             contractDiv.innerHTML = `
                 <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
                     <span style="color: var(--text-muted);">Contracted Spend Volume:</span>
@@ -184,16 +261,16 @@ async function fetchCQOSummary() {
                     <strong style="color: #b91c1c;">$${(offContractSpend / 1e6).toFixed(2)}M (${offPct.toFixed(1)}%)</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
-                    <span style="color: var(--text-muted);">10th Percentile Benchmark:</span>
-                    <strong>$205.10 CPC ($24.80M Opp)</strong>
+                    <span style="color: var(--text-muted);">10th Percentile Aggressive Benchmark:</span>
+                    <strong>$${Math.round(bCpc * 0.75)} CPC (Top Savings Tier)</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
-                    <span style="color: var(--text-muted);">25th Percentile Benchmark (Std):</span>
-                    <strong style="color: var(--brand-red);">$382.40 CPC ($16.20M Opp)</strong>
+                    <span style="color: var(--text-muted);">25th Percentile Standard Benchmark:</span>
+                    <strong style="color: var(--brand-red);">$${Math.round(bCpc)} CPC (Standard Target)</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 6px 0;">
                     <span style="color: var(--text-muted);">50th Percentile Median Benchmark:</span>
-                    <strong>$821.50 CPC ($7.90M Opp)</strong>
+                    <strong>$${Math.round(bCpc * 1.55)} CPC (Median Tier)</strong>
                 </div>
             `;
         }
@@ -240,28 +317,30 @@ async function renderValueQuadrant(percentile) {
     if (!plotDiv) return;
     
     const pct = percentile || window.activeBenchmark || 25;
+    const proc = window.currentProcedure || "";
     
     try {
-        const res = await fetch(`${API_BASE}/cqo/quadrant?percentile=${pct}`);
-        if (!res.ok) throw new Error("Failed to fetch quadrant data");
+        const procParam = proc ? `&procedure=${encodeURIComponent(proc)}` : '';
+        const res = await fetch(`${API_BASE}/cqo/quadrant?percentile=${pct}${procParam}`);
+        if (!res.ok) throw new Error(`Quadrant data HTTP ${res.status}`);
         const result = await res.json();
         
         const surgeons = result.surgeons || [];
-        const benchCost = result.benchmark_cpc || result.benchmark_cost || 267.72;
-        const benchScore = result.target_outcome || result.benchmark_score || 7.0;
+        const benchCost = result.benchmark_cpc || result.benchmark_cost || 163.54;
+        const benchScore = result.target_outcome || result.benchmark_score || 7.2;
         
         if (surgeons.length === 0) {
-            plotDiv.innerHTML = '<div style="text-align: center; padding: 100px; color: var(--text-muted);">No surgeon quadrant data available.</div>';
+            plotDiv.innerHTML = '<div style="text-align: center; padding: 100px; color: var(--text-muted); font-size: 14px;">No surgeon quadrant data available for this selection.</div>';
             return;
         }
         
         // Group surgeons by quadrant categories
         const traces = [];
         const quadGroups = [
-            { name: 'Clinical Champions (Low Cost, High Quality)', color: '#10b981', filter: s => s.quadrant.includes('Champion') },
-            { name: 'Preference Heavy (High Cost, High Quality)', color: '#3b82f6', filter: s => s.quadrant.includes('Preference') },
-            { name: 'Under-Resourced (Low Cost, Lower Quality)', color: '#f59e0b', filter: s => s.quadrant.includes('Under-Resourced') },
-            { name: 'Urgent Alignment (High Cost, Lower Quality)', color: '#ef4444', filter: s => s.quadrant.includes('Urgent') }
+            { name: 'Clinical Champions (Low Cost, High Quality)', color: '#166534', filter: s => s.quadrant.includes('Champion') },
+            { name: 'Preference Heavy (High Cost, High Quality)', color: '#2563eb', filter: s => s.quadrant.includes('Preference') },
+            { name: 'Under-Resourced (Low Cost, Lower Quality)', color: '#d97706', filter: s => s.quadrant.includes('Under') },
+            { name: 'Urgent Alignment (High Cost, Lower Quality)', color: '#dc2626', filter: s => s.quadrant.includes('Urgent') }
         ];
         
         quadGroups.forEach(grp => {
@@ -280,7 +359,7 @@ async function renderValueQuadrant(percentile) {
                 mode: 'markers',
                 name: grp.name,
                 marker: {
-                    size: matched.map(s => Math.min(26, Math.max(9, Math.sqrt(s.cases) * 3))),
+                    size: matched.map(s => Math.min(26, Math.max(10, Math.sqrt(s.cases) * 3.5))),
                     color: grp.color,
                     opacity: 0.85,
                     line: { width: 1.5, color: '#ffffff' }
@@ -560,8 +639,6 @@ function executeSwarmAction(actionText) {
 
 // Initialize Swarm and CQO on page ready
 $(document).ready(function() {
-    setTimeout(() => {
-        fetchSwarmPersonas();
-        fetchCQOSummary();
-    }, 200);
+    fetchSwarmPersonas();
+    fetchCQOSummary();
 });
