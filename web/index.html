@@ -40,13 +40,107 @@
             color: var(--text-dark);
         }
         
-        /* --- Tabs --- */
-        .tab { overflow: hidden; border-bottom: 1px solid var(--card-border); background-color: #fff; border-radius: 8px 8px 0 0; display: flex; flex-wrap: wrap; }
-        .tab button { background-color: inherit; border: none; outline: none; cursor: pointer; padding: 12px 16px; transition: 0.3s; font-size: 12px; font-weight: 600; color: var(--text-muted); font-family: inherit; white-space: nowrap; } /* Reduced padding and font-size */
-        .tab button:hover:not(:disabled) { color: var(--text-dark); background-color: #f8fafc; }
-        .tab button.active { background-color: #fff; border-bottom: 3px solid var(--brand-red); color: var(--brand-red); }
-        .tab button:disabled { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
-        .tabcontent { display: none; animation: fadeEffect 0.5s; width: 100%; box-sizing: border-box; }
+        /* --- Tabs (Single-Line Categorized Navigation) --- */
+        .tab {
+            overflow: visible;
+            border-bottom: 2px solid var(--card-border);
+            background-color: #fff;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: stretch;
+            padding: 0 8px;
+            gap: 4px;
+            position: relative;
+            z-index: 50;
+            min-height: 44px;
+        }
+        .tab-group {
+            position: relative;
+            display: flex;
+            align-items: stretch;
+        }
+        .tab-group-btn {
+            background-color: transparent;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 11px 15px;
+            transition: all 0.2s ease;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-family: inherit;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 6px 6px 0 0;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-group-btn:hover {
+            color: var(--text-dark);
+            background-color: #f8fafc;
+        }
+        .tab-group.active .tab-group-btn {
+            background-color: #fff;
+            border-bottom: 3px solid var(--brand-red);
+            color: var(--brand-red);
+        }
+        .tab-group-caret {
+            font-size: 9px;
+            transition: transform 0.2s ease;
+            opacity: 0.6;
+        }
+        .tab-group:hover .tab-group-caret {
+            transform: rotate(180deg);
+        }
+        .tab-dropdown-menu {
+            display: none;
+            position: absolute;
+            top: calc(100% + 2px);
+            left: 0;
+            background-color: #fff;
+            min-width: 230px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            z-index: 1000;
+            padding: 6px;
+            animation: fadeIn 0.15s ease;
+        }
+        .tab-group:hover .tab-dropdown-menu {
+            display: block;
+        }
+        .tab-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-dark);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s;
+            background: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            box-sizing: border-box;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .tab-dropdown-item:hover {
+            background-color: #fef2f2;
+            color: var(--brand-red);
+        }
+        .tab-dropdown-item.active {
+            background-color: #fef2f2;
+            color: var(--brand-red);
+            font-weight: 700;
+        }
+        .tabcontent { display: none; animation: fadeEffect 0.4s; width: 100%; box-sizing: border-box; }
         @keyframes fadeEffect { from {opacity: 0;} to {opacity: 1;} }
 
         /* --- Loading Spinner --- */
@@ -334,15 +428,81 @@
     </div>
 
     <div class="tab">
-        <button class="tablinks active" onclick="openTab(event, 'DashboardTab')">Cost & Variance Dashboard</button>
-        <button class="tablinks" onclick="openTab(event, 'CQOTab')">🎯 CQO & Value Quadrant</button>
-        <button class="tablinks" onclick="openTab(event, 'SwarmTab')">🐝 Bee Hive Swarm Console</button>
-        <button class="tablinks" onclick="openTab(event, 'PrefCardTab')">Surgeon Preference Cards</button>
-        <button class="tablinks" onclick="openTab(event, 'CompareCardsTab')">Compare Preference Cards</button>
-        <button class="tablinks" onclick="openTab(event, 'ProcCardTab')">Global Procedure Cards</button>
-        <button class="tablinks" onclick="openTab(event, 'PredictTab')">AI Predictive Modeling</button>
-        <button class="tablinks" onclick="openTab(event, 'ParityTab')">Price Parity Analysis</button>
-        <button class="tablinks" onclick="openTab(event, 'LeakageTab')">Savings Leakage</button>
+        <!-- Group 1: Clinical Outcomes & Cohorts -->
+        <div class="tab-group active" id="group-clinical">
+            <button class="tab-group-btn" onclick="openTabDirect('DashboardTab', 'group-clinical')">
+                <span>📊 Clinical & Outcomes</span>
+                <span class="tab-group-caret">▼</span>
+            </button>
+            <div class="tab-dropdown-menu">
+                <button class="tab-dropdown-item tablinks active" onclick="openTab(event, 'DashboardTab')">
+                    <span class="item-icon">📈</span>
+                    <span>Cost & Variance Dashboard</span>
+                </button>
+                <button class="tab-dropdown-item tablinks" onclick="openTab(event, 'CQOTab')">
+                    <span class="item-icon">🎯</span>
+                    <span>CQO & Value Quadrant</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Group 2: Swarm & AI Intelligence -->
+        <div class="tab-group" id="group-swarm">
+            <button class="tab-group-btn" onclick="openTabDirect('SwarmTab', 'group-swarm')">
+                <span>🐝 AI & Swarm Intelligence</span>
+                <span class="tab-group-caret">▼</span>
+            </button>
+            <div class="tab-dropdown-menu">
+                <button class="tab-dropdown-item tablinks" onclick="openTab(event, 'SwarmTab')">
+                    <span class="item-icon">🐝</span>
+                    <span>Bee Hive Swarm Console</span>
+                </button>
+                <button class="tab-dropdown-item tablinks" onclick="openTab(event, 'PredictTab')">
+                    <span class="item-icon">🧠</span>
+                    <span>AI Predictive Modeling</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Group 3: Surgical Cards & Standardization -->
+        <div class="tab-group" id="group-cards">
+            <button class="tab-group-btn" onclick="openTabDirect('PrefCardTab', 'group-cards')">
+                <span>📋 Surgical Preference Cards</span>
+                <span class="tab-group-caret">▼</span>
+            </button>
+            <div class="tab-dropdown-menu">
+                <button class="tab-dropdown-item tablinks" onclick="openTab(event, 'PrefCardTab')">
+                    <span class="item-icon">👨‍⚕️</span>
+                    <span>Surgeon Preference Cards</span>
+                </button>
+                <button class="tab-dropdown-item tablinks" onclick="openTab(event, 'CompareCardsTab')">
+                    <span class="item-icon">⚖️</span>
+                    <span>Compare Preference Cards</span>
+                </button>
+                <button class="tab-dropdown-item tablinks" onclick="openTab(event, 'ProcCardTab')">
+                    <span class="item-icon">🏥</span>
+                    <span>Global Procedure Cards</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Group 4: Value Analysis & Procurement -->
+        <div class="tab-group" id="group-value">
+            <button class="tab-group-btn" onclick="openTabDirect('ParityTab', 'group-value')">
+                <span>💰 Value & Procurement</span>
+                <span class="tab-group-caret">▼</span>
+            </button>
+            <div class="tab-dropdown-menu">
+                <button class="tab-dropdown-item tablinks" onclick="openTab(event, 'ParityTab')">
+                    <span class="item-icon">🏷️</span>
+                    <span>Price Parity Analysis</span>
+                </button>
+                <button class="tab-dropdown-item tablinks" onclick="openTab(event, 'LeakageTab')">
+                    <span class="item-icon">💸</span>
+                    <span>Savings Leakage & Compliance</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="DashboardTab" class="tabcontent" style="display:block;">
@@ -2389,24 +2549,41 @@
         }
 
         function openTab(evt, tabName) {
+            if (evt) {
+                evt.stopPropagation();
+            }
             var i, tabcontent, tablinks;
             tabcontent = document.getElementsByClassName("tabcontent");
             for (i = 0; i < tabcontent.length; i++) { tabcontent[i].style.display = "none"; }
             tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) { tablinks[i].className = tablinks[i].className.replace(" active", ""); }
+            for (i = 0; i < tablinks.length; i++) { tablinks[i].classList.remove("active"); }
+            
+            // Deactivate all tab-groups
+            document.querySelectorAll('.tab-group').forEach(tg => tg.classList.remove('active'));
+
             const targetEl = document.getElementById(tabName);
             if (targetEl) targetEl.style.display = "block";
             
-            if (evt && evt.currentTarget) {
-                evt.currentTarget.className += " active";
-            } else {
+            let matched = false;
+            if (evt && evt.currentTarget && evt.currentTarget.classList.contains('tablinks')) {
+                evt.currentTarget.classList.add("active");
+                const parentGroup = evt.currentTarget.closest('.tab-group');
+                if (parentGroup) parentGroup.classList.add('active');
+                matched = true;
+            }
+            
+            if (!matched) {
                 for (i = 0; i < tablinks.length; i++) {
-                    if (tablinks[i].getAttribute('onclick')?.includes(tabName)) {
-                        tablinks[i].className += " active";
+                    const onclickStr = tablinks[i].getAttribute('onclick') || '';
+                    if (onclickStr.includes(`'${tabName}'`)) {
+                        tablinks[i].classList.add("active");
+                        const parentGroup = tablinks[i].closest('.tab-group');
+                        if (parentGroup) parentGroup.classList.add('active');
                         break;
                     }
                 }
             }
+            
             window.dispatchEvent(new Event('resize'));
             
             if (tabName === 'CQOTab') {
@@ -2424,6 +2601,18 @@
                     renderVarianceChart();
                 }
             }
+        }
+
+        function openTabDirect(tabName, groupId) {
+            openTab(null, tabName);
+            if (groupId) {
+                const grp = document.getElementById(groupId);
+                if (grp) grp.classList.add('active');
+            }
+        }
+
+        function openTabByName(tabName) {
+            openTab(null, tabName);
         }
 
         function showLoading() { $('#loading-overlay').css('display', 'flex'); }
