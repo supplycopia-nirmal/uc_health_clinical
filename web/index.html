@@ -140,6 +140,19 @@
         .view-toggle button.active { background: #fff; color: var(--brand-red); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .d3-tooltip { position: absolute; text-align: left; padding: 8px 12px; font-size: 11px; font-family: 'Open Sans', sans-serif; background: rgba(15, 23, 42, 0.95); color: #fff; border-radius: 6px; pointer-events: none; opacity: 0; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); line-height: 1.5; }
 
+        /* --- Rendered Markdown in Insights --- */
+        #insights-content { line-height: 1.6; color: var(--text-dark); }
+        .rendered-markdown h1, .rendered-markdown h2, .rendered-markdown h3, .rendered-markdown h4 { margin: 12px 0 6px 0; color: var(--text-dark); font-weight: 700; }
+        .rendered-markdown h1 { font-size: 1.3em; }
+        .rendered-markdown h2 { font-size: 1.2em; }
+        .rendered-markdown h3 { font-size: 1.05em; color: var(--brand-red); border-bottom: 1px solid #fee2e2; padding-bottom: 4px; }
+        .rendered-markdown h4 { font-size: 1.0em; }
+        .rendered-markdown ul, .rendered-markdown ol { margin: 6px 0 12px 0; padding-left: 22px; }
+        .rendered-markdown li { margin-bottom: 4px; font-size: 13.5px; }
+        .rendered-markdown p { margin: 6px 0; font-size: 13.5px; }
+        .rendered-markdown strong, .rendered-markdown b { color: #0f172a; font-weight: 700; }
+        .rendered-markdown hr { border: 0; border-top: 1px solid var(--card-border); margin: 12px 0; }
+
         /* --- Chatbot Styles --- */
         #chat-toggle-btn { position: fixed; bottom: 30px; right: 30px; background-color: #fff; color: var(--text-dark); border: 1px solid var(--card-border); border-radius: 50px; padding: 8px 16px 8px 8px; font-size: 13px; font-weight: 600; font-family: inherit; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; z-index: 10000; transition: transform 0.2s, color 0.2s; display: flex; align-items: center; gap: 8px; }
         #chat-toggle-btn:hover { transform: translateY(-2px); color: var(--brand-red); }
@@ -1297,7 +1310,12 @@
                 const data = await res.json();
                 
                 if (data.insight) {
-                    content.innerHTML = data.insight.includes("Error code:") ? `<p style="color: var(--brand-red);">LLM Error: Reduce data size.</p>` : `<div>${data.insight}</div>`;
+                    if (data.insight.includes("Error code:")) {
+                        content.innerHTML = `<p style="color: var(--brand-red);">LLM Error: Reduce data size.</p>`;
+                    } else {
+                        const parsedHTML = typeof marked !== 'undefined' ? marked.parse(data.insight) : data.insight;
+                        content.innerHTML = `<div class="rendered-markdown">${parsedHTML}</div>`;
+                    }
                 } else {
                     console.error("API Validation Error:", data);
                     content.innerHTML = `<p style="color: var(--brand-red);">Server rejected the data format. Check your terminal logs.</p>`;
@@ -2428,7 +2446,7 @@
             try {
                 const res = await fetch(`${API_BASE}/substitutions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ procedure_name: window.currentProcedure }) });
                 const subs = (await res.json()).substitutions || [];
-                if (subs.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">No viable cross-manufacturer substitutions found.</td></tr>'; return; }
+                if (subs.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">No cross-manufacturer substitutions met strict apples-to-apples clinical equivalence criteria for this procedure.</td></tr>'; return; }
                 tbody.innerHTML = '';
                 subs.forEach(sub => {
                     const isEq = sub.is_equivalent;

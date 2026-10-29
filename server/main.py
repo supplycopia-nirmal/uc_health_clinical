@@ -437,7 +437,7 @@ class InsightPayload(BaseModel):
 @app.post("/api/insights")
 def generate_insights(payload: InsightPayload):
     api_key = os.environ.get("OPENAI_API_KEY", MultiTenantConfig.OPENAI_API_KEY)
-    if not api_key: return {"insight": "⚠️ <b>API Key Missing</b>"}
+    if not api_key: return {"insight": "⚠️ **API Key Missing**: Please configure OPENAI_API_KEY."}
     
     safe_surgeon_stats = str(payload.surgeon_stats)[:1500]
     safe_brand_pricing = str(payload.brand_pricing)[:2000]
@@ -456,30 +456,38 @@ def generate_insights(payload: InsightPayload):
     Brand & Unit Price Disparity Data:
     {safe_brand_pricing}
     
-    Provide an executive clinical summary formatted in bullet points:
-    - <b>Volume & Cost Summary</b>: State total spend, cases, and outlier proportion.
-    - <b>Surgeon Variation</b>: Identify surgeons with above-average cost per case.
-    - <b>Material Drivers</b>: Identify specific product categories with brand price spread.
-    - <b>Savings Recommendations</b>: Specific, actionable recommendations to standardize to lowest-cost equivalent items.
-    
-    Return clean HTML with <ul> and <li> tags.
+    Provide an executive clinical summary formatted in clean, structured Markdown:
+    ### Executive Clinical Assessment
+    - **Volume & Cost Summary**: State total spend, cases, and outlier proportion.
+    - **Surgeon Variation**: Identify surgeons with above-average cost per case and high-acuity correlations.
+    - **Material Drivers**: Identify specific product categories with brand price spread.
+    - **Savings Recommendations**: Specific, actionable recommendations to standardize to lowest-cost equivalent items.
     """
     
     for model_name in [MultiTenantConfig.OPENAI_MODEL, MultiTenantConfig.OPENAI_FALLBACK_MODEL, "gpt-4o"]:
         try:
             response = openai_client.chat.completions.create(
                 model=model_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3
+                messages=[{"role": "user", "content": prompt}]
             )
             return {"insight": response.choices[0].message.content}
-        except Exception:
+        except Exception as e:
+            print(f"Model {model_name} insight error: {e}")
             continue
             
-    return {"insight": "<p>⚠️ AI Insights temporarily unavailable.</p>"}
+    return {"insight": "⚠️ AI Insights temporarily unavailable."}
 
 class SubstitutionPayload(BaseModel):
     procedure_name: str = ""
+
+# Categories strictly excluded from brand substitution
+EXCLUDED_SUBSTITUTION_CATEGORIES = {
+    'GENERAL MEDICAL', 'UNKNOWN', 'NONE', 'MISCELLANEOUS', 'SUPPLIES', 
+    'IMPLANT', 'EQUIPMENT', 'MEDICAL SUPPLY', 'MISCELLANEOUS CONSUMABLES'
+}
+
+# Regex to exclude heterogeneous procedure packs, custom kits, trays, and assemblies
+EXCLUDED_PACK_REGEX = re.compile(r'PACK|KIT|TRAY|SET|ASSEMBLY|PROCEDURE PACKS', re.IGNORECASE)
 
 class SubstitutionItem(BaseModel):
     sub_category: str
@@ -489,8 +497,8 @@ class SubstitutionItem(BaseModel):
     target_cost: float
     replacement_cost: float
     qty: float
-    is_equivalent: bool = Field(default=True, description="True if clinically interchangeable.")
-    clinical_rationale: str = Field(default="", description="1-2 sentences on why this is safe.")
+    is_equivalent: bool = Field(default=True, description="True ONLY if items are true apples-to-apples, clinically equivalent, and safely interchangeable.")
+    clinical_rationale: str = Field(default="", description="Detailed clinical rationale explaining material, functional, and procedural interchangeability.")
 
 class SubstitutionResponse(BaseModel):
     substitutions: List[SubstitutionItem]
@@ -506,50 +514,129 @@ def _get_substitutions_cached(procedure_name: str):
         b = str(brand_str).upper()
         return b.split('-')[0].strip() if '-' in b else b.split()[0].strip()
 
+    # 1. Strictly filter out umbrella categories and multi-component custom packs
     valid = proc_df[
         proc_df['contract_sub_category'].notna() & 
-        (~proc_df['contract_sub_category'].isin(['NAN', 'UNKNOWN', ''])) & 
+        (~proc_df['contract_sub_category'].astype(str).str.upper().isin(EXCLUDED_SUBSTITUTION_CATEGORIES)) & 
         (proc_df['unit_cost_num'] > 0)
     ]
+    valid = valid[~valid['contract_sub_category'].astype(str).str.upper().str.contains(EXCLUDED_PACK_REGEX)]
+    valid = valid[~valid['brand'].astype(str).str.upper().isin(['UNKNOWN', 'NONE', 'NAN', ''])]
+    
     if valid.empty: return []
 
+    # 2. Group by commodity subcategory & brand, preserving product description
+    desc_col = 'item_description' if 'item_description' in valid.columns else 'contract_sub_category'
     brand_stats = valid.groupby(['contract_sub_category', 'brand']).agg(
         avg_cost=('unit_cost_num', 'mean'),
-        total_qty=('quantity_num', 'sum')
+        total_qty=('quantity_num', 'sum'),
+        sample_desc=(desc_col, lambda x: x.dropna().iloc[0] if not x.dropna().empty else "")
     ).reset_index()
 
-    candidates = []
+    candidate_pairs = []
     for subcat, group in brand_stats.groupby('contract_sub_category'):
         if len(group) < 2: continue
         sorted_g = group.sort_values('avg_cost', ascending=False).to_dict(orient='records')
-        best_cand = None
-        max_savings = -1
         for i in range(len(sorted_g)):
             for j in range(len(sorted_g)-1, i, -1):
                 exp_item = sorted_g[i]
                 chp_item = sorted_g[j]
+                
                 mfr_e = get_mfr(exp_item['brand'])
                 mfr_c = get_mfr(chp_item['brand'])
                 if mfr_e in mfr_c or mfr_c in mfr_e: continue
+
+                # 3. Strict apples-to-apples price ratio guardrail: 1.05x to 2.50x
+                # Reject any ratio > 2.5x as an obvious specification or packaging/UOM mismatch
+                if chp_item['avg_cost'] <= 0: continue
+                ratio = exp_item['avg_cost'] / chp_item['avg_cost']
+                if not (1.05 <= ratio <= 2.50):
+                    continue
+
                 savings = (exp_item['avg_cost'] - chp_item['avg_cost']) * exp_item['total_qty']
-                if savings > max_savings:
-                    max_savings = savings
-                    best_cand = (exp_item, chp_item, savings)
-        if best_cand and max_savings > 100:
-            exp_item, chp_item, savings = best_cand
-            candidates.append({
-                "sub_category": str(subcat),
-                "target_brand": str(exp_item['brand']),
-                "replacement_brand": str(chp_item['brand']),
-                "projected_savings": round(float(savings), 2),
-                "target_cost": round(float(exp_item['avg_cost']), 2),
-                "replacement_cost": round(float(chp_item['avg_cost']), 2),
-                "qty": round(float(exp_item['total_qty']), 1),
-                "is_equivalent": True,
-                "clinical_rationale": f"Interchangeable clinical equivalent within {subcat}. Consistent procedural efficacy at reduced acquisition cost."
-            })
-    
-    return sorted(candidates, key=lambda x: x['projected_savings'], reverse=True)[:10]
+                if savings > 50:
+                    candidate_pairs.append({
+                        "sub_category": str(subcat),
+                        "target_brand": str(exp_item['brand']),
+                        "target_desc": str(exp_item.get('sample_desc', ''))[:80],
+                        "replacement_brand": str(chp_item['brand']),
+                        "replacement_desc": str(chp_item.get('sample_desc', ''))[:80],
+                        "projected_savings": round(float(savings), 2),
+                        "target_cost": round(float(exp_item['avg_cost']), 2),
+                        "replacement_cost": round(float(chp_item['avg_cost']), 2),
+                        "qty": round(float(exp_item['total_qty']), 1)
+                    })
+
+    candidate_pairs = sorted(candidate_pairs, key=lambda x: x['projected_savings'], reverse=True)[:6]
+    if not candidate_pairs:
+        return []
+
+    # 4. Rigorous Clinical Review via OpenAI (Clinical Board Evaluation)
+    api_key = os.environ.get("OPENAI_API_KEY", MultiTenantConfig.OPENAI_API_KEY)
+    if api_key:
+        prompt = f"""
+        You are a Senior Hospital Value Analysis & Surgical Clinical Reviewer for {MultiTenantConfig.TENANT_NAME}.
+        Evaluate whether the following candidate surgical supply substitutions for the procedure '{procedure_name}' are TRUE APPLES-TO-APPLES clinically interchangeable items:
+        
+        {json.dumps(candidate_pairs, indent=2)}
+        
+        CLINICAL REVIEW CRITERIA:
+        1. APPLES-TO-APPLES: Items must share the exact same clinical function, form factor, and procedural utility.
+        2. REJECT (is_equivalent: false) any multi-component custom packs/kits where contents or drape counts differ.
+        3. REJECT (is_equivalent: false) any item where the price difference is due to packaging size or unit of measure differences.
+        4. REJECT (is_equivalent: false) proprietary implant hardware requiring unique, non-interchangeable surgical instrumentation.
+        5. Set is_equivalent: true ONLY if a surgeon can safely substitute the item with no compromise in technique, efficacy, or safety.
+        6. Provide a concise, professional clinical rationale explaining the exact clinical and material properties.
+        
+        Respond strictly in valid JSON format:
+        {{
+          "substitutions": [
+            {{
+              "sub_category": string,
+              "target_brand": string,
+              "replacement_brand": string,
+              "is_equivalent": boolean,
+              "clinical_rationale": string
+            }}
+          ]
+        }}
+        """
+        for model_name in [MultiTenantConfig.OPENAI_MODEL, MultiTenantConfig.OPENAI_FALLBACK_MODEL, "gpt-4o"]:
+            try:
+                ai_resp = openai_client.chat.completions.create(
+                    model=model_name,
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"}
+                )
+                parsed = json.loads(ai_resp.choices[0].message.content)
+                eval_list = parsed.get("substitutions", [])
+                eval_map = {(item.get("sub_category"), item.get("target_brand"), item.get("replacement_brand")): item for item in eval_list}
+                
+                verified_results = []
+                for cand in candidate_pairs:
+                    key = (cand["sub_category"], cand["target_brand"], cand["replacement_brand"])
+                    evaluation = eval_map.get(key)
+                    if evaluation and evaluation.get("is_equivalent") is True:
+                        cand_clean = {
+                            "sub_category": cand["sub_category"],
+                            "target_brand": cand["target_brand"],
+                            "replacement_brand": cand["replacement_brand"],
+                            "projected_savings": cand["projected_savings"],
+                            "target_cost": cand["target_cost"],
+                            "replacement_cost": cand["replacement_cost"],
+                            "qty": cand["qty"],
+                            "is_equivalent": True,
+                            "clinical_rationale": evaluation.get("clinical_rationale", "Clinically verified apples-to-apples commodity equivalent.")
+                        }
+                        verified_results.append(cand_clean)
+                
+                return verified_results
+            except Exception as e:
+                print(f"Clinical AI evaluation error with {model_name}: {e}")
+                continue
+
+    # Return empty list if no substitutions meet clinical equivalence - never display unverified or mock data
+    return []
 
 @app.post("/api/substitutions")
 def generate_substitutions(payload: SubstitutionPayload):
@@ -1120,22 +1207,36 @@ def predict_cost(payload: PredictPayload):
             X['lead_surgeon'] = case_df['lead_surgeon'].astype(str).fillna('Unknown')
             X['asa_rating'] = case_df['asa_rating'].astype(str).fillna('Unknown') if 'asa_rating' in case_df.columns else 'Unknown'
             
-            # Map patient age from bucket or random normal
+            # Map patient age from bucket or numeric column
             if 'patient_age_bucket' in case_df.columns:
-                age_map = {'19-44': 35, '45-64': 55, '65-84': 75, '85+': 88}
-                X['patient_age'] = case_df['patient_age_bucket'].map(age_map).fillna(60)
+                norm_age = case_df['patient_age_bucket'].astype(str).str.strip().str.upper()
+                age_map = {
+                    '0-18': 14.0,
+                    '19-44': 32.0,
+                    '45-64': 55.0,
+                    '65-84': 74.0,
+                    '85 AND OVER': 88.0,
+                    '85+': 88.0
+                }
+                X['patient_age'] = norm_age.map(age_map).fillna(55.0)
             elif 'patient_age' in case_df.columns:
-                X['patient_age'] = pd.to_numeric(case_df['patient_age'], errors='coerce').fillna(60)
+                X['patient_age'] = pd.to_numeric(case_df['patient_age'], errors='coerce').fillna(55.0)
             else:
-                X['patient_age'] = 60
+                X['patient_age'] = 55.0
 
             if 'bmi_bucket' in case_df.columns:
-                bmi_map = {'Below 30': 25, '30-39': 34, '40+': 42}
-                X['bmi'] = case_df['bmi_bucket'].map(bmi_map).fillna(28)
+                norm_bmi = case_df['bmi_bucket'].astype(str).str.strip().str.upper()
+                bmi_map = {
+                    'BELOW 30': 24.5,
+                    '30 AND ABOVE': 34.0,
+                    '30-39': 34.0,
+                    '40+': 42.0
+                }
+                X['bmi'] = norm_bmi.map(bmi_map).fillna(28.0)
             elif 'bmi' in case_df.columns:
-                X['bmi'] = pd.to_numeric(case_df['bmi'], errors='coerce').fillna(28)
+                X['bmi'] = pd.to_numeric(case_df['bmi'], errors='coerce').fillna(28.0)
             else:
-                X['bmi'] = 28
+                X['bmi'] = 28.0
             
             X_encoded = pd.get_dummies(X, columns=['lead_surgeon', 'asa_rating'])
             
