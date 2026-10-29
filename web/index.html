@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UC Health Clinical Intelligence & Variation Platform</title>
+    
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- jQuery & Select2 -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #E00122;       /* UC Health Red */
+            --primary-dark: #A50016;  /* Deep Crimson */
+            --navy: #001E44;          /* UC Health Navy */
+            --navy-light: #0A2F66;
+            --bg-page: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --border-color: #E2E8F0;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --gold: #D4AF37;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-page); color: var(--text-main); font-size: 13px; line-height: 1.5; }
+
+        /* Top Navigation Header */
+        header {
+            background: #FFFFFF;
+            border-bottom: 2px solid #E2E8F0;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .brand-container { display: flex; align-items: center; gap: 14px; }
+        .brand-logo { height: 42px; width: auto; }
+        .tenant-badge {
+            background: rgba(224, 1, 34, 0.1);
+            color: var(--primary);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* Procedure Selector Bar */
+        .procedure-bar {
+            background: #001E44;
+            color: #FFFFFF;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .procedure-bar label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; }
+        .procedure-select-wrap { flex: 1; max-width: 650px; }
+        
+        .header-actions { display: flex; gap: 8px; margin-left: auto; }
+        .btn-action {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #FFFFFF;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-action:hover { background: rgba(255,255,255,0.2); }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            padding: 0 24px;
+            gap: 4px;
+            overflow-x: auto;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 14px 16px;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { color: var(--navy); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        /* Filter Controls */
+        .filter-row {
+            padding: 12px 24px;
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .filter-group { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; }
+        .filter-group select { min-width: 180px; }
+
+        /* Main Content Container */
+        main { padding: 20px 24px 60px 24px; max-width: 1700px; margin: 0 auto; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Metrics Row */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px 20px;
+            position: relative;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0; width: 4px;
+            background: var(--navy);
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+        .metric-card.accent::before { background: var(--primary); }
+        .metric-card.gold::before { background: var(--gold); }
+        .metric-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; }
+        .metric-value { font-size: 24px; font-weight: 800; color: var(--navy); margin-top: 4px; }
+        .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+        /* Card Section Styles */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--navy);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Two-Column Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 1024px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        /* Tables */
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table.clinical-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            text-align: left;
+        }
+        table.clinical-table th {
+            background: #F1F5F9;
+            color: var(--navy);
+            font-weight: 700;
+            padding: 10px 14px;
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+        table.clinical-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
+            color: #334155;
+        }
+        table.clinical-table tr:hover td { background: #F8FAFC; }
+
+        /* Status Badges */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-standard { background: #DCFCE7; color: #15803D; }
+        .badge-nonstandard { background: #FEF3C7; color: #B45309; }
+        .badge-variance { background: #FEE2E2; color: #B91C1C; }
+        .badge-omitted { background: #E2E8F0; color: #475569; }
+        .badge-conflict { background: #FEE2E2; color: #B91C1C; border: 1px solid #FCA5A5; }
+
+        /* AI Assistant Floating Button */
+        .floating-bee-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: linear-gradient(135deg, #001E44, #0A2F66);
+            color: #FFFFFF;
+            border: 2px solid var(--gold);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 30, 68, 0.4);
+            z-index: 1000;
+            transition: all 0.3s;
+        }
+        .floating-bee-btn:hover { transform: scale(1.08); }
+
+        /* Ask The Bee Modal */
+        .bee-modal {
+            display: none;
+            position: fixed;
+            bottom: 96px;
+            right: 24px;
+            width: 420px;
+            height: 520px;
+            background: #FFFFFF;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            z-index: 1000;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .bee-header {
+            background: var(--navy);
+            color: #FFFFFF;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .bee-chat { flex: 1; padding: 16px; overflow-y: auto; background: #F8FAFC; }
+        .bee-input-wrap {
+            padding: 12px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+            background: #FFFFFF;
+        }
+        .bee-input-wrap input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .bee-input-wrap button {
+            background: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn-brand {
+            background: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .btn-brand:hover { background: var(--primary-dark); }
+        .btn-outline {
+            background: transparent;
+            color: var(--navy);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-outline:hover { background: #F1F5F9; }
+
+        /* Select2 Customization */
+        .select2-container--default .select2-selection--single {
+            height: 38px;
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #0F172A;
+            font-size: 13px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="brand-container">
+            <img src="/static/uc_health_logo.svg" alt="UC Health" class="brand-logo">
+            <span class="tenant-badge" id="tenant-display">UC Health Tenant (CL_UCH_001)</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted);">
+            Connected to Snowflake &nbsp;|&nbsp; <strong>Multi-Tenant Mode</strong> &nbsp;|&nbsp; <i class="fa-solid fa-circle-check" style="color: var(--success);"></i> Live Data
+        </div>
+    </header>
+
+    <!-- Procedure Selector Bar -->
+    <div class="procedure-bar">
+        <label><i class="fa-solid fa-stethoscope"></i> Clinical Procedure:</label>
+        <div class="procedure-select-wrap">
+            <select id="procedure-select" style="width: 100%;">
+                <option value="">-- Loading UC Health Procedures... --</option>
+            </select>
+        </div>
+        <div class="header-actions">
+            <button class="btn-action" onclick="exportData('csv')"><i class="fa-solid fa-file-csv"></i> CSV</button>
+            <button class="btn-action" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('DashboardTab')"><i class="fa-solid fa-chart-line"></i> Dashboard & Variance</button>
+        <button class="tab-btn" onclick="switchTab('PrefCardTab')"><i class="fa-solid fa-id-card-clip"></i> Preference Cards</button>
+        <button class="tab-btn" onclick="switchTab('CompareCardsTab')"><i class="fa-solid fa-code-compare"></i> Compare Cards</button>
+        <button class="tab-btn" onclick="switchTab('ParityTab')"><i class="fa-solid fa-scale-balanced"></i> Price Parity</button>
+        <button class="tab-btn" onclick="switchTab('LeakageTab')"><i class="fa-solid fa-shield-halved"></i> Savings Leakage</button>
+        <button class="tab-btn" onclick="switchTab('PredictTab')"><i class="fa-solid fa-brain"></i> Predictive Cost (AI)</button>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-row">
+        <div class="filter-group">
+            <label><i class="fa-solid fa-hospital"></i> Facility:</label>
+            <select id="hospital-filter" onchange="applyFilters()">
+                <option value="ALL">All Facilities</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label><i class="fa-solid fa-user-doctor"></i> Surgeon:</label>
+            <select id="surgeon-filter" onchange="applyFilters()">
+                <option value="ALL">All Lead Surgeons</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label><i class="fa-solid fa-triangle-exclamation"></i> Outlier Filter:</label>
+            <select id="outlier-filter" onchange="applyFilters()">
+                <option value="ALL">All Cases</option>
+                <option value="Yes">Anomalies Only</option>
+                <option value="No">Normal Cases</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <!-- 1. DASHBOARD TAB -->
+        <div id="DashboardTab" class="tab-content active">
+            <!-- Metrics Row -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">Total Cases</div>
+                    <div class="metric-value" id="kpi-total-cases">-</div>
+                    <div class="metric-sub" id="kpi-sub-cases">Historical volume</div>
+                </div>
+                <div class="metric-card accent">
+                    <div class="metric-title">Total Procedure Spend</div>
+                    <div class="metric-value" id="kpi-total-spend">-</div>
+                    <div class="metric-sub">Cumulative item acquisition</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Average Cost / Case</div>
+                    <div class="metric-value" id="kpi-avg-cost">-</div>
+                    <div class="metric-sub" id="kpi-cost-spread">Benchmark mean</div>
+                </div>
+                <div class="metric-card gold">
+                    <div class="metric-title">Standard BOM Compliance</div>
+                    <div class="metric-value" id="kpi-bom-compliance">--%</div>
+                    <div class="metric-sub">Case construct adherence</div>
+                </div>
+            </div>
+
+            <!-- Charts Row 1: Scatter & Bubble -->
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fa-solid fa-user-doctor"></i> Surgeon Volume vs. Cost Per Case</div>
+                    </div>
+                    <div id="surgeon-scatter-chart" style="height: 380px;"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fa-solid fa-chart-bubble"></i> Case Cost vs. Item Volume (Anomalies)</div>
+                    </div>
+                    <div id="case-bubble-chart" style="height: 380px;"></div>
+                </div>
+            </div>
+
+            <!-- Unified Variance Analysis Breakdown -->
+            <div class="card" id="variance-detail-card" style="display: none;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fa-solid fa-list-check"></i> Case Variance Breakdown: <span id="selected-case-id" style="color: var(--primary); margin-left: 6px;"></span>
+                    </div>
+                    <div id="case-variance-kpis" style="font-size: 13px; font-weight: 600;"></div>
+                </div>
+                <div class="table-responsive">
+                    <table class="clinical-table" id="variance-items-table">
+                        <thead>
+                            <tr>
+                                <th>Clinical Subcategory</th>
+                                <th>Status</th>
+                                <th>Brand / Manufacturer</th>
+                                <th>Quantity Used</th>
+                                <th>Standard BOM Qty</th>
+                                <th>Unit Cost</th>
+                                <th>Total Spend</th>
+                            </tr>
+                        </thead>
+                        <tbody id="variance-items-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Charts Row 2: Top 10 & Bottom 10 Spend -->
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fa-solid fa-arrow-trend-up" style="color: var(--danger);"></i> Top 10 Spend Subcategories</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="clinical-table">
+                            <thead><tr><th>Subcategory</th><th>Total Spend</th></tr></thead>
+                            <tbody id="top-10-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fa-solid fa-arrow-trend-down" style="color: var(--success);"></i> Bottom 10 Spend Subcategories</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="clinical-table">
+                            <thead><tr><th>Subcategory</th><th>Total Spend</th></tr></thead>
+                            <tbody id="bottom-10-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spend Sunburst Hierarchy -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-circle-nodes"></i> Spend Category Hierarchy (Sunburst)</div>
+                </div>
+                <div id="sunburst-chart" style="height: 500px;"></div>
+            </div>
+
+            <!-- AI Clinical Insights -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);"></i> AI Clinical & Supply Chain Variance Insights</div>
+                    <button class="btn-brand" onclick="loadInsights()"><i class="fa-solid fa-robot"></i> Generate Analysis</button>
+                </div>
+                <div id="insights-container" style="padding: 10px 0; color: #334155;">
+                    <p style="color: var(--text-muted);">Click "Generate Analysis" to trigger OpenAI clinical variance evaluation for the selected procedure.</p>
+                </div>
+            </div>
+
+            <!-- Clinical Substitutions & Association Rules -->
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fa-solid fa-right-left"></i> Clinically Equivalent Brand Substitutions</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="clinical-table">
+                            <thead>
+                                <tr>
+                                    <th>Subcategory</th>
+                                    <th>Current Brand</th>
+                                    <th>Alternative Brand</th>
+                                    <th>Projected Savings</th>
+                                </tr>
+                            </thead>
+                            <tbody id="substitutions-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fa-solid fa-boxes-packing"></i> Pack & Custom Kit Opportunities (FP-Growth)</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="clinical-table">
+                            <thead>
+                                <tr>
+                                    <th>If Used In Case</th>
+                                    <th>Frequently Co-Utilized</th>
+                                    <th>Confidence</th>
+                                    <th>Lift</th>
+                                </tr>
+                            </thead>
+                            <tbody id="arm-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. PREFERENCE CARD TAB -->
+        <div id="PrefCardTab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-id-card-clip"></i> Surgeon Preference Card Builder</div>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="pref-surgeon-select" style="min-width: 250px;" onchange="loadPreferenceCard()">
+                            <option value="">-- Choose Surgeon --</option>
+                        </select>
+                        <button class="btn-brand" onclick="savePreferenceCard()"><i class="fa-solid fa-floppy-disk"></i> Save Card</button>
+                    </div>
+                </div>
+                
+                <h4 style="margin: 16px 0 10px 0; color: var(--navy);"><i class="fa-solid fa-box-open" style="color: var(--success);"></i> Open List (Routine Items >70% Historical Utilization)</h4>
+                <div class="table-responsive">
+                    <table class="clinical-table" id="open-list-table">
+                        <thead>
+                            <tr>
+                                <th>Subcategory</th>
+                                <th>Surgeon Brand</th>
+                                <th>Standard Facility Brand</th>
+                                <th>Median Qty</th>
+                                <th>Utilization %</th>
+                                <th>Brand Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="open-list-tbody"></tbody>
+                    </table>
+                </div>
+
+                <h4 style="margin: 24px 0 10px 0; color: var(--navy);"><i class="fa-solid fa-hand" style="color: var(--warning);"></i> Hold List (Conditional Items 30% - 70% Utilization)</h4>
+                <div class="table-responsive">
+                    <table class="clinical-table" id="hold-list-table">
+                        <thead>
+                            <tr>
+                                <th>Subcategory</th>
+                                <th>Surgeon Brand</th>
+                                <th>Standard Facility Brand</th>
+                                <th>Median Qty</th>
+                                <th>Utilization %</th>
+                                <th>Brand Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hold-list-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. COMPARE CARDS TAB -->
+        <div id="CompareCardsTab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-code-compare"></i> Compare Surgeon Preference Cards</div>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="compare-surgeon-a" style="min-width: 200px;"></select>
+                        <span style="align-self: center; font-weight: 700;">VS</span>
+                        <select id="compare-surgeon-b" style="min-width: 200px;"></select>
+                        <button class="btn-brand" onclick="runCompareCards()">Compare</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="clinical-table">
+                        <thead>
+                            <tr>
+                                <th>Clinical Subcategory</th>
+                                <th>Status</th>
+                                <th id="th-surgeon-a">Surgeon A Brand & Qty</th>
+                                <th id="th-surgeon-b">Surgeon B Brand & Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="compare-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. PRICE PARITY TAB -->
+        <div id="ParityTab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-scale-balanced"></i> Facility Price Parity & Disparity Analysis</div>
+                    <button class="btn-brand" onclick="loadPriceParity()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="clinical-table">
+                        <thead>
+                            <tr>
+                                <th>Subcategory</th>
+                                <th>Lowest Paid Price</th>
+                                <th>Highest Paid Price</th>
+                                <th>Price Spread ($)</th>
+                                <th>Spread %</th>
+                                <th>Potential Opportunity</th>
+                                <th>Facilities Compared</th>
+                            </tr>
+                        </thead>
+                        <tbody id="parity-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. SAVINGS LEAKAGE TAB -->
+        <div id="LeakageTab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-shield-halved"></i> Contract Compliance & Savings Leakage</div>
+                    <button class="btn-brand" onclick="loadSavingsLeakage()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="clinical-table">
+                        <thead>
+                            <tr>
+                                <th>Clinical Subcategory</th>
+                                <th>Total Spend</th>
+                                <th>Off-Contract Spend</th>
+                                <th>Compliance Rate</th>
+                                <th>Calculated Savings Opportunity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leakage-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. PREDICTIVE COST MODELING TAB -->
+        <div id="PredictTab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><i class="fa-solid fa-brain"></i> Machine Learning Case Cost Predictor (XGBoost)</div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                    <div>
+                        <label style="font-weight: 600; font-size: 12px;">Patient Age Bucket:</label>
+                        <select id="pred-age" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            <option value="19-44">19-44</option>
+                            <option value="45-64" selected>45-64</option>
+                            <option value="65-84">65-84</option>
+                            <option value="85+">85+</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 12px;">ASA Rating:</label>
+                        <select id="pred-asa" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            <option value="1 - Normal Healthy Patient">1 - Healthy</option>
+                            <option value="2 - Patients with Mild Systemic Disease">2 - Mild Systemic</option>
+                            <option value="3 - Severe Systemic Disease" selected>3 - Severe Systemic</option>
+                            <option value="4 - Severe Systemic Disease That is Constant Threat to Life">4 - Severe Threat</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 12px;">BMI Bucket:</label>
+                        <select id="pred-bmi" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            <option value="Below 30" selected>Below 30</option>
+                            <option value="30-39">30-39</option>
+                            <option value="40+">40+</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 12px;">Smoking Status:</label>
+                        <select id="pred-smoking" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            <option value="Non-Smoker" selected>Non-Smoker</option>
+                            <option value="EvrydySmkr">Everyday Smoker</option>
+                            <option value="Smokeless">Smokeless</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight: 600; font-size: 12px;">Patient Type:</label>
+                        <select id="pred-type" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            <option value="Inpatient" selected>Inpatient</option>
+                            <option value="Outpatient">Outpatient</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn-brand" onclick="runPredictCost()"><i class="fa-solid fa-calculator"></i> Run Cost Prediction</button>
+                
+                <div id="predict-results" style="margin-top: 24px; display: none;">
+                    <div class="metrics-grid">
+                        <div class="metric-card accent">
+                            <div class="metric-title">Predicted Expected Case Cost</div>
+                            <div class="metric-value" id="pred-cost-val">$0.00</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Historical Procedure Mean</div>
+                            <div class="metric-value" id="pred-hist-mean">$0.00</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-title">Model R² Confidence</div>
+                            <div class="metric-value" id="pred-r2-val">0.0</div>
+                        </div>
+                    </div>
+                    <h4 style="margin: 16px 0 8px 0; color: var(--navy);">Key Contributing Clinical Factors (Feature Importance)</h4>
+                    <ul id="pred-importances" style="padding-left: 20px; color: #475569;"></ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating AI Assistant Button -->
+    <div class="floating-bee-btn" onclick="toggleBeeModal()" title="Ask The Bee (Clinical Copilot)">
+        <i class="fa-solid fa-bee"></i>
+    </div>
+
+    <!-- Ask The Bee Modal -->
+    <div class="bee-modal" id="bee-modal">
+        <div class="bee-header">
+            <div><strong>The Bee</strong> &nbsp;<span style="font-size: 11px; color: var(--gold);">Clinical Intelligence Copilot</span></div>
+            <i class="fa-solid fa-xmark" style="cursor: pointer;" onclick="toggleBeeModal()"></i>
+        </div>
+        <div class="bee-chat" id="bee-chat">
+            <p style="color: var(--text-muted); font-size: 12px;">Hello! I'm your UC Health Clinical Copilot. Ask me about surgeon variation, cost opportunities, or standard BOMs for this procedure.</p>
+        </div>
+        <div class="bee-input-wrap">
+            <input type="text" id="bee-input" placeholder="Ask a clinical question..." onkeypress="if(event.key==='Enter') sendBeeMessage()">
+            <button onclick="sendBeeMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        let currentProcedure = "";
+        let currentData = null;
+        let allCases = [];
+
+        $(document).ready(function() {
+            $('#procedure-select').select2({ placeholder: "Search UC Health Procedures..." });
+            loadProcedures();
+
+            $('#procedure-select').on('change', function() {
+                currentProcedure = $(this).val();
+                if (currentProcedure) {
+                    loadProcedureData(currentProcedure);
+                }
+            });
+        });
+
+        function switchTab(tabId) {
+            $('.tab-btn').removeClass('active');
+            $(`[onclick="switchTab('${tabId}')"]`).addClass('active');
+            $('.tab-content').removeClass('active');
+            $(`#${tabId}`).addClass('active');
+
+            if (tabId === 'PrefCardTab' && currentData) populatePrefSurgeons();
+            if (tabId === 'CompareCardsTab' && currentData) populateCompareSurgeons();
+            if (tabId === 'ParityTab' && currentProcedure) loadPriceParity();
+            if (tabId === 'LeakageTab' && currentProcedure) loadSavingsLeakage();
+        }
+
+        async function loadProcedures() {
+            try {
+                const res = await fetch('/api/procedures');
+                const procs = await res.json();
+                const sel = $('#procedure-select');
+                sel.empty().append('<option value="">-- Choose a Clinical Procedure --</option>');
+                procs.forEach(p => {
+                    sel.append(`<option value="${p}">${p}</option>`);
+                });
+                if (procs.length > 0) {
+                    sel.val(procs[0]).trigger('change');
+                }
+            } catch (err) {
+                console.error("Failed to load procedures", err);
+            }
+        }
+
+        async function loadProcedureData(proc) {
+            try {
+                const res = await fetch(`/api/data/${encodeURIComponent(proc)}`);
+                currentData = await res.json();
+                allCases = currentData.cases || [];
+
+                populateFilterDropdowns();
+                updateKPIs(allCases);
+                renderScatterChart(allCases);
+                renderBubbleChart(allCases);
+                renderTopBottom10(currentData.top_10, currentData.bottom_10);
+                loadSunburst();
+                loadSubstitutions();
+                loadAssociationRules();
+            } catch (err) {
+                console.error("Failed to fetch procedure data", err);
+            }
+        }
+
+        function populateFilterDropdowns() {
+            const facs = new Set();
+            const surgs = new Set();
+            allCases.forEach(c => {
+                if (c.hospital_name) facs.add(c.hospital_name);
+                if (c.lead_surgeon) surgs.add(c.lead_surgeon);
+            });
+
+            const facSel = $('#hospital-filter').empty().append('<option value="ALL">All Facilities</option>');
+            Array.from(facs).sort().forEach(f => facSel.append(`<option value="${f}">${f}</option>`));
+
+            const surgSel = $('#surgeon-filter').empty().append('<option value="ALL">All Lead Surgeons</option>');
+            Array.from(surgs).sort().forEach(s => surgSel.append(`<option value="${s}">${s}</option>`));
+        }
+
+        function applyFilters() {
+            const fFac = $('#hospital-filter').val();
+            const fSurg = $('#surgeon-filter').val();
+            const fOut = $('#outlier-filter').val();
+
+            let filtered = allCases.filter(c => {
+                if (fFac !== 'ALL' && c.hospital_name !== fFac) return false;
+                if (fSurg !== 'ALL' && c.lead_surgeon !== fSurg) return false;
+                if (fOut !== 'ALL' && c.Cost_Volume_Outlier !== fOut) return false;
+                return true;
+            });
+
+            updateKPIs(filtered);
+            renderScatterChart(filtered);
+            renderBubbleChart(filtered);
+        }
+
+        function updateKPIs(cases) {
+            const count = cases.length;
+            $('#kpi-total-cases').text(count.toLocaleString());
+
+            let totalSpend = 0;
+            let compliantMatches = 0;
+
+            cases.forEach(c => {
+                const cost = parseFloat(c.cost_per_case || 0);
+                totalSpend += cost;
+                if (c.variance_data && c.variance_data.construct_match_pct >= 85) {
+                    compliantMatches++;
+                }
+            });
+
+            const avgCost = count > 0 ? (totalSpend / count) : 0;
+            const bomRate = count > 0 ? Math.round((compliantMatches / count) * 100) : 100;
+
+            $('#kpi-total-spend').text(`$${totalSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+            $('#kpi-avg-cost').text(`$${avgCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+            $('#kpi-bom-compliance').text(`${bomRate}%`);
+        }
+
+        function renderScatterChart(cases) {
+            const surgMap = {};
+            cases.forEach(c => {
+                const s = c.lead_surgeon || 'Unassigned';
+                if (!surgMap[s]) surgMap[s] = { cases: 0, totalCost: 0 };
+                surgMap[s].cases++;
+                surgMap[s].totalCost += parseFloat(c.cost_per_case || 0);
+            });
+
+            const x = [], y = [], text = [];
+            for (const [s, data] of Object.entries(surgMap)) {
+                x.push(data.cases);
+                y.push(data.totalCost / data.cases);
+                text.push(`${s}<br>Cases: ${data.cases}<br>Avg Cost: $${(data.totalCost / data.cases).toFixed(2)}`);
+            }
+
+            const trace = {
+                x: x, y: y, text: text, mode: 'markers',
+                marker: { size: 12, color: '#001E44', opacity: 0.8 }
+            };
+
+            const layout = {
+                margin: { l: 60, r: 20, t: 30, b: 50 },
+                xaxis: { title: 'Case Volume' },
+                yaxis: { title: 'Average Cost ($)' },
+                hovermode: 'closest'
+            };
+            Plotly.newPlot('surgeon-scatter-chart', [trace], layout, {responsive: true});
+        }
+
+        function renderBubbleChart(cases) {
+            const x = [], y = [], colors = [], text = [], customdata = [];
+
+            cases.forEach(c => {
+                const qty = parseFloat(c.Total_Case_Quantity || 1);
+                const cost = parseFloat(c.cost_per_case || 0);
+                const isOutlier = c.Cost_Volume_Outlier === 'Yes';
+
+                x.push(qty);
+                y.push(cost);
+                colors.push(isOutlier ? '#E00122' : '#001E44');
+                text.push(`Case: ${c.case_id}<br>Surgeon: ${c.lead_surgeon}<br>Cost: $${cost.toFixed(2)}<br>Qty: ${qty}`);
+                customdata.push(c);
+            });
+
+            const trace = {
+                x: x, y: y, text: text, customdata: customdata, mode: 'markers',
+                marker: { size: 9, color: colors, opacity: 0.7 }
+            };
+
+            const layout = {
+                margin: { l: 60, r: 20, t: 30, b: 50 },
+                xaxis: { title: 'Total Quantity Consumed' },
+                yaxis: { title: 'Total Case Cost ($)' },
+                hovermode: 'closest'
+            };
+
+            const el = document.getElementById('case-bubble-chart');
+            Plotly.newPlot(el, [trace], layout, {responsive: true});
+
+            el.on('plotly_click', function(data) {
+                if (data.points.length > 0) {
+                    const c = data.points[0].customdata;
+                    showVarianceDetails(c);
+                }
+            });
+        }
+
+        function showVarianceDetails(c) {
+            $('#variance-detail-card').show();
+            $('#selected-case-id').text(`${c.case_id} (${c.lead_surgeon})`);
+            
+            const vData = c.variance_data || { items_list: [], standard_spend: 0, non_standard_spend: 0, construct_match_pct: 100 };
+            $('#case-variance-kpis').html(
+                `Standard Spend: <strong style="color: var(--success);">$${vData.standard_spend.toFixed(2)}</strong> &nbsp;|&nbsp; ` +
+                `Non-Standard Spend: <strong style="color: var(--danger);">$${vData.non_standard_spend.toFixed(2)}</strong> &nbsp;|&nbsp; ` +
+                `Compliance: <strong>${vData.construct_match_pct}%</strong>`
+            );
+
+            const tbody = $('#variance-items-tbody').empty();
+            (vData.items_list || []).forEach(item => {
+                let badgeClass = 'badge-standard';
+                if (item.status === 'Non-Standard') badgeClass = 'badge-nonstandard';
+                else if (item.status === 'Clinical Variance') badgeClass = 'badge-variance';
+                else if (item.status === 'Omitted') badgeClass = 'badge-omitted';
+
+                tbody.append(`
+                    <tr>
+                        <td><strong>${item.sub_category}</strong></td>
+                        <td><span class="badge ${badgeClass}">${item.status}</span></td>
+                        <td>${item.brand || '-'}</td>
+                        <td>${item.qty}</td>
+                        <td>${item.std_avg_qty || 0}</td>
+                        <td>$${(item.unit_cost || 0).toFixed(2)}</td>
+                        <td><strong>$${(item.total_cost || 0).toFixed(2)}</strong></td>
+                    </tr>
+                `);
+            });
+
+            $('html, body').animate({
+                scrollTop: $("#variance-detail-card").offset().top - 100
+            }, 500);
+        }
+
+        function renderTopBottom10(top10, bottom10) {
+            const topTbody = $('#top-10-tbody').empty();
+            (top10 || []).forEach(t => {
+                topTbody.append(`<tr><td>${t.contract_sub_category}</td><td><strong>$${t.ext_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></td></tr>`);
+            });
+
+            const botTbody = $('#bottom-10-tbody').empty();
+            (bottom10 || []).forEach(b => {
+                botTbody.append(`<tr><td>${b.contract_sub_category}</td><td><strong>$${b.ext_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></td></tr>`);
+            });
+        }
+
+        async function loadSunburst() {
+            try {
+                const res = await fetch('/api/sunburst-data', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({procedure_name: currentProcedure})
+                });
+                const data = await res.json();
+                const records = data.data || [];
+
+                const ids = [], labels = [], parents = [], values = [];
+                ids.push('Total'); labels.push('Total Spend'); parents.push(''); values.push(0);
+
+                const map = {};
+                records.forEach(r => {
+                    const sc = r.spend_category || 'Supplies';
+                    const cat = r.contract_category || 'General';
+                    const subcat = r.contract_sub_category || 'Unclassified';
+                    const val = r.ext_cost || 0;
+
+                    const id_sc = `Total/${sc}`;
+                    const id_cat = `${id_sc}/${cat}`;
+                    const id_sub = `${id_cat}/${subcat}`;
+
+                    if (!map[id_sc]) { map[id_sc] = true; ids.push(id_sc); labels.push(sc); parents.push('Total'); values.push(0); }
+                    if (!map[id_cat]) { map[id_cat] = true; ids.push(id_cat); labels.push(cat); parents.push(id_sc); values.push(0); }
+                    if (!map[id_sub]) { map[id_sub] = true; ids.push(id_sub); labels.push(subcat); parents.push(id_cat); values.push(val); }
+                    else {
+                        const idx = ids.indexOf(id_sub);
+                        values[idx] += val;
+                    }
+                });
+
+                const trace = {
+                    type: 'sunburst',
+                    ids: ids, labels: labels, parents: parents, values: values,
+                    branchvalues: 'total',
+                    marker: { colorscale: 'Reds' }
+                };
+                Plotly.newPlot('sunburst-chart', [trace], {margin: {l: 0, r: 0, b: 0, t: 0}}, {responsive: true});
+            } catch (e) {
+                console.error("Failed to render sunburst", e);
+            }
+        }
+
+        async function loadInsights() {
+            $('#insights-container').html('<p style="color: var(--primary);"><i class="fa-solid fa-spinner fa-spin"></i> Generating OpenAI clinical analysis for UC Health...</p>');
+            try {
+                const res = await fetch('/api/insights', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        procedure_name: currentProcedure,
+                        total_spend: allCases.reduce((acc, c) => acc + parseFloat(c.cost_per_case || 0), 0),
+                        total_cases: allCases.length,
+                        outlier_pct: (allCases.filter(c => c.Cost_Volume_Outlier === 'Yes').length / (allCases.length || 1)) * 100
+                    })
+                });
+                const data = await res.json();
+                $('#insights-container').html(data.insight || '<p>No insights generated.</p>');
+            } catch (err) {
+                $('#insights-container').html('<p style="color: var(--danger);">Failed to generate AI insights.</p>');
+            }
+        }
+
+        async function loadSubstitutions() {
+            try {
+                const res = await fetch('/api/substitutions', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({procedure_name: currentProcedure})
+                });
+                const data = await res.json();
+                const tbody = $('#substitutions-tbody').empty();
+                (data.substitutions || []).forEach(s => {
+                    tbody.append(`
+                        <tr>
+                            <td><strong>${s.sub_category}</strong></td>
+                            <td style="color: var(--danger);">${s.target_brand}</td>
+                            <td style="color: var(--success);">${s.replacement_brand}</td>
+                            <td><strong style="color: var(--success);">+$${s.projected_savings.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></td>
+                        </tr>
+                    `);
+                });
+            } catch (e) { console.error("Substitutions error", e); }
+        }
+
+        async function loadAssociationRules() {
+            try {
+                const res = await fetch('/api/association-rules', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({procedure_name: currentProcedure})
+                });
+                const data = await res.json();
+                const tbody = $('#arm-tbody').empty();
+                (data.rules || []).forEach(r => {
+                    tbody.append(`
+                        <tr>
+                            <td>${r.if_item}</td>
+                            <td><strong>${r.then_item}</strong></td>
+                            <td>${(r.confidence * 100).toFixed(1)}%</td>
+                            <td><strong>${r.lift.toFixed(2)}x</strong></td>
+                        </tr>
+                    `);
+                });
+            } catch (e) { console.error("ARM rules error", e); }
+        }
+
+        function populatePrefSurgeons() {
+            const surgs = new Set();
+            allCases.forEach(c => { if (c.lead_surgeon) surgs.add(c.lead_surgeon); });
+            const sel = $('#pref-surgeon-select').empty().append('<option value="">-- Choose Surgeon --</option>');
+            Array.from(surgs).sort().forEach(s => sel.append(`<option value="${s}">${s}</option>`));
+        }
+
+        async function loadPreferenceCard() {
+            const surg = $('#pref-surgeon-select').val();
+            if (!surg) return;
+
+            try {
+                const res = await fetch('/api/preference-card', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({procedure_name: currentProcedure, surgeon_name: surg})
+                });
+                const data = await res.json();
+
+                const openTbody = $('#open-list-tbody').empty();
+                (data.open_list || []).forEach(item => {
+                    const conflictBadge = item.has_brand_conflict ? '<span class="badge badge-conflict">Brand Disparity</span>' : '<span class="badge badge-standard">Aligned</span>';
+                    openTbody.append(`
+                        <tr>
+                            <td><strong>${item.sub_category}</strong></td>
+                            <td>${item.surgeon_brand}</td>
+                            <td>${item.standard_brand}</td>
+                            <td>${item.median_quantity}</td>
+                            <td>${item.historical_utilization_pct}%</td>
+                            <td>${conflictBadge}</td>
+                        </tr>
+                    `);
+                });
+
+                const holdTbody = $('#hold-list-tbody').empty();
+                (data.hold_list || []).forEach(item => {
+                    const conflictBadge = item.has_brand_conflict ? '<span class="badge badge-conflict">Brand Disparity</span>' : '<span class="badge badge-standard">Aligned</span>';
+                    holdTbody.append(`
+                        <tr>
+                            <td><strong>${item.sub_category}</strong></td>
+                            <td>${item.surgeon_brand}</td>
+                            <td>${item.standard_brand}</td>
+                            <td>${item.median_quantity}</td>
+                            <td>${item.historical_utilization_pct}%</td>
+                            <td>${conflictBadge}</td>
+                        </tr>
+                    `);
+                });
+            } catch (e) { console.error("Pref card error", e); }
+        }
+
+        function populateCompareSurgeons() {
+            const surgs = new Set();
+            allCases.forEach(c => { if (c.lead_surgeon) surgs.add(c.lead_surgeon); });
+            const selA = $('#compare-surgeon-a').empty();
+            const selB = $('#compare-surgeon-b').empty();
+            Array.from(surgs).sort().forEach(s => {
+                selA.append(`<option value="${s}">${s}</option>`);
+                selB.append(`<option value="${s}">${s}</option>`);
+            });
+            if (selB.children().length > 1) selB.prop('selectedIndex', 1);
+        }
+
+        async function runCompareCards() {
+            const sA = $('#compare-surgeon-a').val();
+            const sB = $('#compare-surgeon-b').val();
+            $('#th-surgeon-a').text(`${sA} (Brand & Qty)`);
+            $('#th-surgeon-b').text(`${sB} (Brand & Qty)`);
+
+            try {
+                const res = await fetch('/api/compare-preference-cards', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({procedure_name: currentProcedure, surgeon_a: sA, surgeon_b: sB})
+                });
+                const data = await res.json();
+                const tbody = $('#compare-tbody').empty();
+                (data.comparison || []).forEach(c => {
+                    const statusClass = c.status === 'Shared' ? 'badge-standard' : 'badge-variance';
+                    tbody.append(`
+                        <tr>
+                            <td><strong>${c.sub_category}</strong></td>
+                            <td><span class="badge ${statusClass}">${c.status}</span></td>
+                            <td>${c.in_surgeon_a ? `${c.surgeon_a_brand} (Qty: ${c.surgeon_a_qty})` : '-'}</td>
+                            <td>${c.in_surgeon_b ? `${c.surgeon_b_brand} (Qty: ${c.surgeon_b_qty})` : '-'}</td>
+                        </tr>
+                    `);
+                });
+            } catch (e) { console.error("Compare error", e); }
+        }
+
+        async function loadPriceParity() {
+            try {
+                const res = await fetch('/api/price-parity', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({procedure_name: currentProcedure})
+                });
+                const data = await res.json();
+                const tbody = $('#parity-tbody').empty();
+                (data.parity || []).forEach(p => {
+                    tbody.append(`
+                        <tr>
+                            <td><strong>${p.sub_category}</strong></td>
+                            <td style="color: var(--success);">$${p.min_price.toFixed(2)}</td>
+                            <td style="color: var(--danger);">$${p.max_price.toFixed(2)}</td>
+                            <td>$${p.price_spread.toFixed(2)}</td>
+                            <td><strong>${p.spread_pct}%</strong></td>
+                            <td><strong style="color: var(--success);">+$${p.potential_savings.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></td>
+                            <td>${p.facilities_count}</td>
+                        </tr>
+                    `);
+                });
+            } catch (e) { console.error("Parity error", e); }
+        }
+
+        async function loadSavingsLeakage() {
+            try {
+                const res = await fetch('/api/savings-leakage', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({procedure_name: currentProcedure})
+                });
+                const data = await res.json();
+                const tbody = $('#leakage-tbody').empty();
+                (data.leakage || []).forEach(l => {
+                    tbody.append(`
+                        <tr>
+                            <td><strong>${l.sub_category}</strong></td>
+                            <td>$${l.total_spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="color: var(--danger);">$${l.non_compliant_spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td><strong>${l.compliance_pct}%</strong></td>
+                            <td><strong style="color: var(--success);">+$${l.savings_opportunity.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></td>
+                        </tr>
+                    `);
+                });
+            } catch (e) { console.error("Leakage error", e); }
+        }
+
+        async function runPredictCost() {
+            $('#predict-results').hide();
+            try {
+                const res = await fetch('/api/predict-cost', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        procedure_name: currentProcedure,
+                        age_bucket: $('#pred-age').val(),
+                        asa_rating: $('#pred-asa').val(),
+                        bmi_bucket: $('#pred-bmi').val(),
+                        smoking_status: $('#pred-smoking').val(),
+                        patient_type: $('#pred-type').val()
+                    })
+                });
+                const data = await res.json();
+                if (data.predicted_cost !== undefined) {
+                    $('#pred-cost-val').text(`$${data.predicted_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
+                    $('#pred-hist-mean').text(`$${(data.historical_mean || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`);
+                    $('#pred-r2-val').text(data.model_r2 || '0.0');
+
+                    const ul = $('#pred-importances').empty();
+                    for (const [feat, imp] of Object.entries(data.feature_importance || {})) {
+                        ul.append(`<li><strong>${feat}</strong>: ${(imp * 100).toFixed(1)}% influence</li>`);
+                    }
+                    $('#predict-results').show();
+                }
+            } catch (e) { console.error("Predict error", e); }
+        }
+
+        function toggleBeeModal() {
+            const m = $('#bee-modal');
+            m.css('display', m.css('display') === 'none' ? 'flex' : 'none');
+        }
+
+        async function sendBeeMessage() {
+            const q = $('#bee-input').val().trim();
+            if (!q) return;
+
+            const chat = $('#bee-chat');
+            chat.append(`<p style="text-align: right; margin: 8px 0;"><span style="background: var(--navy); color: #fff; padding: 6px 12px; border-radius: 12px; font-size: 12px; display: inline-block;">${q}</span></p>`);
+            $('#bee-input').val('');
+
+            chat.append(`<p id="bee-loading" style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> The Bee is analyzing...</p>`);
+            chat.scrollTop(chat[0].scrollHeight);
+
+            try {
+                const res = await fetch('/api/ask-the-bee', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({question: q, procedure_context: currentProcedure})
+                });
+                const data = await res.json();
+                $('#bee-loading').remove();
+                chat.append(`<p style="margin: 8px 0;"><span style="background: #E2E8F0; color: #0F172A; padding: 8px 12px; border-radius: 12px; font-size: 12px; display: inline-block;">${data.answer}</span></p>`);
+                chat.scrollTop(chat[0].scrollHeight);
+            } catch (e) {
+                $('#bee-loading').remove();
+                chat.append(`<p style="color: var(--danger); font-size: 11px;">Error connecting to The Bee.</p>`);
+            }
+        }
+
+        function exportData(format) {
+            if (!allCases.length) return;
+            let csv = "Case_ID,Hospital,Procedure,Surgeon,Quantity,Cost,Cost_Volume_Outlier,Anomaly_Type\n";
+            allCases.forEach(c => {
+                csv += `"${c.case_id}","${c.hospital_name}","${currentProcedure}","${c.lead_surgeon}",${c.Total_Case_Quantity},${c.cost_per_case},"${c.Cost_Volume_Outlier}","${c.Anomaly_Type_Detail}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `UC_Health_${currentProcedure.replace(/[^a-zA-Z0-9]/g, '_')}_Cases.csv`);
+            a.click();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 60" width="320" height="60">
+  <defs>
+    <linearGradient id="ucGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E00122"/>
+      <stop offset="100%" stop-color="#A50016"/>
+    </linearGradient>
+  </defs>
+  <!-- Modern Geometric Cross / Shield Icon -->
+  <rect x="8" y="10" width="40" height="40" rx="10" fill="url(#ucGrad)"/>
+  <rect x="23" y="18" width="10" height="24" rx="2" fill="#FFFFFF"/>
+  <rect x="16" y="25" width="24" height="10" rx="2" fill="#FFFFFF"/>
+  
+  <!-- Text Brand -->
+  <text x="60" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="900" fill="#001E44" letter-spacing="-0.5">UC Health</text>
+  <text x="60" y="46" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="700" fill="#E00122" letter-spacing="1.5">CLINICAL INTELLIGENCE</text>
+  <rect x="195" y="20" width="1" height="25" fill="#CBD5E1"/>
+  <text x="205" y="36" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600" fill="#64748B" letter-spacing="0.5">SUPPLYCOPIA</text>
+</svg>

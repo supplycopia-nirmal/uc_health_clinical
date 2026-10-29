@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  uc-health-clinical:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uc_health_clinical_app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ../lambda_migration._rsa_key.p8:/app/lambda_migration._rsa_key.p8
+    restart: unless-stopped

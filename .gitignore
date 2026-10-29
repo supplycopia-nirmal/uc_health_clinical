@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+env/
+venv/
+.env
+
+# Large data files (stored in Snowflake cloud tables)
+data/*.csv
+data/*.parquet
+
+# Keep RLHF feedback template
+!data/rlhf_preference_cards.jsonl
+
+# Operating System
+.DS_Store
+Thumbs.db
