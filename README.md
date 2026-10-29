@@ -85,8 +85,8 @@ python pipeline/generate_master_constructs.py
 
 ### 4. Launch the Application Server
 ```bash
-uvicorn server.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn server.main:app --host 0.0.0.0 --port 8007 --reload
 ```
-Navigate to `http://localhost:8000` and log in:
+Navigate to `http://localhost:8007` and log in:
 - **Username**: `uchealth_admin`
 - **Password**: `clinical_copia`

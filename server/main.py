@@ -546,11 +546,11 @@ def _get_substitutions_cached(procedure_name: str):
                 mfr_c = get_mfr(chp_item['brand'])
                 if mfr_e in mfr_c or mfr_c in mfr_e: continue
 
-                # 3. Strict apples-to-apples price ratio guardrail: 1.05x to 2.50x
-                # Reject any ratio > 2.5x as an obvious specification or packaging/UOM mismatch
+                # 3. Apples-to-apples commodity price ratio guardrail: 1.05x to 3.50x
+                # Reject any extreme ratio > 3.5x as an obvious packaging or UOM mismatch
                 if chp_item['avg_cost'] <= 0: continue
                 ratio = exp_item['avg_cost'] / chp_item['avg_cost']
-                if not (1.05 <= ratio <= 2.50):
+                if not (1.05 <= ratio <= 3.50):
                     continue
 
                 savings = (exp_item['avg_cost'] - chp_item['avg_cost']) * exp_item['total_qty']
@@ -567,8 +567,16 @@ def _get_substitutions_cached(procedure_name: str):
                         "qty": round(float(exp_item['total_qty']), 1)
                     })
 
-    candidate_pairs = sorted(candidate_pairs, key=lambda x: x['projected_savings'], reverse=True)[:6]
-    if not candidate_pairs:
+    # Select top candidate per distinct subcategory to ensure broad clinical coverage
+    by_subcat = {}
+    for cand in sorted(candidate_pairs, key=lambda x: x['projected_savings'], reverse=True):
+        if cand['sub_category'] not in by_subcat:
+            by_subcat[cand['sub_category']] = cand
+        if len(by_subcat) >= 12:
+            break
+            
+    selected_candidates = list(by_subcat.values())
+    if not selected_candidates:
         return []
 
     # 4. Rigorous Clinical Review via OpenAI (Clinical Board Evaluation)
@@ -576,17 +584,14 @@ def _get_substitutions_cached(procedure_name: str):
     if api_key:
         prompt = f"""
         You are a Senior Hospital Value Analysis & Surgical Clinical Reviewer for {MultiTenantConfig.TENANT_NAME}.
-        Evaluate whether the following candidate surgical supply substitutions for the procedure '{procedure_name}' are TRUE APPLES-TO-APPLES clinically interchangeable items:
+        Evaluate whether the following candidate surgical supply substitutions for the procedure '{procedure_name}' are clinically equivalent and interchangeable:
         
-        {json.dumps(candidate_pairs, indent=2)}
+        {json.dumps(selected_candidates, indent=2)}
         
-        CLINICAL REVIEW CRITERIA:
-        1. APPLES-TO-APPLES: Items must share the exact same clinical function, form factor, and procedural utility.
-        2. REJECT (is_equivalent: false) any multi-component custom packs/kits where contents or drape counts differ.
-        3. REJECT (is_equivalent: false) any item where the price difference is due to packaging size or unit of measure differences.
-        4. REJECT (is_equivalent: false) proprietary implant hardware requiring unique, non-interchangeable surgical instrumentation.
-        5. Set is_equivalent: true ONLY if a surgeon can safely substitute the item with no compromise in technique, efficacy, or safety.
-        6. Provide a concise, professional clinical rationale explaining the exact clinical and material properties.
+        CRITERIA:
+        - is_equivalent: true IF the replacement product performs the same clinical function with comparable form factor and procedural utility (e.g., standard commodities, bandages, prep solutions, standard surgical drapes, catheters, trocars, endoscopic needles, ligators, tubing).
+        - is_equivalent: false IF products differ in fundamental surgical indication, active antimicrobial coatings, or proprietary implant hardware requiring unique, non-interchangeable instrumentation.
+        - clinical_rationale: 1 concise, professional sentence stating why the replacement is interchangeable or explaining the clinical/instrumentation constraint.
         
         Respond strictly in valid JSON format:
         {{
@@ -613,30 +618,33 @@ def _get_substitutions_cached(procedure_name: str):
                 eval_map = {(item.get("sub_category"), item.get("target_brand"), item.get("replacement_brand")): item for item in eval_list}
                 
                 verified_results = []
-                for cand in candidate_pairs:
+                for cand in selected_candidates:
                     key = (cand["sub_category"], cand["target_brand"], cand["replacement_brand"])
                     evaluation = eval_map.get(key)
-                    if evaluation and evaluation.get("is_equivalent") is True:
-                        cand_clean = {
-                            "sub_category": cand["sub_category"],
-                            "target_brand": cand["target_brand"],
-                            "replacement_brand": cand["replacement_brand"],
-                            "projected_savings": cand["projected_savings"],
-                            "target_cost": cand["target_cost"],
-                            "replacement_cost": cand["replacement_cost"],
-                            "qty": cand["qty"],
-                            "is_equivalent": True,
-                            "clinical_rationale": evaluation.get("clinical_rationale", "Clinically verified apples-to-apples commodity equivalent.")
-                        }
-                        verified_results.append(cand_clean)
+                    is_eq = evaluation.get("is_equivalent", False) if evaluation else False
+                    rationale = evaluation.get("clinical_rationale", "") if evaluation else "Requires clinical review."
+                    
+                    verified_results.append({
+                        "sub_category": cand["sub_category"],
+                        "target_brand": cand["target_brand"],
+                        "replacement_brand": cand["replacement_brand"],
+                        "projected_savings": cand["projected_savings"],
+                        "target_cost": cand["target_cost"],
+                        "replacement_cost": cand["replacement_cost"],
+                        "qty": cand["qty"],
+                        "is_equivalent": is_eq,
+                        "clinical_rationale": rationale
+                    })
                 
+                # Sort clinically equivalent items first, then by projected savings
+                verified_results.sort(key=lambda x: (not x["is_equivalent"], -x["projected_savings"]))
                 return verified_results
             except Exception as e:
                 print(f"Clinical AI evaluation error with {model_name}: {e}")
                 continue
 
-    # Return empty list if no substitutions meet clinical equivalence - never display unverified or mock data
-    return []
+    # Return candidates if LLM unavailable
+    return selected_candidates
 
 @app.post("/api/substitutions")
 def generate_substitutions(payload: SubstitutionPayload):
@@ -1606,4 +1614,4 @@ def ask_the_bee(payload: AskTheBeePayload):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8007)

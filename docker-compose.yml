@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: uc_health_clinical_app
     ports:
-      - "8000:8000"
+      - "8007:8007"
     env_file:
       - .env
     volumes:
