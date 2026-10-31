@@ -3095,7 +3095,13 @@
             };
 
             const layout = {
-                title: 'Surgeon Performance Benchmarking',
+                title: {
+                    text: 'Surgeon Performance Benchmarking',
+                    font: { size: 14, color: '#1e293b', weight: 600 },
+                    x: 0.02,
+                    xanchor: 'left',
+                    y: 0.95
+                },
                 xaxis: { 
                     title: 'Average Quantity per Case',
 					tickpad: 10,
@@ -3103,6 +3109,7 @@
                     linecolor: '#cbd5e1',
                     linewidth: 1,
                     zeroline: false,
+                    rangemode: 'nonnegative',
                     gridcolor: '#f1f5f9'
                 },
                 yaxis: { 
@@ -3113,7 +3120,7 @@
                     linecolor: '#cbd5e1',
                     linewidth: 1,
                     zeroline: false,
-                    rangemode: 'tozero',
+                    rangemode: 'nonnegative',
                     gridcolor: '#f1f5f9'
                 },
                 hovermode: 'closest',
@@ -5557,19 +5564,22 @@
                 let plotX = row._origX;
                 let plotY = row._origY;
 
-                // Disperse overlapping points in concentric rings so every single case is distinctly visible
-                if (groupSize > 1) {
+                // Disperse overlapping points in a compact golden-spiral phyllotaxis cluster
+                // Strictly bounded so coordinates never expand into large orbits or negative numbers
+                if (groupSize > 1 && posInGroup > 0) {
                     overlappingCaseCount++;
-                    const ring = Math.floor(posInGroup / 6) + 1;
-                    const itemsInRing = ring === 1 ? Math.min(groupSize, 6) : Math.max(groupSize - 6, 1);
-                    const ringIndex = ring === 1 ? posInGroup : (posInGroup - 6);
-                    const angle = (2 * Math.PI * ringIndex) / itemsInRing + (ring * 0.4);
+                    const goldenAngle = 2.39996323; // radians (~137.5 degrees)
+                    const effectiveI = ((posInGroup - 1) % 12) + 1;
+                    const rStep = Math.sqrt(effectiveI) / Math.sqrt(12);
+                    const angle = posInGroup * goldenAngle;
 
-                    const radiusX = (spanX * 0.016 * ring) || (0.15 * ring);
-                    const radiusY = (spanY * 0.020 * ring) || ((metricMode === 'intensity' ? 0.3 : 1.6) * ring);
+                    let maxRx = 0.55;
+                    let maxRy = 1.50;
+                    if (metricMode === 'charges') maxRy = 25.0;
+                    else if (metricMode === 'intensity') maxRy = 0.04;
 
-                    plotX += radiusX * Math.cos(angle);
-                    plotY += radiusY * Math.sin(angle);
+                    plotX = Math.max(0, row._origX + maxRx * rStep * Math.cos(angle));
+                    plotY = Math.max(0, row._origY + maxRy * rStep * Math.sin(angle));
                 }
 
                 const overlapNote = groupSize > 1
@@ -5623,13 +5633,20 @@
 
             const layout = { 
                 autosize: true, 
-                title: chartTitle, 
+                title: { 
+                    text: chartTitle, 
+                    font: { size: 14, color: '#1e293b', weight: 600 },
+                    x: 0.02,
+                    xanchor: 'left',
+                    y: 0.96
+                }, 
                 xaxis: { 
                     title: 'Total Case Quantity',
                     showline: true,
                     linecolor: '#cbd5e1',
                     linewidth: 1,
                     zeroline: false,
+                    rangemode: 'nonnegative',
                     gridcolor: '#f1f5f9'
                 }, 
                 yaxis: { 
@@ -5641,14 +5658,24 @@
                     linecolor: '#cbd5e1',
                     linewidth: 1,
                     zeroline: false,
-                    rangemode: 'tozero',
+                    rangemode: 'nonnegative',
                     gridcolor: '#f1f5f9'
                 }, 
                 hovermode: 'closest', 
                 plot_bgcolor: 'white', 
                 paper_bgcolor: 'white', 
-                legend: { title: { text: 'Classification' }, orientation: 'h', y: 1.12, x: 0.3 }, 
-                margin: { t: 55, b: 80, l: 95, r: 35 },
+                legend: { 
+                    title: { text: 'Classification', font: { size: 11, color: '#64748b' } }, 
+                    orientation: 'h', 
+                    x: 0.98, 
+                    xanchor: 'right', 
+                    y: 1.12,
+                    bgcolor: 'rgba(255, 255, 255, 0.9)',
+                    bordercolor: '#e2e8f0',
+                    borderwidth: 1,
+                    font: { size: 11 }
+                }, 
+                margin: { t: 65, b: 80, l: 95, r: 35 },
                 clickmode: 'event+select'
             };
 
