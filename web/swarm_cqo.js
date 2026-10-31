@@ -120,12 +120,12 @@ function setBenchmarkPercentile(pct) {
         if (btnPct === window.activeBenchmark) {
             btn.classList.add('active');
             btn.style.background = '#fff';
-            btn.style.color = '#e64552';
-            btn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
+            btn.style.color = 'var(--brand-red, #e43946)';
+            btn.style.boxShadow = '0 1px 2px rgba(0,0,0,0.06)';
         } else {
             btn.classList.remove('active');
             btn.style.background = 'transparent';
-            btn.style.color = '#64748b';
+            btn.style.color = 'var(--text-muted, #64748b)';
             btn.style.boxShadow = 'none';
         }
     });

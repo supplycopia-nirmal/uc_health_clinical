@@ -1,0 +1,72 @@
+{
+  "backup_metadata": {
+    "version": "1.0.0-legacy",
+    "created_at": "2026-10-31T12:45:00Z",
+    "description": "Baseline legacy color palette snapshot for UCHealth CQO / SupplyCopia application prior to Senior UI/UX Design System overhaul."
+  },
+  "css_root_variables": {
+    "--brand-red": "#e64552",
+    "--brand-red-hover": "#c93b46",
+    "--bg-body": "#f4f7f6",
+    "--card-border": "#e2e8f0",
+    "--text-dark": "#334155",
+    "--text-muted": "#64748b"
+  },
+  "active_button_and_interactive_colors": {
+    "scatter_metric_toggle_cpc": "#0284c7",
+    "scatter_metric_toggle_charges": "transparent",
+    "scatter_metric_toggle_intensity": "transparent",
+    "scatter_raw_cpc_button": "#e11d48",
+    "scatter_benchmark_pill_active": "#e64552",
+    "site_of_service_pill_bg": "#eff6ff",
+    "site_of_service_pill_border": "#93c5fd",
+    "site_of_service_pill_text": "#1d4ed8",
+    "price_discrepancy_pill_bg": "#fffbeb",
+    "price_discrepancy_pill_border": "#fde68a",
+    "price_discrepancy_pill_text": "#b45309",
+    "save_updates_btn_text": "#16a34a",
+    "save_updates_btn_border": "#16a34a",
+    "swarm_pill_bg": "#fff",
+    "swarm_pill_border": "#fed7aa",
+    "swarm_pill_text": "#c2410c",
+    "swarm_pulse_dot": "#ea580c",
+    "budget_active_window_bg": "#eff6ff",
+    "budget_active_window_border": "#3b82f6",
+    "budget_active_window_text": "#1d4ed8",
+    "budget_full_window_border": "#cbd5e1",
+    "budget_full_window_text": "#475569"
+  },
+  "data_table_and_badge_colors": {
+    "table_total_charges_text": "#0284c7",
+    "table_supply_intensity_text": "#7c3aed",
+    "table_outlier_yes": "#e64552",
+    "table_outlier_no": "#166534",
+    "table_construct_match_pass": "#166534",
+    "table_construct_match_fail": "#e64552",
+    "open_list_frequency_text": "#166534",
+    "hold_list_frequency_text": "#92400e",
+    "donut_variance_color": "#166534",
+    "donut_overspend_color": "#e64552"
+  },
+  "charts_and_visualization_colors": {
+    "scatter_standard_case_marker": "#94a3b8",
+    "scatter_outlier_case_marker": "#e64552",
+    "scatter_axis_grid": "#f1f5f9",
+    "scatter_axis_lines": "#cbd5e1",
+    "risk_scatter_upper_outlier": "#dc2626",
+    "risk_scatter_champion": "#16a34a",
+    "treemap_spend_root": "#1e293b",
+    "treemap_medical_supply": "#b91c1c",
+    "treemap_implants": "#475569"
+  },
+  "swarm_and_ai_elements": {
+    "swarm_avatar_bg": "#fff7ed",
+    "swarm_avatar_border": "#ffedd5",
+    "trace_completed_bg": "#14532d",
+    "trace_completed_text": "#86efac",
+    "trace_running_bg": "#7c2d12",
+    "trace_running_text": "#fdba74",
+    "trace_warning_bg": "#78350f",
+    "trace_warning_text": "#fde68a"
+  }
+}

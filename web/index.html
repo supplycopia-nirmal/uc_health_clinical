@@ -21,12 +21,37 @@
     
     <style>
         :root {
-            --brand-red: #e64552;
-            --brand-red-hover: #c93b46;
-            --bg-body: #f4f7f6;
+            /* Brand Identity (SupplyCopia Crimson Logo) */
+            --brand-red: #e43946;
+            --brand-red-hover: #c92a37;
+            --brand-red-light: #fdf2f3;
+            --brand-red-subtle: #fee2e2;
+            --brand-charcoal: #1e293b;
+            
+            /* Neutral Slate Architecture (60% Canvas) */
+            --bg-body: #f8fafc;
+            --card-surface: #ffffff;
             --card-border: #e2e8f0;
-            --text-dark: #334155;
+            --card-border-subtle: #f1f5f9;
+            --text-dark: #1e293b;
             --text-muted: #64748b;
+            --text-subtle: #94a3b8;
+            
+            /* Semantic Clinical Status Tokens (Colorblind-Safe) */
+            --color-success: #15803d;
+            --color-success-bg: #f0fdf4;
+            --color-success-border: #bbf7d0;
+            
+            --color-warning: #b45309;
+            --color-warning-bg: #fffbeb;
+            --color-warning-border: #fde68a;
+            
+            --color-alert: #dc2626;
+            --color-alert-bg: #fef2f2;
+            --color-alert-border: #fecaca;
+            
+            --color-data-neutral: #334155;
+            --color-data-neutral-bg: #f1f5f9;
         }
 
         body { 
@@ -204,6 +229,76 @@
         
         .btn-standardize { background-color: #fef08a; color: #92400e; border: 1px solid #fde047; padding: 3px 6px; font-size: 10px; font-weight: 600; border-radius: 4px; cursor: pointer; transition: 0.2s; }
         .btn-standardize:hover { background-color: #fde047; }
+
+        /* --- Unified Segmented Controls (iOS/macOS Style Pill Controls) --- */
+        .segmented-control {
+            display: inline-flex;
+            align-items: center;
+            background: #f1f5f9;
+            border-radius: 6px;
+            padding: 2px;
+            gap: 2px;
+            border: 1px solid var(--card-border);
+            box-sizing: border-box;
+        }
+        .segmented-btn {
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            line-height: 1.4;
+        }
+        .segmented-btn:hover {
+            color: var(--text-dark);
+            background: rgba(255, 255, 255, 0.6);
+        }
+        .segmented-btn.active {
+            background: #ffffff !important;
+            color: var(--brand-red) !important;
+            font-weight: 700 !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        /* --- Executive Action Tool Buttons (Replacing Pastel Rainbow Buttons) --- */
+        .btn-action-tool {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            color: var(--text-dark);
+            font-size: 11.5px;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            height: 32px;
+            box-sizing: border-box;
+        }
+        .btn-action-tool:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: var(--brand-red);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        /* --- Tabular Numerics for Monospaced Financial Alignment --- */
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum";
+        }
 
         /* --- Cards & Panels --- */
         #chart-container { width: 100%; height: 400px; background: #fff; padding: 15px; box-sizing: border-box; border-radius: 8px; border: 1px solid var(--card-border); margin-top: 15px; }
@@ -728,44 +823,44 @@
                         <span id="scatter-mode-label" style="font-size: 11px; color: #64748b;">Showing Raw Unadjusted Average CPC</span>
                     </div>
                 </div>
-                <div style="display: inline-flex; border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden; background: #f1f5f9; padding: 2px;">
-                    <button id="btn-scatter-raw" onclick="switchCPCScatterMode('raw')" style="padding: 5px 13px; font-size: 11.5px; font-weight: 700; border: none; background: #e11d48; color: #fff; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                <div class="segmented-control">
+                    <button id="btn-scatter-raw" class="segmented-btn active" onclick="switchCPCScatterMode('raw')">
                         📊 Raw Unadjusted CPC
                     </button>
-                    <button id="btn-scatter-risk" onclick="switchCPCScatterMode('risk')" style="padding: 5px 13px; font-size: 11.5px; font-weight: 600; border: none; background: transparent; color: #475569; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                    <button id="btn-scatter-risk" class="segmented-btn" onclick="switchCPCScatterMode('risk')">
                         🎯 Comorbidity-Adjusted (O/E Ratio)
                     </button>
                 </div>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <button class="btn-secondary" onclick="openSiteOfServiceModal()" style="font-size: 11.5px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-color: #93c5fd; color: #1d4ed8; background: #eff6ff;">
-                    <span>🏥</span> Inpatient &rarr; ASC Migration Engine
+                <button class="btn-action-tool" onclick="openSiteOfServiceModal()">
+                    <span>🏥</span> Inpatient &rarr; ASC Migration
                 </button>
-                <button class="btn-secondary" onclick="openPriceDiscrepancyModal()" style="font-size: 11.5px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; border-color: #fde68a; color: #b45309; background: #fffbeb;">
-                    <span>🏷️</span> Vendor Price Discrepancy Clawback
+                <button class="btn-action-tool" onclick="openPriceDiscrepancyModal()">
+                    <span>🏷️</span> Price Discrepancy Audit
                 </button>
             </div>
         </div>
 
         <div id="physician-scatter-container" style="width: 100%; height: 450px; background: #fff; box-sizing: border-box; border-radius: 8px; border: 1px solid var(--card-border); overflow: hidden;"></div>
         
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 25px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 22px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 12px; font-weight: 700; color: #334155;">Case Scatter Dimension:</span>
-                <div style="display: inline-flex; border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden; background: #f8fafc; padding: 2px;">
-                    <button id="btn-metric-cpc" onclick="switchCaseScatterMetric('cpc')" style="padding: 4px 12px; font-size: 11px; font-weight: 700; border: none; background: #0284c7; color: #fff; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                <span style="font-size: 11.5px; font-weight: 700; color: var(--text-dark);">Dimension:</span>
+                <div class="segmented-control">
+                    <button id="btn-metric-cpc" class="segmented-btn active" onclick="switchCaseScatterMetric('cpc')">
                         📦 Supply Spend (CPC)
                     </button>
-                    <button id="btn-metric-charges" onclick="switchCaseScatterMetric('charges')" style="padding: 4px 12px; font-size: 11px; font-weight: 600; border: none; background: transparent; color: #475569; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
-                        🏥 Total Procedure Charges (Labor + OR Overhead)
+                    <button id="btn-metric-charges" class="segmented-btn" onclick="switchCaseScatterMetric('charges')">
+                        🏥 Total Procedure Charges
                     </button>
-                    <button id="btn-metric-intensity" onclick="switchCaseScatterMetric('intensity')" style="padding: 4px 12px; font-size: 11px; font-weight: 600; border: none; background: transparent; color: #475569; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                    <button id="btn-metric-intensity" class="segmented-btn" onclick="switchCaseScatterMetric('intensity')">
                         ⚡ Supply Intensity (%)
                     </button>
                 </div>
             </div>
-            <div style="font-size: 11px; color: #64748b; font-weight: 600;">
-                <span style="color: #4f46e5;">● Dispersed View</span> active for coincident pack cases
+            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600;">
+                <span style="color: var(--brand-red);">● Sunflower Dispersal</span> active for identical pack encounters
             </div>
         </div>
         
@@ -775,11 +870,11 @@
             <div class="table-panel">
                 <div class="table-header">
                     <h4 class="header-title">Case Summary</h4>
-                    <div class="header-metrics">Total Cases: <strong id="total-cases-display">0</strong> &nbsp;|&nbsp; Avg Qty: <strong id="avg-qty-display">0</strong> &nbsp;|&nbsp; Avg Cost: <strong id="avg-cost-display">$0.00</strong> &nbsp;|&nbsp; Avg Charge: <strong id="avg-charge-display" style="color: #0284c7;">$0.00</strong> &nbsp;|&nbsp; Supply Burden: <strong id="supply-intensity-display" style="color: #7c3aed;">0.0%</strong></div>
+                    <div class="header-metrics">Total: <strong id="total-cases-display">0</strong> &nbsp;|&nbsp; Avg Qty: <strong id="avg-qty-display">0</strong> &nbsp;|&nbsp; Avg Spend: <strong id="avg-cost-display">$0.00</strong> &nbsp;|&nbsp; Avg Charge: <strong id="avg-charge-display" style="color: var(--text-dark); font-weight: 700;">$0.00</strong> &nbsp;|&nbsp; Supply Burden: <strong id="supply-intensity-display" style="color: var(--text-dark); background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 700;">0.0%</strong></div>
                 </div>
                 <div class="table-scroll">
                     <table id="data-table">
-                        <thead><tr><th>Case ID</th><th>Surgeon</th><th>Qty</th><th>Supply CPC</th><th>Total Charges</th><th>Intensity</th><th>Outlier</th><th>Match %</th></tr></thead>
+                        <thead><tr><th>Case ID</th><th>Surgeon</th><th style="text-align: right; padding-right: 15px;">Qty</th><th style="text-align: right; padding-right: 15px;">Supply Spend</th><th style="text-align: right; padding-right: 15px;">Total Charges</th><th style="text-align: center;">Intensity</th><th style="text-align: center;">Outlier</th><th style="text-align: center;">Match %</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -922,11 +1017,11 @@
                 <span id="cqo-cohort-label" style="font-size: 12px; font-weight: 700; color: var(--brand-red);">All Procedures (68,478 Encounters)</span>
                 
                 <!-- Benchmark Target Percentile Switcher -->
-                <div class="benchmark-pill-group" style="display: inline-flex; background: #f1f5f9; padding: 2px; border-radius: 20px; align-items: center; border: 1px solid var(--card-border);">
-                    <span style="font-size: 11px; font-weight: 700; color: #64748b; padding: 0 8px;">Target:</span>
-                    <button class="btn-benchmark btn-benchmark-pill" data-pct="10" onclick="setBenchmarkPercentile(10)" style="border: none; border-radius: 16px; padding: 3px 10px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748b;">10th %</button>
-                    <button class="btn-benchmark btn-benchmark-pill active" data-pct="25" onclick="setBenchmarkPercentile(25)" style="border: none; border-radius: 16px; padding: 3px 10px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.2s; background: #fff; color: #e64552; box-shadow: 0 1px 3px rgba(0,0,0,0.12);">25th % (Std)</button>
-                    <button class="btn-benchmark btn-benchmark-pill" data-pct="50" onclick="setBenchmarkPercentile(50)" style="border: none; border-radius: 16px; padding: 3px 10px; font-size: 11.5px; font-weight: 700; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748b;">50th % (Median)</button>
+                <div class="segmented-control">
+                    <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); padding: 0 6px;">Target:</span>
+                    <button class="btn-benchmark segmented-btn" data-pct="10" onclick="setBenchmarkPercentile(10)">10th %</button>
+                    <button class="btn-benchmark segmented-btn active" data-pct="25" onclick="setBenchmarkPercentile(25)">25th % (Std)</button>
+                    <button class="btn-benchmark segmented-btn" data-pct="50" onclick="setBenchmarkPercentile(50)">50th % (Median)</button>
                 </div>
                 
                 <button class="btn-secondary" onclick="fetchCQOSummary()">🔄 Refresh CQO</button>
@@ -1326,9 +1421,9 @@
                     <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Visualizing historical actual spend transitioning seamlessly into predictive trajectories.</p>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <div style="display: inline-flex; background: #f1f5f9; padding: 2px; border-radius: 6px; border: 1px solid var(--card-border);">
-                        <button id="btn-budget-view-chart" onclick="switchBudgetView('chart')" style="border: none; background: #fff; color: #0f172a; padding: 4px 10px; font-size: 11.5px; font-weight: 700; border-radius: 4px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.06);">📈 Line Graph View</button>
-                        <button id="btn-budget-view-table" onclick="switchBudgetView('table')" style="border: none; background: transparent; color: #64748b; padding: 4px 10px; font-size: 11.5px; font-weight: 600; border-radius: 4px; cursor: pointer;">📋 Monthly Schedule Table</button>
+                    <div class="segmented-control">
+                        <button id="btn-budget-view-chart" class="segmented-btn active" onclick="switchBudgetView('chart')">📈 Line Graph View</button>
+                        <button id="btn-budget-view-table" class="segmented-btn" onclick="switchBudgetView('table')">📋 Monthly Schedule</button>
                     </div>
 
                     <!-- Exclude Last Month / Billing Buffer Toggle -->
@@ -1412,13 +1507,15 @@
             </div>
 
             <!-- Active Window Sub-Toolbar for Line Graph -->
-            <div id="budget-window-toggle-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 4px 8px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
-                <div style="font-size: 11px; color: #475569; display: flex; align-items: center; gap: 6px;">
-                    <span style="font-weight: 700;">Display Horizon:</span>
-                    <button id="btn-budget-win-12m" onclick="setBudgetDisplayWindow('active12m')" style="border: 1px solid #3b82f6; background: #eff6ff; color: #1d4ed8; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">🗓️ Active Window: Last 12M History + 12M Forecast (Default)</button>
-                    <button id="btn-budget-win-full" onclick="setBudgetDisplayWindow('full24m')" style="border: 1px solid #cbd5e1; background: #fff; color: #475569; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">🌐 Full 24M History + 12M Forecast</button>
+            <div id="budget-window-toggle-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 4px 8px; background: #f8fafc; border-radius: 6px; border: 1px solid var(--card-border);">
+                <div style="font-size: 11px; color: var(--text-dark); display: flex; align-items: center; gap: 8px;">
+                    <span style="font-weight: 700;">Horizon:</span>
+                    <div class="segmented-control">
+                        <button id="btn-budget-win-12m" class="segmented-btn active" onclick="setBudgetDisplayWindow('active12m')">🗓️ Active Window: Last 12M + 12M Forecast</button>
+                        <button id="btn-budget-win-full" class="segmented-btn" onclick="setBudgetDisplayWindow('full24m')">🌐 Full 24M + 12M Forecast</button>
+                    </div>
                 </div>
-                <span id="budget-window-summary" style="font-size: 10.5px; color: #64748b; font-style: italic;">Showing 24 active monthly intervals (Last 12M actuals transitioning to forecast)</span>
+                <span id="budget-window-summary" style="font-size: 10.5px; color: var(--text-muted); font-style: italic;">Showing 24 active monthly intervals (Last 12M actuals transitioning to forecast)</span>
             </div>
 
             <!-- Chart Container -->
@@ -2674,13 +2771,13 @@
             const label = document.getElementById('scatter-mode-label');
 
             if (mode === 'risk') {
-                if (btnRaw) { btnRaw.style.background = 'transparent'; btnRaw.style.color = '#475569'; btnRaw.style.fontWeight = '600'; }
-                if (btnRisk) { btnRisk.style.background = '#e11d48'; btnRisk.style.color = '#fff'; btnRisk.style.fontWeight = '700'; }
+                if (btnRaw) btnRaw.classList.remove('active');
+                if (btnRisk) btnRisk.classList.add('active');
                 if (label) label.innerText = 'Showing Comorbidity-Adjusted Expected CPC vs. Observed CPC (O/E Ratio)';
                 renderRiskAdjustedScatter();
             } else {
-                if (btnRaw) { btnRaw.style.background = '#e11d48'; btnRaw.style.color = '#fff'; btnRaw.style.fontWeight = '700'; }
-                if (btnRisk) { btnRisk.style.background = 'transparent'; btnRisk.style.color = '#475569'; btnRisk.style.fontWeight = '600'; }
+                if (btnRaw) btnRaw.classList.add('active');
+                if (btnRisk) btnRisk.classList.remove('active');
                 if (label) label.innerText = 'Showing Raw Unadjusted Average CPC';
                 renderPhysicianScatter(window.filteredCases || window.allCases || []);
             }
@@ -4307,8 +4404,8 @@
                     margin: {l: 10, r: 10, b: 10, t: 10},
                     paper_bgcolor: 'transparent',
                     plot_bgcolor: 'transparent',
-                    treemapcolorway: ["#e64552", "#1d4ed8", "#166534", "#a16207", "#6d28d9", "#0284c7"],
-                    sunburstcolorway: ["#e64552", "#1d4ed8", "#166534", "#a16207", "#6d28d9"],
+                    treemapcolorway: ["#e43946", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1"],
+                    sunburstcolorway: ["#e43946", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1"],
                     transition: {
                         duration: 500,
                         easing: 'cubic-in-out'
@@ -5500,13 +5597,9 @@
                 const btn = document.getElementById(`btn-metric-${m}`);
                 if (btn) {
                     if (m === mode) {
-                        btn.style.background = '#0284c7';
-                        btn.style.color = '#fff';
-                        btn.style.fontWeight = '700';
+                        btn.classList.add('active');
                     } else {
-                        btn.style.background = 'transparent';
-                        btn.style.color = '#475569';
-                        btn.style.fontWeight = '600';
+                        btn.classList.remove('active');
                     }
                 }
             });
@@ -5583,7 +5676,7 @@
                 }
 
                 const overlapNote = groupSize > 1
-                    ? `<br><span style="color: #4f46e5; font-weight: 700;">● Standardized Pack Case (${posInGroup + 1} of ${groupSize} cases with identical metrics)</span>`
+                    ? `<br><span style="color: #475569; font-weight: 700;">● Standardized Pack Case (${posInGroup + 1} of ${groupSize} cases with identical metrics)</span>`
                     : '';
 
                 const cpcVal = parseFloat(row.cost_per_case || 0);
@@ -5605,13 +5698,13 @@
                 x: normalX, y: normalY, text: normalText, customdata: normalIds, 
                 mode: 'markers', type: 'scatter', name: 'Standard Case', 
                 hoverinfo: 'text', 
-                marker: { color: '#94a3b8', size: 10, opacity: 0.8, line: { width: 1.5, color: '#ffffff' } } 
+                marker: { color: '#94a3b8', size: 9, opacity: 0.85, line: { width: 1, color: '#ffffff' } } 
             };
             const traceOutlier = { 
                 x: outlierX, y: outlierY, text: outlierText, customdata: outlierIds, 
                 mode: 'markers', type: 'scatter', name: 'Outlier Case', 
                 hoverinfo: 'text', 
-                marker: { color: '#e64552', size: 12, opacity: 0.9, line: { width: 1.5, color: '#ffffff' } } 
+                marker: { color: '#e43946', size: 11, opacity: 0.95, line: { width: 1.5, color: '#ffffff' } } 
             };
 
             let yAxisTitle = 'Surgical Supply Cost Per Case ($)';
@@ -5635,7 +5728,7 @@
                 autosize: true, 
                 title: { 
                     text: chartTitle, 
-                    font: { size: 14, color: '#1e293b', weight: 600 },
+                    font: { size: 13.5, color: '#1e293b', weight: 700 },
                     x: 0.02,
                     xanchor: 'left',
                     y: 0.96
@@ -5665,15 +5758,16 @@
                 plot_bgcolor: 'white', 
                 paper_bgcolor: 'white', 
                 legend: { 
-                    title: { text: 'Classification', font: { size: 11, color: '#64748b' } }, 
+                    title: { text: 'Classification: ', side: 'left', font: { size: 11, color: '#475569', family: 'system-ui, sans-serif' } }, 
                     orientation: 'h', 
-                    x: 0.98, 
+                    x: 0.99, 
                     xanchor: 'right', 
-                    y: 1.12,
-                    bgcolor: 'rgba(255, 255, 255, 0.9)',
+                    y: 1.13,
+                    yanchor: 'middle',
+                    bgcolor: 'rgba(255, 255, 255, 0.95)',
                     bordercolor: '#e2e8f0',
                     borderwidth: 1,
-                    font: { size: 11 }
+                    font: { size: 11, color: '#1e293b' }
                 }, 
                 margin: { t: 65, b: 80, l: 95, r: 35 },
                 clickmode: 'event+select'
@@ -5729,7 +5823,6 @@
                 if (isNaN(parseFloat(row.Total_Case_Quantity)) || isNaN(parseFloat(row.cost_per_case))) continue;
                 const tr = document.createElement('tr'); tr.id = `row-${row.case_id}`;
                 const matchPct = row.variance_data && row.variance_data.construct_match_pct !== undefined ? row.variance_data.construct_match_pct + '%' : 'N/A';
-                const matchColor = parseFloat(matchPct) < 80 ? 'var(--brand-red)' : '#166534';
                 
                 const cpcVal = parseFloat(row.cost_per_case || 0);
                 const chgVal = parseFloat(row.total_charges || 0);
@@ -5737,15 +5830,27 @@
                 const chgText = chgVal > 0 ? `$${chgVal.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '$0.00';
                 const intensityText = chgVal > 0 ? `${intensityVal.toFixed(1)}%` : 'N/A';
 
+                const isOutlier = (row.Cost_Volume_Outlier && row.Cost_Volume_Outlier.trim() === 'Yes');
+                const outlierBadge = isOutlier 
+                    ? `<span style="display: inline-flex; align-items: center; gap: 3px; color: var(--color-alert); font-weight: 700; background: var(--color-alert-bg); padding: 2px 7px; border-radius: 4px; font-size: 11px;">⚠ Yes</span>`
+                    : `<span style="display: inline-flex; align-items: center; gap: 3px; color: var(--color-success); font-weight: 600; background: var(--color-success-bg); padding: 2px 7px; border-radius: 4px; font-size: 11px;">✓ No</span>`;
+
+                const matchVal = parseFloat(matchPct);
+                const matchBadge = isNaN(matchVal) 
+                    ? `<span style="color: var(--text-muted); font-size: 11px;">N/A</span>`
+                    : (matchVal >= 80 
+                        ? `<span style="color: var(--color-success); font-weight: 700;">${matchPct}</span>` 
+                        : `<span style="color: var(--color-alert); font-weight: 700;">${matchPct}</span>`);
+
                 tr.innerHTML = `
-                    <td title="${row.case_id}">${row.case_id.split('-').pop()}</td>
-                    <td>${row.lead_surgeon || 'Unknown'}</td>
-                    <td style="text-align: center;">${row.Total_Case_Quantity}</td>
-                    <td>$${cpcVal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                    <td style="color: #0284c7; font-weight: 600;">${chgText}</td>
-                    <td style="color: #7c3aed; font-weight: 700; text-align: center;">${intensityText}</td>
-                    <td style="color: ${row.Cost_Volume_Outlier === 'Yes' ? 'var(--brand-red)' : '#166534'}; text-align: center;">${row.Cost_Volume_Outlier}</td>
-                    <td style="color: ${matchColor}; font-weight: bold; text-align: center;">${matchPct}</td>
+                    <td title="${row.case_id}" style="font-family: monospace; font-size: 11px; color: var(--text-muted);">${row.case_id.split('-').pop()}</td>
+                    <td style="font-weight: 600; color: var(--text-dark);">${row.lead_surgeon || 'Unknown'}</td>
+                    <td class="tabular-nums" style="text-align: right; padding-right: 15px;">${row.Total_Case_Quantity}</td>
+                    <td class="tabular-nums" style="text-align: right; padding-right: 15px; font-weight: 600;">$${cpcVal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td class="tabular-nums" style="text-align: right; padding-right: 15px; color: var(--text-dark); font-weight: 600;">${chgText}</td>
+                    <td style="text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 11px;">${intensityText}</span></td>
+                    <td style="text-align: center;">${outlierBadge}</td>
+                    <td style="text-align: center;">${matchBadge}</td>
                 `;
                 
                 tr.addEventListener('mouseenter', () => { 
@@ -6528,16 +6633,10 @@
                 if (windowBar) windowBar.style.display = 'flex';
                 if (tableWrapper) tableWrapper.style.display = 'none';
                 if (btnChart) {
-                    btnChart.style.background = '#fff';
-                    btnChart.style.color = '#0f172a';
-                    btnChart.style.boxShadow = '0 1px 2px rgba(0,0,0,0.06)';
-                    btnChart.style.fontWeight = '700';
+                    btnChart.classList.add('active');
                 }
                 if (btnTable) {
-                    btnTable.style.background = 'transparent';
-                    btnTable.style.color = '#64748b';
-                    btnTable.style.boxShadow = 'none';
-                    btnTable.style.fontWeight = '600';
+                    btnTable.classList.remove('active');
                 }
                 if (window.currentBudgetData) {
                     renderBudgetChart(window.currentBudgetData);
@@ -6552,32 +6651,12 @@
             const summaryEl = document.getElementById('budget-window-summary');
 
             if (horizon === 'full24m') {
-                if (btnFull) {
-                    btnFull.style.borderColor = '#3b82f6';
-                    btnFull.style.background = '#eff6ff';
-                    btnFull.style.color = '#1d4ed8';
-                    btnFull.style.fontWeight = '700';
-                }
-                if (btn12m) {
-                    btn12m.style.borderColor = '#cbd5e1';
-                    btn12m.style.background = '#fff';
-                    btn12m.style.color = '#475569';
-                    btn12m.style.fontWeight = '600';
-                }
+                if (btnFull) btnFull.classList.add('active');
+                if (btn12m) btn12m.classList.remove('active');
                 if (summaryEl) summaryEl.innerText = "Showing full 36-month horizon (24M historical actuals + 12M forecast)";
             } else {
-                if (btn12m) {
-                    btn12m.style.borderColor = '#3b82f6';
-                    btn12m.style.background = '#eff6ff';
-                    btn12m.style.color = '#1d4ed8';
-                    btn12m.style.fontWeight = '700';
-                }
-                if (btnFull) {
-                    btnFull.style.borderColor = '#cbd5e1';
-                    btnFull.style.background = '#fff';
-                    btnFull.style.color = '#475569';
-                    btnFull.style.fontWeight = '600';
-                }
+                if (btn12m) btn12m.classList.add('active');
+                if (btnFull) btnFull.classList.remove('active');
                 if (summaryEl) summaryEl.innerText = "Showing 24 active monthly intervals (Last 12M actuals transitioning to forecast)";
             }
 
@@ -6932,25 +7011,25 @@
                         {
                             label: 'Historical Actual Spend',
                             data: histData,
-                            borderColor: '#334155',
-                            backgroundColor: 'rgba(51, 65, 85, 0.08)',
+                            borderColor: '#1e293b',
+                            backgroundColor: 'rgba(30, 41, 59, 0.08)',
                             borderWidth: 3,
                             fill: false,
                             tension: 0.2,
                             pointRadius: 4,
-                            pointBackgroundColor: '#334155'
+                            pointBackgroundColor: '#1e293b'
                         },
                         {
                             label: `Status Quo Forecast (${data.algorithm_display || 'Unmanaged Trend'})`,
                             data: sqData,
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                            borderColor: '#dc2626',
+                            backgroundColor: 'rgba(220, 38, 38, 0.05)',
                             borderWidth: 2.5,
                             borderDash: [5, 5],
                             tension: 0.3,
                             fill: false,
                             pointRadius: 4,
-                            pointBackgroundColor: '#ef4444'
+                            pointBackgroundColor: '#dc2626'
                         },
                         {
                             label: 'Approved Monthly Budget Cap',
@@ -6964,8 +7043,8 @@
                         {
                             label: 'Value-Managed Spend (Standard BOM & Contracts)',
                             data: mgData,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderColor: '#15803d',
+                            backgroundColor: 'rgba(21, 128, 61, 0.08)',
                             borderWidth: 3,
                             tension: 0.3,
                             fill: true,
