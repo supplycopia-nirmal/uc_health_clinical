@@ -18,6 +18,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="/static/lightbox_alert.css">
+    <script src="/static/lightbox_alert.js"></script>
     <script>window.API_BASE = "/api";</script>
     <script src="swarm_cqo.js?v=2.2"></script>
     
@@ -4831,9 +4833,9 @@
             }
         }
 
-        function removeRow(btn, subcat, brand, qty) {
+        async function removeRow(btn, subcat, brand, qty) {
             if (subcat && subcat !== 'Unknown') {
-                const comment = prompt(`Please provide a rationale for deleting:\n\n${subcat} (${brand})`, "Surgeon preference / Not required");
+                const comment = await showLightboxPrompt(`Please provide a rationale for deleting:\n\n${subcat} (${brand})`, "Surgeon preference / Not required", "Item Deletion Rationale");
                 if (comment === null) return; // User cancelled
                 
                 window.pendingSubstitutions.push({
@@ -6092,7 +6094,7 @@
         }
 
         async function deleteSavedCard(surgeonName) {
-            if(!confirm(`Are you sure you want to delete the saved preference card for ${surgeonName}?`)) return;
+            if (!(await showLightboxConfirm(`Are you sure you want to delete the saved preference card for ${surgeonName}?`, "Delete Preference Card", { danger: true, confirmText: "Delete Card" }))) return;
             try {
                 const res = await fetch(`${API_BASE}/preference-card/saved`, {
                     method: 'DELETE',
@@ -6261,7 +6263,7 @@
             });
             
             if (manualDiffs.length > 0) {
-                const comment = prompt(`You made ${manualDiffs.length} manual adjustment(s) (Additions or Brand/Qty changes).\n\nPlease provide a rationale for these changes for the AI:`, "Surgeon specific manual adjustment");
+                const comment = await showLightboxPrompt(`You made ${manualDiffs.length} manual adjustment(s) (Additions or Brand/Qty changes).\n\nPlease provide a rationale for these changes for the AI:`, "Surgeon specific manual adjustment", "Clinical AI Rationale");
                 if (comment === null) return; // Cancel save
                 
                 manualDiffs.forEach(diff => {
@@ -7374,7 +7376,7 @@
         }
 
         async function manualPurgeAuditLogs() {
-            if (!confirm("Execute automated 90-day retention purge? Records older than 90 days will be permanently removed to protect memory.")) return;
+            if (!(await showLightboxConfirm("Execute automated 90-day retention purge? Records older than 90 days will be permanently removed to protect memory.", "Execute Data Retention Purge", { danger: true, confirmText: "Execute Purge" }))) return;
             try {
                 const res = await fetch(`${API_BASE}/audit-log/purge?days=90`, { method: 'POST' });
                 const data = await res.json();
@@ -7790,8 +7792,8 @@
             closePrefCardLightbox();
         }
 
-        function simulateLogout() {
-            if (confirm("Sign out of UC Health Clinical Value System (SSO Session)?")) {
+        async function simulateLogout() {
+            if (await showLightboxConfirm("Sign out of UC Health Clinical Value System (SSO Session)?", "Sign Out Confirmation", { confirmText: "Sign Out", cancelText: "Stay Signed In" })) {
                 window.location.href = "/logout";
             }
         }

@@ -369,8 +369,23 @@ async def saml_acs(request: Request, SAMLResponse: str = Form(...), RelayState: 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"SAML Assertion Processing Error: {str(e)}")
 
+def is_localhost_request(request: Request) -> bool:
+    env = os.environ.get("ENVIRONMENT", os.environ.get("ENV", "")).lower()
+    if env in ("production", "prod", "hosted", "staging"):
+        return False
+    host_header = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.hostname or ""
+    host_name = host_header.split(":")[0].strip().lower()
+    if "supplycopia.com" in host_name or host_name.endswith(".com") or host_name.endswith(".org") or host_name.endswith(".net") or host_name.endswith(".io"):
+        return False
+    return host_name in ("localhost", "127.0.0.1", "0.0.0.0", "::1", "testclient")
+
 @app.get("/saml/dev-login")
 def saml_dev_login(request: Request, returnUrl: str = "/"):
+    if not is_localhost_request(request):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Developer bypass is strictly disabled on hosted environments. Please authenticate via SSO."
+        )
     mgr = get_saml_manager()
     user_info = mgr.get_dev_user()
     token = mgr.create_session_token(user_info)
