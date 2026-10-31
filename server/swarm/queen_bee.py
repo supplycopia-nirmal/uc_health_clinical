@@ -736,6 +736,96 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
                 "chart_spec": None
             }
 
+        # Check for Surgeon Preference Card comparison intent
+        is_compare_cards_query = any(kw in user_msg_clean for kw in [
+            "compare preference cards", "compare preference card", "compare cards",
+            "compare surgeon cards", "compare surgeon preference cards", "compare surgeon card",
+            "card comparison"
+        ])
+
+        if is_compare_cards_query:
+            # Check how many surgeons are mentioned in user message
+            mentioned_surgeons = []
+            if proc_df is not None and hasattr(proc_df, 'columns') and 'lead_surgeon' in proc_df.columns:
+                for s in proc_df['lead_surgeon'].dropna().unique():
+                    s_clean = str(s).strip()
+                    if not s_clean:
+                        continue
+                    last_name = s_clean.split(',')[0].strip().lower()
+                    if s_clean.lower() in user_msg_clean or (len(last_name) >= 3 and last_name in user_msg_clean.split()):
+                        mentioned_surgeons.append(s_clean)
+            
+            # If user didn't name 2 surgeons, ask for clarification!
+            if len(mentioned_surgeons) < 2:
+                surg_options_1 = []
+                surg_options_2 = []
+                surg_list = []
+                if proc_df is not None and hasattr(proc_df, 'columns') and 'lead_surgeon' in proc_df.columns:
+                    s_counts = proc_df['lead_surgeon'].dropna().value_counts()
+                    surg_list = s_counts.index.tolist()
+                    for idx, s in enumerate(surg_list):
+                        cnt = s_counts[s]
+                        sel1 = 'selected="selected"' if idx == 0 else ''
+                        sel2 = 'selected="selected"' if idx == 1 else ''
+                        surg_options_1.append(f'<option value="{s}" {sel1}>Dr. {s} ({cnt} cases)</option>')
+                        surg_options_2.append(f'<option value="{s}" {sel2}>Dr. {s} ({cnt} cases)</option>')
+
+                compare_clarification = f"""### ⚖️ Preference Card Comparison Specification
+To perform a head-to-head comparison of surgeon preference cards for **`{procedure_name}`**, please select two surgeons to compare:
+
+<div class="chat-clarification-card" style="background: #ffffff; border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; border-radius: 8px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+        <div>
+            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">Primary Surgeon (Surgeon A):</label>
+            <select class="chat-compare-surg-1" style="width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; background: #fff; color: #1e293b;">
+                {"".join(surg_options_1)}
+            </select>
+        </div>
+        <div>
+            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">Benchmark / Comparison (Surgeon B):</label>
+            <select class="chat-compare-surg-2" style="width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; background: #fff; color: #1e293b;">
+                {"".join(surg_options_2)}
+            </select>
+        </div>
+    </div>
+    <div style="display: flex; justify-content: flex-end;">
+        <button type="button" onclick="executeCompareCardsFromChat(this, '{procedure_name}')" style="background: #0284c7; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(2,132,199,0.25);">
+            ⚖️ Compare Selected Cards
+        </button>
+    </div>
+</div>
+""".strip()
+
+                followups_comp = []
+                if len(surg_list) >= 2:
+                    followups_comp.append(f"Compare preference cards for Dr. {surg_list[0]} and Dr. {surg_list[1]}")
+                followups_comp.append(f"Which surgeons at UC Health have the highest cost variance in {procedure_name}?")
+
+                traces.append(SwarmTraceStep(
+                    step_id=2,
+                    agent_id=PERSONA_SURGEON_BEE.id,
+                    agent_name=PERSONA_SURGEON_BEE.name,
+                    agent_avatar=PERSONA_SURGEON_BEE.avatar,
+                    action="Requested Comparison Selection",
+                    status="completed",
+                    thought=f"User asked to compare preference cards without naming surgeons. Rendered two-surgeon comparison selector for '{procedure_name}'.",
+                    timestamp="Just now"
+                ))
+
+                return {
+                    "reply": compare_clarification,
+                    "lead_agent": PERSONA_SURGEON_BEE.model_dump(),
+                    "participating_bees": [PERSONA_SURGEON_BEE.model_dump(), PERSONA_WORKER_BEE.model_dump()],
+                    "swarm_trace": [t.model_dump() for t in traces],
+                    "debate_transcript": None,
+                    "embedded_actions": [
+                        {"title": "🛠️ Preference Card Optimizer", "action": f"openTabDirect('PrefCardTab', 'grp-clinical')"},
+                        {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"}
+                    ],
+                    "followup_questions": followups_comp[:2],
+                    "chart_spec": None
+                }
+
         # Check for Surgeon Preference Card generation intent
         is_pref_card_query = any(kw in user_msg_clean for kw in [
             "preference card", "pref card", "surgeon preference", "standardized card",
@@ -744,17 +834,120 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
 
         if is_pref_card_query:
             target_surg = surgeon_name if surgeon_name and surgeon_name != "All Surgeons" else None
+            # Check if a surgeon name or last name is explicitly in user message
             if not target_surg and proc_df is not None and hasattr(proc_df, 'columns') and 'lead_surgeon' in proc_df.columns:
                 for s in proc_df['lead_surgeon'].dropna().unique():
-                    if str(s).lower() in user_msg_clean:
-                        target_surg = str(s)
+                    s_clean = str(s).strip()
+                    if not s_clean:
+                        continue
+                    if s_clean.lower() in user_msg_clean:
+                        target_surg = s_clean
                         break
-                if not target_surg:
-                    s_counts = proc_df['lead_surgeon'].dropna().value_counts()
-                    if not s_counts.empty:
-                        target_surg = s_counts.index[0]
-            if not target_surg:
+                    last_name = s_clean.split(',')[0].strip().lower()
+                    if len(last_name) >= 3 and (f"dr. {last_name}" in user_msg_clean or f"dr {last_name}" in user_msg_clean or f"doctor {last_name}" in user_msg_clean or f"for {last_name}" in user_msg_clean or last_name in user_msg_clean.split()):
+                        target_surg = s_clean
+                        break
+
+            # If user explicitly asked for consensus / all surgeons
+            if not target_surg and any(w in user_msg_clean for w in ["all surgeons", "consensus", "cohort standard", "system average", "all doctors"]):
                 target_surg = "All Surgeons"
+
+            # IF NO SURGEON IS SPECIFIED -> OPEN-ENDED QUERY: ASK FOR MORE INFORMATION
+            if not target_surg:
+                surg_options = ['<option value="All Surgeons">All Surgeons (Consensus Standard Cohort)</option>']
+                top_surg_chips = []
+                top_surg_names = []
+                
+                if proc_df is not None and hasattr(proc_df, 'columns') and 'lead_surgeon' in proc_df.columns:
+                    spend_col = 'line_spend' if 'line_spend' in proc_df.columns else ('ext_cost' if 'ext_cost' in proc_df.columns else 'unit_cost')
+                    case_col = 'case_id' if 'case_id' in proc_df.columns else 'row_id'
+                    
+                    surg_counts = proc_df.groupby('lead_surgeon').agg({
+                        spend_col: 'sum',
+                        case_col: 'nunique'
+                    }).reset_index().sort_values(by=case_col, ascending=False)
+                    
+                    for _, r in surg_counts.iterrows():
+                        s_name = str(r['lead_surgeon']).strip()
+                        c_cnt = int(r[case_col])
+                        cpc = float(r[spend_col]) / max(1, c_cnt)
+                        surg_options.append(f'<option value="{s_name}">Dr. {s_name} ({c_cnt} cases, ${cpc:,.2f} avg CPC)</option>')
+                        if len(top_surg_chips) < 4:
+                            top_surg_chips.append((s_name, c_cnt, cpc))
+                            top_surg_names.append(s_name)
+
+                surg_select_html = "\n                ".join(surg_options)
+                
+                chips_html = "".join([
+                    f'<button type="button" class="plan-chip" onclick="executePrefCardForSurgeon(\'{procedure_name}\', \'{s[0]}\')" style="padding: 6px 12px; font-size: 11.5px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #1e293b; font-weight: 600; cursor: pointer; text-align: left; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">👨‍⚕️ Dr. {s[0]} <span style="color: #64748b; font-size: 10.5px; font-weight: 500;">({s[1]} cases)</span></button>'
+                    for s in top_surg_chips
+                ])
+
+                clarification_reply = f"""### 🗂️ Preference Card Specification
+To generate a standardized preference card for **`{procedure_name}`**, please select the practicing surgeon you want to optimize:
+
+<div class="chat-clarification-card" style="background: #ffffff; border: 1px solid #cbd5e1; border-left: 4px solid #e11d48; border-radius: 8px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+    <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+        <span>🎯</span> <strong>Select Target Surgeon:</strong>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+        <select class="chat-pref-surg-select" style="flex: 1; min-width: 260px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; background: #fff; color: #1e293b; outline: none;">
+            {surg_select_html}
+        </select>
+        <button type="button" class="btn-execute-plan" onclick="executePrefCardFromChat(this, '{procedure_name}')" style="background: #e11d48; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(225,29,72,0.25);">
+            🚀 Generate Preference Card
+        </button>
+    </div>
+
+    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
+        Or Quick Select High-Volume Surgeon:
+    </div>
+    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        {chips_html}
+    </div>
+</div>
+
+> [!NOTE]
+> The algorithm analyzes historical case BOMs, designating items with $\\ge 80\\%$ usage as **Routine Open Staples** (pre-opened in pack) and items with $< 80\\%$ usage to the **Sterile Hold Cart** (opened PRN on demand).
+""".strip()
+
+                traces.append(SwarmTraceStep(
+                    step_id=2,
+                    agent_id=PERSONA_WORKER_BEE.id,
+                    agent_name=PERSONA_WORKER_BEE.name,
+                    agent_avatar=PERSONA_WORKER_BEE.avatar,
+                    action="Requested Surgeon Specification",
+                    status="completed",
+                    thought=f"User requested preference card without specifying surgeon. Rendered interactive surgeon selector for '{procedure_name}'.",
+                    timestamp="Just now"
+                ))
+
+                followups = []
+                if top_surg_names:
+                    followups.append(f"Generate standardized preference card for Dr. {top_surg_names[0]}")
+                    if len(top_surg_names) > 1:
+                        followups.append(f"Generate standardized preference card for Dr. {top_surg_names[1]}")
+                if len(followups) < 2:
+                    followups.append(f"Generate consensus standard preference card across all surgeons for {procedure_name}")
+
+                embedded_acts = []
+                if top_surg_names:
+                    embedded_acts.append({"title": f"👨‍⚕️ Dr. {top_surg_names[0]}", "action": f"generate standardized preference card for Dr. {top_surg_names[0]}"})
+                embedded_acts.extend([
+                    {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"},
+                    {"title": "📈 12-Month Budget Forecast", "action": "forecast monthly spend and budget run-rate trajectory"}
+                ])
+
+                return {
+                    "reply": clarification_reply,
+                    "lead_agent": PERSONA_WORKER_BEE.model_dump(),
+                    "participating_bees": [PERSONA_WORKER_BEE.model_dump(), PERSONA_SURGEON_BEE.model_dump()],
+                    "swarm_trace": [t.model_dump() for t in traces],
+                    "debate_transcript": None,
+                    "embedded_actions": embedded_acts,
+                    "followup_questions": followups[:2],
+                    "chart_spec": None
+                }
 
             # Compute Preference Card Open List and Hold List from real encounter records
             surg_mask = (proc_df['lead_surgeon'].astype(str).str.strip().str.upper() == target_surg.strip().upper()) if target_surg != "All Surgeons" else slice(None)
@@ -783,9 +976,12 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
             open_tbl = "\n".join(open_rows) if open_rows else "| Standard Surgical Supplies | Hospital Contract | 1 | 100.0% | Procedural Staple |"
             hold_tbl = "\n".join(hold_rows) if hold_rows else "| Specialty Dissector | Alternative Vendor | 24.0% | Sterile Hold Cart (PRN) |"
 
+            surg_title = "Consensus Standard (All Practicing Surgeons)" if target_surg == "All Surgeons" else f"Dr. {target_surg}"
+            surg_lb_param = target_surg if target_surg != "All Surgeons" else (proc_df['lead_surgeon'].dropna().value_counts().index[0] if proc_df is not None and not proc_df.empty else "All Surgeons")
+
             pref_reply = f"""### 🗂️ Standardized Surgeon Preference Card
 **Procedure:** `{procedure_name}`  
-**Target Surgeon:** `Dr. {target_surg}`  
+**Target Surgeon:** `{surg_title}`  
 **Analyzed Encounter Cohort:** `{t_cases}` historical surgical cases  
 
 #### 🟢 Routine Open List (Procedural Staples — Pre-Opened in Custom Pack, Utilization ≥ 80%)
@@ -802,10 +998,10 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
 > Moving items with $<80\\%$ utilization from pre-opened surgical packs onto the **Sterile Hold Cart** eliminates opened-but-unused bio-waste while guaranteeing surgeons immediate physical access in the operating theater upon clinical necessity.
 
 <div style="margin: 14px 0 6px 0; display: flex; gap: 8px; flex-wrap: wrap;">
-    <button class="btn-chat-action" onclick="openPrefCardLightbox('{procedure_name}', '{target_surg}')" style="background: #e11d48; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(225,29,72,0.25);">
+    <button class="btn-chat-action" onclick="openPrefCardLightbox('{procedure_name}', '{surg_lb_param}')" style="background: #e11d48; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(225,29,72,0.25);">
         📑 View Full Standardized Preference Card in Lightbox
     </button>
-    <button class="btn-chat-action" onclick="openTabDirect('PrefCardTab', 'grp-clinical'); if(document.getElementById('pref-surgeon-select')) {{ document.getElementById('pref-surgeon-select').value = '{target_surg}'; fetchPreferenceCard(); }}" style="background: #0284c7; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+    <button class="btn-chat-action" onclick="openTabDirect('PrefCardTab', 'grp-clinical'); if(document.getElementById('pref-surgeon-select')) {{ document.getElementById('pref-surgeon-select').value = '{surg_lb_param}'; fetchPreferenceCard(); }}" style="background: #0284c7; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
         🛠️ Open in Preference Card Optimizer
     </button>
 </div>
@@ -818,7 +1014,7 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
                 agent_avatar=PERSONA_WORKER_BEE.avatar,
                 action="Rationalized Preference Card BOM",
                 status="completed",
-                thought=f"Engineered preference card for Dr. {target_surg} across {t_cases} cases: {len(open_items)} routine staples separated from {len(hold_items)} conditional hold items.",
+                thought=f"Engineered preference card for {surg_title} across {t_cases} cases: {len(open_items)} routine staples separated from {len(hold_items)} conditional hold items.",
                 timestamp="Just now"
             ))
 
@@ -829,12 +1025,12 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
                 "swarm_trace": [t.model_dump() for t in traces],
                 "debate_transcript": None,
                 "embedded_actions": [
-                    {"title": "📑 View Full Preference Card", "action": f"openPrefCardLightbox('{procedure_name}', '{target_surg}')"},
+                    {"title": "📑 View Full Preference Card", "action": f"openPrefCardLightbox('{procedure_name}', '{surg_lb_param}')"},
                     {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"},
                     {"title": "📈 12-Month Budget Forecast", "action": "forecast monthly spend and budget run-rate trajectory"}
                 ],
                 "followup_questions": [
-                    f"How much waste spend does Dr. {target_surg} generate on conditional items?",
+                    f"How much waste spend does {surg_title} generate on conditional items?",
                     f"What items in {procedure_name} have the highest variance across surgeons?"
                 ],
                 "chart_spec": None

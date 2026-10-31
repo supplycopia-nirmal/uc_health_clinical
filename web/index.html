@@ -4155,6 +4155,83 @@
             }
         };
 
+        window.executePrefCardFromChat = function(btn, procName) {
+            let surgVal = 'All Surgeons';
+            if (btn) {
+                const container = btn.closest('.chat-clarification-card');
+                if (container) {
+                    const sel = container.querySelector('.chat-pref-surg-select') || container.querySelector('select');
+                    if (sel) surgVal = sel.value;
+                }
+            } else {
+                const sel = document.querySelector('.chat-pref-surg-select');
+                if (sel) surgVal = sel.value;
+            }
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                if (surgVal === 'All Surgeons') {
+                    chatInput.value = `Generate consensus standard preference card across all surgeons for ${procName || window.currentProcedure}`;
+                } else {
+                    chatInput.value = `Generate standardized preference card for Dr. ${surgVal}`;
+                }
+                sendChatMessage();
+            }
+        };
+
+        window.executePrefCardForSurgeon = function(procName, surgName) {
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                if (!surgName || surgName === 'All Surgeons') {
+                    chatInput.value = `Generate consensus standard preference card across all surgeons for ${procName || window.currentProcedure}`;
+                } else {
+                    chatInput.value = `Generate standardized preference card for Dr. ${surgName}`;
+                }
+                sendChatMessage();
+            }
+        };
+
+        window.selectPrefSurgeonChip = function(btn, surgName) {
+            if (btn) {
+                const container = btn.closest('.chat-clarification-card');
+                if (container) {
+                    const sel = container.querySelector('.chat-pref-surg-select') || container.querySelector('select');
+                    if (sel) sel.value = surgName;
+                    container.querySelectorAll('.plan-chip').forEach(c => {
+                        c.style.background = '#fff';
+                        c.style.borderColor = '#cbd5e1';
+                        c.style.color = '#1e293b';
+                    });
+                    btn.style.background = '#fef2f2';
+                    btn.style.borderColor = '#e11d48';
+                    btn.style.color = '#e11d48';
+                }
+            }
+        };
+
+        window.executeCompareCardsFromChat = function(btn, procName) {
+            let surg1 = '', surg2 = '';
+            if (btn) {
+                const container = btn.closest('.chat-clarification-card');
+                if (container) {
+                    const sel1 = container.querySelector('.chat-compare-surg-1');
+                    const sel2 = container.querySelector('.chat-compare-surg-2');
+                    if (sel1 && sel2) {
+                        surg1 = sel1.value;
+                        surg2 = sel2.value;
+                    }
+                }
+            }
+            if (!surg1 || !surg2 || surg1 === surg2) {
+                alert("Please select two different surgeons to compare.");
+                return;
+            }
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                chatInput.value = `Compare preference cards for Dr. ${surg1} and Dr. ${surg2}`;
+                sendChatMessage();
+            }
+        };
+
         // executeSwarmAction is provided by swarm_cqo.js with deep routing and toast confirmations
 
         async function loadCatalog() {
