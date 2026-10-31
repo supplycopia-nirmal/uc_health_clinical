@@ -26,6 +26,11 @@ data/jira_attachments/*
 *.pem
 *.cer
 
+# SQLite Databases & WAL files
+*.db-shm
+*.db-wal
+data/*.db
+
 # Operating System
 .DS_Store
 Thumbs.db

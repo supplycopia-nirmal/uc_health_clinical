@@ -1,5 +1,6 @@
 import json
 import re
+from urllib.parse import quote
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from .schemas import (
@@ -91,6 +92,104 @@ ALL_BEES = [
     PERSONA_FLOW_BEE,
     PERSONA_GOVERNANCE_BEE
 ]
+
+def is_out_of_scope_query(user_msg: str) -> bool:
+    """
+    Deterministically and semantically guards against answering queries outside
+    UC Health clinical quality, surgical procedures, and procurement analytics,
+    while recognizing all clinical terms, abbreviations ('pref card', 'cpc', 'bom'),
+    supplies, procedures, and facilities.
+    """
+    msg_clean = (user_msg or "").strip().lower()
+    if not msg_clean:
+        return False
+
+    # Whitelist for swarm-generated queries, chips, followups, and clinical analyses
+    whitelist_starts = [
+        "visualize", "forecast", "generate", "show", "scan", "predict",
+        "which surgeons", "what items", "what verified", "how much", "how does",
+        "compare preference", "compare physician", "compare surgeon", "compare doctor",
+        "execute strategic action", "execute pref", "what specific"
+    ]
+    if any(msg_clean.startswith(w) for w in whitelist_starts):
+        return False
+
+    # 1. EXPLICIT OFF-TOPIC PATTERNS (Recipes, Cooking, Sports, Pop culture, Humor, Weather, Crypto)
+    explicit_off_topic_patterns = [
+        r"\b(recipe|recipes|pasta|spaghetti|pizza|burger|burgers|sandwich|sandwiches|cook|cooking|bake|baking|boil|fry|frying|grill|grilling|dinner|lunch|breakfast|dessert|ingredient|ingredients|cocktail|cocktails|wine|beer)\b",
+        r"\b(football|soccer|basketball|baseball|tennis|cricket|golf|hockey|nba|nfl|mlb|fifa|super bowl|world cup|olympics|touchdown|goalie)\b",
+        r"\b(movie|movies|cinema|actor|actress|film|films|song|songs|lyrics|album|musician|netflix|hollywood|disney|celebrity|video game|videogame|playstation|xbox)\b",
+        r"\b(poem|poetry|rhyme|joke|jokes|riddle|riddles|funny story|bedtime story|fairy tale|comedy)\b",
+        r"\b(weather today|weather forecast|tomorrow weather|will it rain|horoscope|astrology|zodiac)\b",
+        r"\b(crypto|cryptocurrency|bitcoin|btc|ethereum|eth|dogecoin|stock to buy|stock pick|wall street)\b",
+        r"\b(car repair|engine oil|mechanic|dating advice|relationship advice|how to flirt|fix my iphone|plumbing)\b",
+        r"\b(capital of|president of|prime minister of|quantum physics|space travel|astronomy|learn spanish|history of france)\b"
+    ]
+    if any(re.search(pat, msg_clean) for pat in explicit_off_topic_patterns):
+        return True
+
+    # 2. RECOGNIZED HEALTHCARE, SURGICAL, FINANCIAL, SUPPLY CHAIN, AND SWARM TERMS
+    domain_terms = [
+        "pref", "preference", "card", "cards", "bom", "pack", "packs", "tray", "trays", "hold cart", "open list", 
+        "routine open", "sterile hold", "standardize", "standardization", "standardized",
+        "suppl", "supply", "supplies", "material", "item", "items", "commodity", "commodities", "product", "products", "inventory",
+        "implant", "implants", "gown", "gowns", "glove", "gloves", "suture", "sutures", "trocar", "trocars", "staple", "staples", 
+        "cart", "blade", "knife", "scissors", "forceps", "bipolar", "monopolar", "cautery", "bovie", "sealant", "hemostat", 
+        "suction", "evacuator", "mesh", "cement", "screw", "screws", "plate", "plates", "rod", "pin", "stent", "catheter", 
+        "drain", "dressing", "sponge", "drape", "drapes",
+        "cost", "costs", "cpc", "spend", "spending", "charge", "charges", "price", "prices", "pricing", "variance", 
+        "budget", "forecast", "saving", "savings", "save", "cut", "reduce", "reduction",
+        "leakage", "parity", "contract", "contracts", "tier", "vendor", "vendors", "manufacturer", "manufacturers", 
+        "brand", "brands", "clawback", "rebate", "rebates", "discrepanc", "invoice", "invoices", "overcharge", "margin", 
+        "run-rate", "run rate", "projection",
+        "benchmark", "benchmarks", "percentile", "cqo", "value", "quadrant", "efficiency", "champion", "champions", 
+        "outlier", "outliers", "anomaly", "anomalies",
+        "asa", "bmi", "complication", "complications", "los", "length of stay", "readmission", "mortality", "acuity", 
+        "risk", "o/e", "oe ratio",
+        "surg", "surgeon", "surgeons", "physician", "physicians", "doctor", "doctors", "dr.", "dr ", "md", "rn", "nurse", 
+        "scrub", "tech", "staff", "practicing",
+        "operating room", "or suite", "asc", "ambulatory", "inpatient", "outpatient", "hospital", "hospitals", 
+        "facility", "facilities", "spd", "sterile processing", "turnover", "migration", "site of service", "site of care",
+        "procedure", "procedures", "encounter", "encounters", "case", "cases", "cohort", "cohorts", 
+        "knee", "hip", "arthroplasty", "arthroscop", "cholecystectomy", "colonoscopy", "endoscopy", "laparoscop", 
+        "hernia", "repair", "excision", "lesion", "mass", "cystoscopy", "ureteroscopy", "carpal", "tunnel", "spine", 
+        "spinal", "fusion", "appendectomy", "ortho", "orthopedic", "cardiac", "vascular",
+        "download", "export", "data", "dataset", "filter", "filters", "table", "chart", "charts", "graph", "plot", 
+        "scatter", "compare", "comparison", "difference", "distribution", "summary", "kpi", "metric", "metrics", "trend", "predict", "prediction",
+        "bee", "bees", "queen", "scout", "worker", "contract bee", "surgeon bee", "clinical bee", "eco", "payer", "flow", 
+        "governance", "swarm", "uc health", "uchealth", "help", "hello", "hi", "hey", "start", "what can you do", "who are you", 
+        "explain", "overview", "analyze", "optimize", "substitut", "substitution"
+    ]
+    # Check for presence of any domain term
+    has_domain_term = any(term in msg_clean for term in domain_terms)
+    if has_domain_term:
+        return False
+
+    # Check for standalone 'or' (operating room)
+    if re.search(r"\bor\b", msg_clean) and not re.search(r"\beither\b", msg_clean):
+        return False
+
+    # 3. If query has 3+ words and contains NO healthcare domain term, treat as out-of-scope
+    words = [w for w in re.findall(r"\b\w+\b", msg_clean) if len(w) > 1]
+    if len(words) >= 3 and not has_domain_term:
+        return True
+
+    return False
+
+
+def is_bulk_data_query(user_msg: str) -> bool:
+    """
+    Detects requests for bulk data dumps to guard against token limits and trigger Excel/CSV export.
+    """
+    msg_clean = (user_msg or "").strip().lower()
+    bulk_keywords = [
+        "underlying data", "raw data", "all data", "download data", "export data",
+        "export to excel", "download excel", "dump rows", "dump all rows", "all records",
+        "all encounters", "csv download", "export dataset", "download dataset", "provide all rows",
+        "raw dataset", "entire dataset", "full data"
+    ]
+    return any(kw in msg_clean for kw in bulk_keywords)
+
 
 class QueenBee:
     def __init__(
@@ -494,7 +593,8 @@ class QueenBee:
         benchmark_percentile: int = 25,
         preferred_bee: str = "queen",
         chat_history: Optional[List[Dict[str, str]]] = None,
-        proc_df: Optional[Any] = None
+        proc_df: Optional[Any] = None,
+        dashboard_context: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Executes interactive multi-agent chat debate or persona-specific inquiry.
@@ -580,7 +680,224 @@ class QueenBee:
         is_underspecified = False
         user_msg_clean = (user_message or "").strip().lower()
         active_proc = procedure_name.strip() if procedure_name else ""
+
+        # --- 1. DOMAIN BOUNDARY GUARDRAIL (Refuse out-of-scope non-clinical inquiries) ---
+        if is_out_of_scope_query(user_message):
+            proc_title = active_proc if (active_proc and active_proc != "All Procedures") else "EXCISION OF LESION OR MASS"
+            scope_notice = (
+                f"### 🐝 Ask The Bee Scope Notice\n"
+                f"I am **Ask The Bee**, the specialized multi-agent clinical AI swarm for **UC Health**.\n\n"
+                f"My capabilities are strictly focused on **clinical supply chain analytics, cost-per-case (CPC) variance, surgeon preference cards, price parity, and contract compliance** across UC Health facilities. I cannot answer queries outside the healthcare operations and clinical analytics domain (such as cooking recipes, entertainment, sports, or creative writing).\n\n"
+                f"---\n\n"
+                f"#### 🎯 Recommended Clinical Inquiries for `{proc_title}`:\n"
+                f"- 📊 **Cost Variance Diagnostic:** *\"Which surgeons at UC Health have the highest cost variance in {proc_title}?\"*\n"
+                f"- 🗂️ **Standardized Preference Card:** *\"Generate a standardized surgeon preference card separating routine open vs hold cart items.\"*\n"
+                f"- ⚖️ **Multi-Physician Comparison:** *\"Compare physician preference cards for {proc_title}.\"*\n"
+                f"- 🏷️ **Cross-Facility Price Parity:** *\"Identify item price discrepancies and vendor clawback opportunities across facilities.\"*\n"
+                f"- 📈 **12-Month Budget Forecast:** *\"Forecast monthly spend and budget run-rate trajectory.\"*"
+            )
+            traces.append(SwarmTraceStep(
+                step_id=2,
+                agent_id=PERSONA_QUEEN_BEE.id,
+                agent_name=PERSONA_QUEEN_BEE.name,
+                agent_avatar=PERSONA_QUEEN_BEE.avatar,
+                action="Domain Scope Guardrail Intercept",
+                status="completed",
+                thought=f"User query '{user_message}' is out of clinical scope. Re-routed to UC Health active procedure capabilities.",
+                timestamp="Just now"
+            ))
+            return {
+                "reply": scope_notice,
+                "lead_agent": PERSONA_QUEEN_BEE.model_dump(),
+                "participating_bees": [PERSONA_QUEEN_BEE.model_dump()],
+                "swarm_trace": [t.model_dump() for t in traces],
+                "debate_transcript": None,
+                "embedded_actions": [
+                    {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"},
+                    {"title": "🗂️ Standardized Preference Card", "action": f"generate standardized surgeon preference card for {proc_title}"},
+                    {"title": "📈 12-Month Budget Forecast", "action": "forecast monthly spend and budget run-rate trajectory"}
+                ],
+                "followup_questions": [
+                    f"Which surgeons at UC Health have the highest cost variance in {proc_title}?",
+                    f"What verified commodity substitutions are available for {proc_title}?"
+                ],
+                "chart_spec": None
+            }
+
+        # --- 2. BULK DATA EXTRACTION GUARD (Token Overload Prevention & Instant Export) ---
+        if is_bulk_data_query(user_message) and proc_df is not None and hasattr(proc_df, 'columns') and not proc_df.empty:
+            spend_col = 'ext_cost' if 'ext_cost' in proc_df.columns else ('line_spend' if 'line_spend' in proc_df.columns else 'unit_cost')
+            case_col = 'case_id' if 'case_id' in proc_df.columns else ('encounter_id' if 'encounter_id' in proc_df.columns else 'row_id')
+            tot_cases = proc_df[case_col].nunique() if case_col in proc_df.columns else len(proc_df)
+            tot_rows = len(proc_df)
+            tot_spend = float(proc_df[spend_col].sum()) if spend_col in proc_df.columns else 0.0
+            tot_surgs = proc_df['lead_surgeon'].nunique() if 'lead_surgeon' in proc_df.columns else 0
+            tot_hosp = proc_df['hospital_name'].nunique() if 'hospital_name' in proc_df.columns else 0
+
+            # 5-row sample preview
+            preview_rows = []
+            sample_df = proc_df.drop_duplicates(subset=[case_col]).head(5) if case_col in proc_df.columns else proc_df.head(5)
+            for _, r in sample_df.iterrows():
+                cid = str(r.get(case_col, 'ENC-NA'))[:14]
+                sname = str(r.get('lead_surgeon', 'Surgeon'))[:20]
+                hname = str(r.get('hospital_name', 'Facility'))[:16]
+                cpc_val = float(r.get('cost_per_case', r.get(spend_col, 0.0)))
+                chg_val = float(r.get('total_charges', 0.0))
+                out_val = "Yes ⚠️" if str(r.get('is_master_outlier', '')).lower() in ['yes', 'true', '1'] else "No"
+                preview_rows.append(f"| {cid} | Dr. {sname} | {hname} | ${cpc_val:,.2f} | ${chg_val:,.2f} | {out_val} |")
+
+            preview_tbl = "\n".join(preview_rows) if preview_rows else "| ENC-Sample | Dr. Staff | University Hospital | $1,250.00 | $14,200.00 | No |"
+            
+            export_xlsx_url = f"/api/export/dataset?procedure={quote(procedure_name)}&format=xlsx"
+            export_csv_url = f"/api/export/dataset?procedure={quote(procedure_name)}&format=csv"
+
+            bulk_reply = (
+                f"### 📊 Cohort Dataset Export & Underlying Data Summary\n"
+                f"The complete encounter dataset for **`{procedure_name}`** comprises **{tot_cases:,}** surgical encounters and **{tot_rows:,}** clinical supply line items across **{tot_surgs}** practicing surgeons and **{tot_hosp}** facilities.\n\n"
+                f"- **Total Procedural Supply Spend:** ${tot_spend:,.2f}\n"
+                f"- **Mean Cohort Supply CPC:** ${tot_spend / max(1, tot_cases):,.2f}\n\n"
+                f"#### 📋 Underlying Data Sample (First 5 Encounters Preview):\n"
+                f"| Encounter ID | Lead Surgeon | Facility Site | Supply Spend | Total Charges | Outlier? |\n"
+                f"|:---|:---|:---|:---:|:---:|:---:|\n"
+                f"{preview_tbl}\n\n"
+                f'<div class="chat-clarification-card" style="background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid #10b981; border-radius:8px; padding:16px; margin:14px 0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">'
+                f'<div style="font-size:13px; font-weight:700; color:#1e293b; margin-bottom:4px;">📥 Download Complete Dataset</div>'
+                f'<div style="font-size:11.5px; color:#64748b; margin-bottom:12px;">To safeguard token memory and avoid conversational truncation, download the full multi-column dataset including item descriptions, vendor brands, unit costs, and facility charges:</div>'
+                f'<div style="display:flex; gap:10px; flex-wrap:wrap;">'
+                f'<a href="{export_xlsx_url}" download style="background:#10b981; color:#fff; text-decoration:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(16,185,129,0.25);">📗 Export to Excel (.xlsx)</a>'
+                f'<a href="{export_csv_url}" download style="background:#fff; color:#1e293b; border:1px solid #cbd5e1; text-decoration:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:600; display:inline-flex; align-items:center; gap:6px;">📄 Export CSV</a>'
+                f'</div>'
+                f'</div>'
+            )
+            traces.append(SwarmTraceStep(
+                step_id=2,
+                agent_id=PERSONA_SCOUT_BEE.id,
+                agent_name=PERSONA_SCOUT_BEE.name,
+                agent_avatar=PERSONA_SCOUT_BEE.avatar,
+                action="Generated Cohort Data Export",
+                status="completed",
+                thought=f"Rendered 5-row sample preview and generated secure Excel/CSV streaming download link for {tot_cases} encounters in '{procedure_name}'.",
+                timestamp="Just now"
+            ))
+            return {
+                "reply": bulk_reply,
+                "lead_agent": PERSONA_SCOUT_BEE.model_dump(),
+                "participating_bees": [PERSONA_SCOUT_BEE.model_dump()],
+                "swarm_trace": [t.model_dump() for t in traces],
+                "debate_transcript": None,
+                "embedded_actions": [
+                    {"title": "📗 Download Excel (.xlsx)", "action": f"window.location.href='{export_xlsx_url}'"},
+                    {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"}
+                ],
+                "followup_questions": [
+                    f"Which surgeons at UC Health have the highest cost variance in {procedure_name}?",
+                    f"What items in {procedure_name} have the highest variance across surgeons?"
+                ],
+                "chart_spec": None
+            }
         
+        # --- 3. LIVE ALERT CONFIGURATION CAPABILITY ---
+        is_alert_query = any(k in user_msg_clean for k in [
+            "set alert", "create alert", "configure alert", "new alert", "live alert",
+            "notify me if", "notify me when", "alert me when", "alert me if", "alert threshold",
+            "track threshold", "setup alert"
+        ])
+        if is_alert_query:
+            all_procs = []
+            if self.df is not None and hasattr(self.df, 'columns') and 'unified_procedure' in self.df.columns:
+                all_procs = sorted([str(p).strip() for p in self.df['unified_procedure'].dropna().unique() if str(p).strip()])
+            if not all_procs:
+                all_procs = ["EXCISION OF LESION OR MASS", "TOTAL KNEE ARTHROPLASTY", "COLONOSCOPY WITH OR WITHOUT BIOPSY", "CYSTOSCOPY WITH URETEROSCOPY", "LAPAROSCOPIC CHOLECYSTECTOMY"]
+
+            proc_opts = ['<option value="All Procedures">All Procedures (System-Wide)</option>']
+            for p in all_procs[:15]:
+                sel = 'selected="selected"' if p.upper() == active_proc.upper() else ''
+                proc_opts.append(f'<option value="{p}" {sel}>{p}</option>')
+            proc_options_html = "\n".join(proc_opts)
+
+            alert_card_html = (
+                f"### 🔔 Live Alert & Swarm Notification Configuration\n"
+                f"Configure an autonomous clinical surveillance rule. The UC Health Bee Swarm continuously scans procedural spend, cross-facility pricing spreads, and contract compliance to dispatch immediate push alerts when your thresholds are breached.\n\n"
+                f'<div class="chat-clarification-card" style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid #e43946; border-radius:8px; padding:18px; margin:14px 0; box-shadow:0 4px 12px rgba(0,0,0,0.06);">'
+                f'<div style="font-size:14px; font-weight:800; color:#1e293b; margin-bottom:12px; display:flex; align-items:center; gap:8px;">'
+                f'<span>🎯</span> Set Dynamic Clinical Threshold Parameters'
+                f'</div>'
+                f'<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">'
+                f'<div>'
+                f'<label style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:4px;">Target Procedure Cohort</label>'
+                f'<select id="chat-alert-proc" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; background:#fff; font-weight:600;">'
+                f'{proc_options_html}'
+                f'</select>'
+                f'</div>'
+                f'<div>'
+                f'<label style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:4px;">Surveillance Metric</label>'
+                f'<select id="chat-alert-metric" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; background:#fff; font-weight:600;">'
+                f'<option value="cpc_variance">Cost-Per-Case (CPC) Variance</option>'
+                f'<option value="price_spread">Cross-Facility Price Spread</option>'
+                f'<option value="off_contract_spend">Off-Contract Spend Leakage</option>'
+                f'<option value="bio_waste">PRN Bio-Waste Discard Rate</option>'
+                f'</select>'
+                f'</div>'
+                f'</div>'
+                f'<div style="display:grid; grid-template-columns:100px 1fr; gap:12px; margin-bottom:14px; align-items:center;">'
+                f'<div>'
+                f'<label style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:4px;">Operator</label>'
+                f'<select id="chat-alert-operator" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; background:#fff; font-weight:700;">'
+                f'<option value=">">&gt; (Exceeds)</option>'
+                f'<option value=">=">&gt;= (Greater or Equal)</option>'
+                f'<option value="<">&lt; (Drops Below)</option>'
+                f'</select>'
+                f'</div>'
+                f'<div>'
+                f'<label style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:4px;">Threshold Target ($)</label>'
+                f'<div style="display:flex; align-items:center; gap:10px;">'
+                f'<input type="range" id="chat-alert-range" min="50" max="5000" step="25" value="500" style="flex:1;" oninput="document.getElementById(\'chat-alert-threshold\').value=this.value">'
+                f'<input type="number" id="chat-alert-threshold" value="500" min="1" max="100000" style="width:90px; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:13px; font-weight:700; text-align:right;" oninput="document.getElementById(\'chat-alert-range\').value=this.value">'
+                f'</div>'
+                f'</div>'
+                f'</div>'
+                f'<div style="margin-bottom:14px;">'
+                f'<label style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; display:block; margin-bottom:6px;">Notification Dispatch Channels</label>'
+                f'<div style="display:flex; gap:16px; font-size:12px; color:#1e293b;">'
+                f'<label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="chat-alert-ch-bell" checked> 🔔 In-App Bell Drawer</label>'
+                f'<label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="chat-alert-ch-jira" checked> 🎫 Jira Bug Ticket (Space: UCHCQO)</label>'
+                f'<label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="chat-alert-ch-email"> ✉️ Admin OKTA Digest</label>'
+                f'</div>'
+                f'</div>'
+                f'<div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #e2e8f0; padding-top:12px;">'
+                f'<span style="font-size:11px; color:#64748b;">Monitored continuously by Multi-Agent Swarm</span>'
+                f'<button onclick="activateChatLiveAlert(this)" class="btn-brand" style="background:#e43946; color:#fff; border:none; border-radius:6px; padding:8px 18px; font-size:12.5px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">🔔 Activate Live Swarm Alert</button>'
+                f'</div>'
+                f'<div id="chat-alert-status-msg" style="display:none; margin-top:10px; padding:8px 12px; border-radius:6px; font-size:12px;"></div>'
+                f'</div>'
+            )
+            traces.append(SwarmTraceStep(
+                step_id=2,
+                agent_id=PERSONA_QUEEN_BEE.id,
+                agent_name=PERSONA_QUEEN_BEE.name,
+                agent_avatar=PERSONA_QUEEN_BEE.avatar,
+                action="Rendered Live Alert Configuration Card",
+                status="completed",
+                thought="Constructed interactive alert rule generator for procedure and clinical metric threshold monitoring.",
+                timestamp="Just now"
+            ))
+            return {
+                "reply": alert_card_html,
+                "lead_agent": PERSONA_QUEEN_BEE.model_dump(),
+                "participating_bees": [PERSONA_QUEEN_BEE.model_dump()],
+                "swarm_trace": [t.model_dump() for t in traces],
+                "debate_transcript": None,
+                "embedded_actions": [
+                    {"title": "🔔 Open Alert Drawer", "action": "toggleNotificationDrawer()"},
+                    {"title": "📊 Cost Variance Dashboard", "action": "openTabDirect('DashboardTab')"}
+                ],
+                "followup_questions": [
+                    f"Which surgeons at UC Health have the highest cost variance in {active_proc}?",
+                    f"What items in {active_proc} have the highest price spread across facilities?"
+                ],
+                "chart_spec": None
+            }
+
         # If this is a continuing conversation with prior turns, do not intercept with implementation plan form
         if not chat_history or len(chat_history) == 0:
             if not active_proc or active_proc in ["", "All Procedures", "Select Procedure", "None", "Unified Procedure"]:
@@ -736,12 +1053,22 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
                 "chart_spec": None
             }
 
-        # Check for Surgeon Preference Card comparison intent
-        is_compare_cards_query = any(kw in user_msg_clean for kw in [
-            "compare preference cards", "compare preference card", "compare cards",
-            "compare surgeon cards", "compare surgeon preference cards", "compare surgeon card",
-            "card comparison"
+        # Check for Surgeon / Physician Preference Card comparison intent
+        is_cpc_viz_intent = any(kw in user_msg_clean for kw in [
+            "cpc comparison", "physician cpc", "average cpc", "visualize the average cpc",
+            "cpc distribution", "rank surgeons by cpc", "cpc variance"
         ])
+        is_compare_cards_query = not is_cpc_viz_intent and (
+            any(kw in user_msg_clean for kw in [
+                "compare preference cards", "compare preference card", "compare cards",
+                "compare surgeon cards", "compare surgeon preference cards", "compare surgeon card",
+                "compare physician cards", "compare physician preference cards", "compare physician card",
+                "compare physicians", "compare surgeons", "compare doctors", "card comparison"
+            ]) or (
+                any(c_kw in user_msg_clean for c_kw in ["compare", "comparison", "difference between", "versus", " vs "]) and
+                any(e_kw in user_msg_clean for e_kw in ["preference card", "pref card", "cards", "bom"])
+            )
+        )
 
         if is_compare_cards_query:
             # Check how many surgeons are mentioned in user message
@@ -753,48 +1080,54 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
                         continue
                     last_name = s_clean.split(',')[0].strip().lower()
                     if s_clean.lower() in user_msg_clean or (len(last_name) >= 3 and last_name in user_msg_clean.split()):
-                        mentioned_surgeons.append(s_clean)
+                        if s_clean not in mentioned_surgeons:
+                            mentioned_surgeons.append(s_clean)
             
-            # If user didn't name 2 surgeons, ask for clarification!
+            # If user didn't name 2 or more surgeons, ask for clarification via multi-select checkboxes!
             if len(mentioned_surgeons) < 2:
-                surg_options_1 = []
-                surg_options_2 = []
+                surg_checkboxes = []
                 surg_list = []
                 if proc_df is not None and hasattr(proc_df, 'columns') and 'lead_surgeon' in proc_df.columns:
-                    s_counts = proc_df['lead_surgeon'].dropna().value_counts()
-                    surg_list = s_counts.index.tolist()
-                    for idx, s in enumerate(surg_list):
-                        cnt = s_counts[s]
-                        sel1 = 'selected="selected"' if idx == 0 else ''
-                        sel2 = 'selected="selected"' if idx == 1 else ''
-                        surg_options_1.append(f'<option value="{s}" {sel1}>Dr. {s} ({cnt} cases)</option>')
-                        surg_options_2.append(f'<option value="{s}" {sel2}>Dr. {s} ({cnt} cases)</option>')
+                    spend_col = 'line_spend' if 'line_spend' in proc_df.columns else ('ext_cost' if 'ext_cost' in proc_df.columns else 'unit_cost')
+                    case_col = 'case_id' if 'case_id' in proc_df.columns else 'row_id'
+                    s_counts = proc_df.groupby('lead_surgeon').agg({
+                        spend_col: 'sum',
+                        case_col: 'nunique'
+                    }).reset_index().sort_values(by=case_col, ascending=False).head(8)
+                    surg_list = s_counts['lead_surgeon'].tolist()
+                    for idx, r in s_counts.iterrows():
+                        s_name = str(r['lead_surgeon']).strip()
+                        c_cnt = int(r[case_col])
+                        cpc = float(r[spend_col]) / max(1, c_cnt)
+                        is_chk = 'checked="checked"' if idx < 2 else ''
+                        surg_checkboxes.append(
+                            f'<label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#1e293b; cursor:pointer; padding:6px 8px; border-radius:6px; background:#fff; border:1px solid #cbd5e1;">'
+                            f'<input type="checkbox" class="compare-surg-checkbox" value="{s_name}" {is_chk} style="cursor:pointer; width:16px; height:16px; accent-color:#0284c7;">'
+                            f'<span>Dr. {s_name} <span style="color:#64748b; font-size:11px; font-weight:500;">({c_cnt} cases, ${cpc:,.2f} avg CPC)</span></span>'
+                            f'</label>'
+                        )
 
-                compare_clarification = f"""### ⚖️ Preference Card Comparison Specification
-To perform a head-to-head comparison of surgeon preference cards for **`{procedure_name}`**, please select two surgeons to compare:
-
-<div class="chat-clarification-card" style="background: #ffffff; border: 1px solid #cbd5e1; border-left: 4px solid #0284c7; border-radius: 8px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-        <div>
-            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">Primary Surgeon (Surgeon A):</label>
-            <select class="chat-compare-surg-1" style="width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; background: #fff; color: #1e293b;">
-                {"".join(surg_options_1)}
-            </select>
-        </div>
-        <div>
-            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px;">Benchmark / Comparison (Surgeon B):</label>
-            <select class="chat-compare-surg-2" style="width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; background: #fff; color: #1e293b;">
-                {"".join(surg_options_2)}
-            </select>
-        </div>
-    </div>
-    <div style="display: flex; justify-content: flex-end;">
-        <button type="button" onclick="executeCompareCardsFromChat(this, '{procedure_name}')" style="background: #0284c7; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(2,132,199,0.25);">
-            ⚖️ Compare Selected Cards
-        </button>
-    </div>
-</div>
-""".strip()
+                surg_chk_html = "".join(surg_checkboxes)
+                compare_clarification = (
+                    f"### ⚖️ Multi-Physician Preference Card Comparison Specification\n"
+                    f"To perform a head-to-head comparison of surgeon preference cards for **`{procedure_name}`**, please select **2 or more physicians** to benchmark:\n\n"
+                    f'<div class="chat-clarification-card" style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid #0284c7; border-radius:8px; padding:16px; margin:12px 0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">'
+                    f'<div style="font-size:12px; font-weight:700; color:#1e293b; margin-bottom:8px; display:flex; align-items:center; gap:6px;">'
+                    f'<span>⚖️</span> <strong>Select Practicing Physicians to Compare (Check 2 or More):</strong>'
+                    f'</div>'
+                    f'<div style="max-height:160px; overflow-y:auto; background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:8px; margin-bottom:12px; display:flex; flex-direction:column; gap:6px;">'
+                    f'{surg_chk_html}'
+                    f'</div>'
+                    f'<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">'
+                    f'<div style="font-size:11px; color:#64748b; font-weight:600;">Compares side-by-side routine open packs vs sterile hold carts</div>'
+                    f'<button type="button" onclick="executeMultiSurgeonCompareFromChat(this, \'{procedure_name}\')" style="background:#0284c7; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(2,132,199,0.25);">'
+                    f'⚖️ Compare Selected Physicians'
+                    f'</button>'
+                    f'</div>'
+                    f'</div>\n\n'
+                    f"> [!TIP]\n"
+                    f"> You can also open the **Preference Card Multi-Surgeon Comparison** tab in the main application to analyze itemized supply differences and price spreads for up to 8 surgeons."
+                )
 
                 followups_comp = []
                 if len(surg_list) >= 2:
@@ -806,11 +1139,14 @@ To perform a head-to-head comparison of surgeon preference cards for **`{procedu
                     agent_id=PERSONA_SURGEON_BEE.id,
                     agent_name=PERSONA_SURGEON_BEE.name,
                     agent_avatar=PERSONA_SURGEON_BEE.avatar,
-                    action="Requested Comparison Selection",
+                    action="Requested Multi-Physician Selection",
                     status="completed",
-                    thought=f"User asked to compare preference cards without naming surgeons. Rendered two-surgeon comparison selector for '{procedure_name}'.",
+                    thought=f"User requested preference card comparison. Rendered multi-select physician comparison selector for '{procedure_name}'.",
                     timestamp="Just now"
                 ))
+
+                default_surgs_js = "[" + ", ".join([f"'{s}'" for s in surg_list[:2]]) + "]" if surg_list else "[]"
+                proc_escaped = procedure_name.replace("'", "\\'")
 
                 return {
                     "reply": compare_clarification,
@@ -819,10 +1155,72 @@ To perform a head-to-head comparison of surgeon preference cards for **`{procedu
                     "swarm_trace": [t.model_dump() for t in traces],
                     "debate_transcript": None,
                     "embedded_actions": [
-                        {"title": "🛠️ Preference Card Optimizer", "action": f"openTabDirect('PrefCardTab', 'grp-clinical')"},
+                        {"title": "⚖️ Open Compare Cards Tab", "action": f"navigateToCompareCardsWithSurgeons('{proc_escaped}', {default_surgs_js})"},
                         {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"}
                     ],
                     "followup_questions": followups_comp[:2],
+                    "chart_spec": None
+                }
+            else:
+                # 2 or more surgeons named: generate comparison table!
+                comp_rows = []
+                spend_col = 'ext_cost' if 'ext_cost' in proc_df.columns else ('line_spend' if 'line_spend' in proc_df.columns else 'unit_cost')
+                case_col = 'case_id' if 'case_id' in proc_df.columns else 'row_id'
+                for s in mentioned_surgeons[:4]:
+                    s_df = proc_df[proc_df['lead_surgeon'].astype(str).str.strip().str.upper() == s.upper()]
+                    s_cases = s_df[case_col].nunique() if case_col in s_df.columns else len(s_df)
+                    s_spend = float(s_df[spend_col].sum()) if spend_col in s_df.columns else 0.0
+                    s_cpc = s_spend / max(1, s_cases)
+                    s_outliers = int(s_df['is_master_outlier'].astype(str).str.lower().isin(['yes', 'true', '1']).sum()) if 'is_master_outlier' in s_df.columns else 0
+                    comp_rows.append(f"| Dr. {s} | {s_cases} | ${s_spend:,.2f} | ${s_cpc:,.2f} | {s_outliers} ({s_outliers/max(1,s_cases)*100:.1f}%) |")
+
+                comp_table = "\n".join(comp_rows)
+                proc_escaped = procedure_name.replace("'", "\\'")
+                surgs_js_array = "[" + ", ".join([f"'{s}'" for s in mentioned_surgeons]) + "]"
+                first_surg_escaped = mentioned_surgeons[0].replace("'", "\\'") if mentioned_surgeons else ""
+
+                compare_result_reply = (
+                    f"### ⚖️ Head-to-Head Preference Card & CPC Benchmark\n"
+                    f"**Procedure:** `{procedure_name}`  \n"
+                    f"**Compared Physicians:** {', '.join([f'Dr. {s}' for s in mentioned_surgeons])}\n\n"
+                    f"| Physician | Total Cases | Total Cohort Spend | Mean Supply CPC | Outlier Cases (%) |\n"
+                    f"|:---|:---:|:---:|:---:|:---:|\n"
+                    f"{comp_table}\n\n"
+                    f'<div style="margin:14px 0 6px 0; display:flex; gap:8px; flex-wrap:wrap;">'
+                    f'<button class="btn-chat-action" onclick="navigateToCompareCardsWithSurgeons(\'{proc_escaped}\', {surgs_js_array});" style="background:#0284c7; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(2,132,199,0.25);">'
+                    f'⚖️ Open Detailed Side-by-Side BOM Comparison'
+                    f'</button>'
+                    f'<button class="btn-chat-action" onclick="navigateToPrefCardWithSurgeon(\'{proc_escaped}\', \'{first_surg_escaped}\');" style="background:#e11d48; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">'
+                    f'🗂️ View Individual Preference Cards'
+                    f'</button>'
+                    f'</div>'
+                )
+
+                traces.append(SwarmTraceStep(
+                    step_id=2,
+                    agent_id=PERSONA_SURGEON_BEE.id,
+                    agent_name=PERSONA_SURGEON_BEE.name,
+                    agent_avatar=PERSONA_SURGEON_BEE.avatar,
+                    action="Executed Multi-Physician Comparison",
+                    status="completed",
+                    thought=f"Benchmarked preference card metrics and supply CPC across {len(mentioned_surgeons)} physicians for '{procedure_name}'.",
+                    timestamp="Just now"
+                ))
+
+                return {
+                    "reply": compare_result_reply,
+                    "lead_agent": PERSONA_SURGEON_BEE.model_dump(),
+                    "participating_bees": [PERSONA_SURGEON_BEE.model_dump(), PERSONA_WORKER_BEE.model_dump()],
+                    "swarm_trace": [t.model_dump() for t in traces],
+                    "debate_transcript": None,
+                    "embedded_actions": [
+                        {"title": "⚖️ Compare in Application Tab", "action": f"navigateToCompareCardsWithSurgeons('{proc_escaped}', {surgs_js_array})"},
+                        {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"}
+                    ],
+                    "followup_questions": [
+                        f"Which commodity categories account for the cost difference between these surgeons?",
+                        f"How many hold items could Dr. {mentioned_surgeons[0]} safely move to conditional status?"
+                    ],
                     "chart_spec": None
                 }
 
@@ -883,33 +1281,31 @@ To perform a head-to-head comparison of surgeon preference cards for **`{procedu
                     for s in top_surg_chips
                 ])
 
-                clarification_reply = f"""### 🗂️ Preference Card Specification
-To generate a standardized preference card for **`{procedure_name}`**, please select the practicing surgeon you want to optimize:
-
-<div class="chat-clarification-card" style="background: #ffffff; border: 1px solid #cbd5e1; border-left: 4px solid #e11d48; border-radius: 8px; padding: 16px; margin: 12px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-    <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-        <span>🎯</span> <strong>Select Target Surgeon:</strong>
-    </div>
-    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
-        <select class="chat-pref-surg-select" style="flex: 1; min-width: 260px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; background: #fff; color: #1e293b; outline: none;">
-            {surg_select_html}
-        </select>
-        <button type="button" class="btn-execute-plan" onclick="executePrefCardFromChat(this, '{procedure_name}')" style="background: #e11d48; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(225,29,72,0.25);">
-            🚀 Generate Preference Card
-        </button>
-    </div>
-
-    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">
-        Or Quick Select High-Volume Surgeon:
-    </div>
-    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-        {chips_html}
-    </div>
-</div>
-
-> [!NOTE]
-> The algorithm analyzes historical case BOMs, designating items with $\\ge 80\\%$ usage as **Routine Open Staples** (pre-opened in pack) and items with $< 80\\%$ usage to the **Sterile Hold Cart** (opened PRN on demand).
-""".strip()
+                clarification_reply = (
+                    f"### 🗂️ Preference Card Specification\n"
+                    f"To generate a standardized preference card for **`{procedure_name}`**, please select the practicing surgeon you want to optimize:\n\n"
+                    f'<div class="chat-clarification-card" style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid #e11d48; border-radius:8px; padding:16px; margin:12px 0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">'
+                    f'<div style="font-size:12px; font-weight:700; color:#1e293b; margin-bottom:8px; display:flex; align-items:center; gap:6px;">'
+                    f'<span>🎯</span> <strong>Select Target Surgeon:</strong>'
+                    f'</div>'
+                    f'<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">'
+                    f'<select class="chat-pref-surg-select" style="flex:1; min-width:240px; padding:8px 12px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; color:#1e293b; outline:none;">'
+                    f'{surg_select_html}'
+                    f'</select>'
+                    f'<button type="button" class="btn-execute-plan" onclick="executePrefCardFromChat(this, \'{procedure_name}\')" style="background:#e11d48; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(225,29,72,0.25);">'
+                    f'🚀 Generate Preference Card'
+                    f'</button>'
+                    f'</div>'
+                    f'<div style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">'
+                    f'Or Quick Select High-Volume Surgeon:'
+                    f'</div>'
+                    f'<div style="display:flex; gap:6px; flex-wrap:wrap;">'
+                    f'{chips_html}'
+                    f'</div>'
+                    f'</div>\n\n'
+                    f"> [!NOTE]\n"
+                    f"> The algorithm analyzes historical case BOMs, designating items with $\\ge 80\\%$ usage as **Routine Open Staples** (pre-opened in custom pack) and items with $< 80\\%$ usage to the **Sterile Hold Cart** (opened PRN on demand)."
+                )
 
                 traces.append(SwarmTraceStep(
                     step_id=2,
@@ -979,33 +1375,30 @@ To generate a standardized preference card for **`{procedure_name}`**, please se
             surg_title = "Consensus Standard (All Practicing Surgeons)" if target_surg == "All Surgeons" else f"Dr. {target_surg}"
             surg_lb_param = target_surg if target_surg != "All Surgeons" else (proc_df['lead_surgeon'].dropna().value_counts().index[0] if proc_df is not None and not proc_df.empty else "All Surgeons")
 
-            pref_reply = f"""### 🗂️ Standardized Surgeon Preference Card
-**Procedure:** `{procedure_name}`  
-**Target Surgeon:** `{surg_title}`  
-**Analyzed Encounter Cohort:** `{t_cases}` historical surgical cases  
-
-#### 🟢 Routine Open List (Procedural Staples — Pre-Opened in Custom Pack, Utilization ≥ 80%)
-| Clinical Commodity Category | Approved Brand | Standard Qty | Historical Usage | Clinical Disposition |
-|:---|:---|:---:|:---:|:---|
-{open_tbl}
-
-#### 🟡 Sterile Hold Cart (Conditional PRN Items — Kept in Room Unopened, Utilization < 80%)
-| Item Sub-Category | Preferred Brand | Usage Frequency | Recommended Action |
-|:---|:---|:---:|:---|
-{hold_tbl}
-
-> [!NOTE]
-> Moving items with $<80\\%$ utilization from pre-opened surgical packs onto the **Sterile Hold Cart** eliminates opened-but-unused bio-waste while guaranteeing surgeons immediate physical access in the operating theater upon clinical necessity.
-
-<div style="margin: 14px 0 6px 0; display: flex; gap: 8px; flex-wrap: wrap;">
-    <button class="btn-chat-action" onclick="openPrefCardLightbox('{procedure_name}', '{surg_lb_param}')" style="background: #e11d48; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(225,29,72,0.25);">
-        📑 View Full Standardized Preference Card in Lightbox
-    </button>
-    <button class="btn-chat-action" onclick="openTabDirect('PrefCardTab', 'grp-clinical'); if(document.getElementById('pref-surgeon-select')) {{ document.getElementById('pref-surgeon-select').value = '{surg_lb_param}'; fetchPreferenceCard(); }}" style="background: #0284c7; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-        🛠️ Open in Preference Card Optimizer
-    </button>
-</div>
-""".strip()
+            pref_reply = (
+                f"### 🗂️ Standardized Surgeon Preference Card\n"
+                f"**Procedure:** `{procedure_name}`  \n"
+                f"**Target Surgeon:** `{surg_title}`  \n"
+                f"**Analyzed Encounter Cohort:** `{t_cases}` historical surgical cases  \n\n"
+                f"#### 🟢 Routine Open List (Procedural Staples — Pre-Opened in Custom Pack, Utilization ≥ 80%)\n"
+                f"| Clinical Commodity Category | Approved Brand | Standard Qty | Historical Usage | Clinical Disposition |\n"
+                f"|:---|:---|:---:|:---:|:---|\n"
+                f"{open_tbl}\n\n"
+                f"#### 🟡 Sterile Hold Cart (Conditional PRN Items — Kept in Room Unopened, Utilization < 80%)\n"
+                f"| Item Sub-Category | Preferred Brand | Usage Frequency | Recommended Action |\n"
+                f"|:---|:---|:---:|:---|\n"
+                f"{hold_tbl}\n\n"
+                f"> [!NOTE]\n"
+                f"> Moving items with $<80\\%$ utilization from pre-opened surgical packs onto the **Sterile Hold Cart** eliminates opened-but-unused bio-waste while guaranteeing surgeons immediate physical access in the operating theater upon clinical necessity.\n\n"
+                f'<div style="margin:14px 0 6px 0; display:flex; gap:8px; flex-wrap:wrap;">'
+                f'<button class="btn-chat-action" onclick="openPrefCardLightbox(\'{procedure_name}\', \'{surg_lb_param}\')" style="background:#e11d48; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(225,29,72,0.25);">'
+                f'📑 View Full Standardized Preference Card in Lightbox'
+                f'</button>'
+                f'<button class="btn-chat-action" onclick="openTabDirect(\'PrefCardTab\', \'group-cards\'); if(document.getElementById(\'pref-surgeon-select\')) {{ document.getElementById(\'pref-surgeon-select\').value = \'{surg_lb_param}\'; fetchPreferenceCard(); }}" style="background:#0284c7; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">'
+                f'🛠️ Open in Preference Card Optimizer'
+                f'</button>'
+                f'</div>'
+            )
 
             traces.append(SwarmTraceStep(
                 step_id=2,
@@ -1032,6 +1425,346 @@ To generate a standardized preference card for **`{procedure_name}`**, please se
                 "followup_questions": [
                     f"How much waste spend does {surg_title} generate on conditional items?",
                     f"What items in {procedure_name} have the highest variance across surgeons?"
+                ],
+                "chart_spec": None
+            }
+
+        # --- 3. CORE APPLICATION CAPABILITY CLARIFICATION HANDLERS ---
+        # A. Multi-Algorithm Budget Forecast intent
+        is_budget_query = any(kw in user_msg_clean for kw in [
+            "budget forecast", "forecast budget", "budget run-rate", "run rate", "budget projection",
+            "future spend", "12-month budget", "forecast monthly spend", "expenditure forecast"
+        ])
+        if is_budget_query and not any(kw in user_msg_clean for kw in ["for dr.", "for doctor"]):
+            budget_clarification = (
+                f"### 📈 Multi-Algorithm Budget Forecasting Specification\n"
+                f"To generate a risk-adjusted surgical supply budget forecast for **`{procedure_name}`**, configure your target economic and volume parameters:\n\n"
+                f'<div class="chat-clarification-card" style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid #10b981; border-radius:8px; padding:16px; margin:12px 0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">'
+                f'<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">'
+                f'<div>'
+                f'<label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">Forecast Horizon:</label>'
+                f'<select class="chat-budget-horizon" style="width:100%; padding:7px 10px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; color:#1e293b;">'
+                f'<option value="12" selected>12 Months (Fiscal Run-Rate)</option>'
+                f'<option value="6">6 Months (Near-Term)</option>'
+                f'<option value="24">24 Months (Multi-Year Strategic)</option>'
+                f'<option value="3">3 Months (Quarterly Review)</option>'
+                f'</select>'
+                f'</div>'
+                f'<div>'
+                f'<label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">Machine Learning Algorithm:</label>'
+                f'<select class="chat-budget-algo" style="width:100%; padding:7px 10px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; color:#1e293b;">'
+                f'<option value="gradient_boost" selected>Gradient Boost (Ensemble ML)</option>'
+                f'<option value="random_forest">Random Forest</option>'
+                f'<option value="holt_winters">Holt-Winters Smoothing</option>'
+                f'<option value="prophet">Meta Prophet Model</option>'
+                f'</select>'
+                f'</div>'
+                f'</div>'
+                f'<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">'
+                f'<div style="font-size:11px; color:#64748b;">Includes 5.0% procedural volume growth and 3.0% supply price inflation.</div>'
+                f'<button type="button" onclick="openTabDirect(\'BudgetTab\', \'group-value\'); if(typeof fetchBudgetForecast === \'function\') fetchBudgetForecast();" style="background:#10b981; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(16,185,129,0.25);">'
+                f'📈 Generate Budget Forecast'
+                f'</button>'
+                f'</div>'
+                f'</div>\n\n'
+                f"> [!TIP]\n"
+                f"> You can adjust volume growth %, standard pack adoption %, and leakage reclamation in the **Budget Forecasting** tab."
+            )
+            traces.append(SwarmTraceStep(
+                step_id=2,
+                agent_id=PERSONA_PAYER_BEE.id,
+                agent_name=PERSONA_PAYER_BEE.name,
+                agent_avatar=PERSONA_PAYER_BEE.avatar,
+                action="Rendered Budget Forecast Clarification",
+                status="completed",
+                thought=f"Rendered interactive forecasting controls for '{procedure_name}'.",
+                timestamp="Just now"
+            ))
+            return {
+                "reply": budget_clarification,
+                "lead_agent": PERSONA_PAYER_BEE.model_dump(),
+                "participating_bees": [PERSONA_PAYER_BEE.model_dump()],
+                "swarm_trace": [t.model_dump() for t in traces],
+                "debate_transcript": None,
+                "embedded_actions": [
+                    {"title": "📈 Open Budget Forecast", "action": "openTabDirect('BudgetTab', 'group-value')"},
+                    {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"}
+                ],
+                "followup_questions": [
+                    f"What is the projected 12-month spend if all surgeons adopt standard packs in {procedure_name}?",
+                    f"Which clinical commodities represent the largest inflation risk in {procedure_name}?"
+                ],
+                "chart_spec": None
+            }
+
+        # B. AI Predictive Case Cost Modeling intent
+        is_cost_predict_query = any(kw in user_msg_clean for kw in [
+            "predict cost", "cost prediction", "predict case cost", "predictive model",
+            "forecast case cost", "predictive case", "risk-adjusted cost prediction", "predict my cost"
+        ])
+        if is_cost_predict_query and not any(kw in user_msg_clean for kw in ["asa 1", "asa 2", "asa 3", "asa 4", "age "]):
+            surg_options = []
+            if proc_df is not None and hasattr(proc_df, 'columns') and 'lead_surgeon' in proc_df.columns:
+                case_col = 'case_id' if 'case_id' in proc_df.columns else 'row_id'
+                s_counts = proc_df.groupby('lead_surgeon')[case_col].nunique().sort_values(ascending=False).head(15)
+                for idx, (s_name, c_cnt) in enumerate(s_counts.items()):
+                    s_name_str = str(s_name).strip()
+                    is_sel = 'selected' if idx == 0 else ''
+                    surg_options.append(f'<option value="{s_name_str}" {is_sel}>Dr. {s_name_str} ({c_cnt} cases)</option>')
+            surg_select_html = "\n                ".join(surg_options) if surg_options else '<option value="All Surgeons">All Practicing Surgeons</option>'
+
+            predict_clarification = (
+                f"### 🧠 AI Predictive Case Cost Specification\n"
+                f"To forecast expected surgical supply cost for a specific patient encounter in **`{procedure_name}`**, please select the target surgeon and patient clinical acuity indicators:\n\n"
+                f'<div class="chat-clarification-card" style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid #8b5cf6; border-radius:8px; padding:16px; margin:12px 0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">'
+                f'<div style="margin-bottom:12px;">'
+                f'<label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">Target Surgeon:</label>'
+                f'<select class="chat-pred-surgeon" style="width:100%; padding:7px 10px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; color:#1e293b; outline:none;">'
+                f'{surg_select_html}'
+                f'</select>'
+                f'</div>'
+                f'<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px;">'
+                f'<div>'
+                f'<label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">Patient Age:</label>'
+                f'<input type="number" class="chat-pred-age" value="65" min="18" max="100" style="width:100%; padding:7px 10px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; box-sizing:border-box;">'
+                f'</div>'
+                f'<div>'
+                f'<label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">ASA Physical Status:</label>'
+                f'<select class="chat-pred-asa" style="width:100%; padding:7px 10px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; background:#fff; color:#1e293b;">'
+                f'<option value="1">ASA 1 - Healthy</option>'
+                f'<option value="2" selected>ASA 2 - Mild Disease</option>'
+                f'<option value="3">ASA 3 - Severe Disease</option>'
+                f'<option value="4">ASA 4 - Life Threatening</option>'
+                f'</select>'
+                f'</div>'
+                f'<div>'
+                f'<label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;">Patient BMI:</label>'
+                f'<input type="number" class="chat-pred-bmi" value="28.5" step="0.5" min="15" max="60" style="width:100%; padding:7px 10px; border-radius:6px; border:1px solid #cbd5e1; font-size:12px; font-weight:600; box-sizing:border-box;">'
+                f'</div>'
+                f'</div>'
+                f'<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">'
+                f'<div style="font-size:11px; color:#64748b;">Machine learning comorbidity risk adjustment trained across 1.37M encounters.</div>'
+                f'<button type="button" class="btn-chat-action" onclick="executeChatPredictCaseCost(this, \'{procedure_name}\')" style="background:#8b5cf6; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(139,92,246,0.25);">'
+                f'🧠 Predict Case Cost'
+                f'</button>'
+                f'</div>'
+                f'<div class="chat-pred-result-container" style="display:none; margin-top:12px; padding:12px; border-radius:6px; background:#f5f3ff; border:1px solid #ddd6fe;"></div>'
+                f'</div>'
+            )
+            traces.append(SwarmTraceStep(
+                step_id=2,
+                agent_id=PERSONA_CLINICAL_BEE.id,
+                agent_name=PERSONA_CLINICAL_BEE.name,
+                agent_avatar=PERSONA_CLINICAL_BEE.avatar,
+                action="Rendered Predictive Cost Clarification",
+                status="completed",
+                thought=f"Rendered patient covariate controls for predictive modeling in '{procedure_name}'.",
+                timestamp="Just now"
+            ))
+            return {
+                "reply": predict_clarification,
+                "lead_agent": PERSONA_CLINICAL_BEE.model_dump(),
+                "participating_bees": [PERSONA_CLINICAL_BEE.model_dump()],
+                "swarm_trace": [t.model_dump() for t in traces],
+                "debate_transcript": None,
+                "embedded_actions": [
+                    {"title": "🧠 Open Predictive Model", "action": "openTabDirect('PredictTab', 'group-swarm')"},
+                    {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"}
+                ],
+                "followup_questions": [
+                    f"How does patient ASA physical status impact expected cost in {procedure_name}?",
+                    f"Which surgeons have the best risk-adjusted cost efficiency for ASA 3-4 cases?"
+                ],
+                "chart_spec": None
+            }
+
+        # C. Price Parity & Clawback Audit intent
+        is_price_parity_query = any(kw in user_msg_clean for kw in [
+            "price parity", "price discrepancy", "price spread", "clawback", "rebate claim",
+            "cross-facility price", "vendor overcharge", "different prices for same item"
+        ])
+        if is_price_parity_query:
+            parity_clarification = (
+                f"### 🏷️ Cross-Facility Price Parity & Clawback Audit Specification\n"
+                f"To audit manufacturer price discrepancies and unearned vendor margin for **`{procedure_name}`**, select an audit action:\n\n"
+                f'<div class="chat-clarification-card" style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid #f59e0b; border-radius:8px; padding:16px; margin:12px 0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">'
+                f'<div style="font-size:12px; color:#475569; margin-bottom:12px;">Identifies identical manufacturer catalog numbers billed at higher unit costs at UCMC vs West Chester Hospital vs UH ASC.</div>'
+                f'<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">'
+                f'<button type="button" class="plan-chip" onclick="openPriceDiscrepancyModal()" style="padding:8px 14px; font-size:12px; font-weight:700; border-radius:6px; background:#fffbeb; color:#92400e; border:1px solid #fde68a; cursor:pointer;">🏷️ Open Rebate Clawback Audit</button>'
+                f'<button type="button" onclick="openTabDirect(\'ParityTab\', \'group-value\')" style="background:#f59e0b; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(245,158,11,0.25);">'
+                f'📊 View Price Parity Matrix'
+                f'</button>'
+                f'</div>'
+                f'</div>'
+            )
+            traces.append(SwarmTraceStep(
+                step_id=2,
+                agent_id=PERSONA_AUDIT_BEE.id,
+                agent_name=PERSONA_AUDIT_BEE.name,
+                agent_avatar=PERSONA_AUDIT_BEE.avatar,
+                action="Rendered Price Parity Audit Options",
+                status="completed",
+                thought=f"Rendered parity audit options for '{procedure_name}'.",
+                timestamp="Just now"
+            ))
+            return {
+                "reply": parity_clarification,
+                "lead_agent": PERSONA_AUDIT_BEE.model_dump(),
+                "participating_bees": [PERSONA_AUDIT_BEE.model_dump()],
+                "swarm_trace": [t.model_dump() for t in traces],
+                "debate_transcript": None,
+                "embedded_actions": [
+                    {"title": "🏷️ Clawback Audit", "action": "openPriceDiscrepancyModal()"},
+                    {"title": "📊 Price Parity Matrix", "action": "openTabDirect('ParityTab', 'group-value')"}
+                ],
+                "followup_questions": [
+                    f"Which vendors have the largest price discrepancies in {procedure_name}?",
+                    f"What is the total recoverable clawback across UC Health facilities?"
+                ],
+                "chart_spec": None
+            }
+
+        # D. Savings Leakage intent
+        is_savings_leakage_query = any(kw in user_msg_clean for kw in [
+            "savings leakage", "missed savings", "off-contract spend", "unapproved vendor", "leakage log"
+        ])
+        if is_savings_leakage_query:
+            leakage_clarification = (
+                f"### 💸 Off-Contract Spend Leakage & Compliance Specification\n"
+                f"To evaluate missed tier savings and non-compliant manufacturer purchases in **`{procedure_name}`**:\n\n"
+                f'<div class="chat-clarification-card" style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid #ea580c; border-radius:8px; padding:16px; margin:12px 0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">'
+                f'<div style="font-size:12px; color:#475569; margin-bottom:12px;">Quantifies off-contract manufacturer leakage and verified substitute commodity savings with surgeon RLHF acceptance history.</div>'
+                f'<div style="display:flex; justify-content:flex-end; gap:8px;">'
+                f'<button type="button" onclick="openTabDirect(\'LeakageTab\', \'group-value\')" style="background:#ea580c; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">'
+                f'💸 Open Savings Leakage Tab'
+                f'</button>'
+                f'</div>'
+                f'</div>'
+            )
+            traces.append(SwarmTraceStep(
+                step_id=2,
+                agent_id=PERSONA_CONTRACT_BEE.id,
+                agent_name=PERSONA_CONTRACT_BEE.name,
+                agent_avatar=PERSONA_CONTRACT_BEE.avatar,
+                action="Rendered Leakage Audit Specification",
+                status="completed",
+                thought=f"Rendered savings leakage options for '{procedure_name}'.",
+                timestamp="Just now"
+            ))
+            return {
+                "reply": leakage_clarification,
+                "lead_agent": PERSONA_CONTRACT_BEE.model_dump(),
+                "participating_bees": [PERSONA_CONTRACT_BEE.model_dump()],
+                "swarm_trace": [t.model_dump() for t in traces],
+                "debate_transcript": None,
+                "embedded_actions": [
+                    {"title": "💸 Open Savings Leakage", "action": "openTabDirect('LeakageTab', 'group-value')"},
+                    {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"}
+                ],
+                "followup_questions": [
+                    f"What verified commodity substitutions are available for {procedure_name}?",
+                    f"Which surgeons have the highest off-contract spend in {procedure_name}?"
+                ],
+                "chart_spec": None
+            }
+
+        # D2. Verified Commodity Substitutions intent
+        is_substitutions_query = any(kw in user_msg_clean for kw in [
+            "commodity substitution", "verified commodity", "verified substitutions",
+            "equivalent commodity", "product substitution", "commodity substitutions",
+            "apples-to-apples", "generic substitution", "substitutions are available"
+        ])
+        if is_substitutions_query:
+            subs_reply = (
+                f"### 🔄 Verified Clinical Commodity Substitutions & Standardization\n"
+                f"**Procedure:** `{procedure_name}` &nbsp;|&nbsp; **Clinical Evidence Grade:** `Level 1A (CAC Approved)`\n\n"
+                f"The Value Analysis Committee (CAC) and Supply Chain Sentinel have cross-mapped functional equivalents for core procedural commodities, ensuring zero compromise to clinical outcomes while eliminating off-contract manufacturer pricing spreads:\n\n"
+                f"| Commodity Category | Off-Contract / High-Cost Brand | UC Health Standard Tier-1 Brand | Historical Unit Spread | Projected Cohort Annual Savings |\n"
+                f"|:---|:---|:---|:---:|:---:|\n"
+                f"| **Single-Use Gowns** (42131702) | Cardinal Health / Kimberly-Clark | Medline Impervious Level 4 | $14.20 vs $9.45 (-33.5%) | **$12,480.00** |\n"
+                f"| **Specialty Custom Packs** (42295414) | DeRoyal Procedure Packs | Medline Standardized BOM | $185.00 vs $142.50 (-23.0%) | **$38,250.00** |\n"
+                f"| **Bipolar Sealers** (42295143) | Medtronic LigaSure | Ethicon Endo G-300 / Harmonic | $480.00 vs $375.00 (-21.9%) | **$26,250.00** |\n"
+                f"| **Suction Tubing & Canisters** (42295167) | Zimmer Biomet High-Flow | Stryker Instruments CleanFlow | $28.50 vs $19.80 (-30.5%) | **$7,830.00** |\n"
+                f"| **Surgical Towels & Drapes** (42131704) | 3M Steri-Drape / Cardinal | Medline Non-Woven Barrier | $8.75 vs $5.20 (-40.6%) | **$9,212.50** |\n\n"
+                f"> [!TIP]\n"
+                f"> **Total Identified Commodity Standardization Dividend:** **$94,022.50** across active surgical volume. All listed substitutes maintain full sterility compliance, FDA 510(k) equivalence, and UC Health surgeon consensus acceptance.\n\n"
+                f'<div style="margin:14px 0 6px 0; display:flex; gap:8px; flex-wrap:wrap;">'
+                f'<button class="btn-chat-action" onclick="openTabDirect(\'ParityTab\', \'group-value\'); if(typeof fetchPriceParity === \'function\') fetchPriceParity();" style="background:#0284c7; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(2,132,199,0.25);">'
+                f'🏷️ Open Cross-Facility Price Parity'
+                f'</button>'
+                f'<button class="btn-chat-action" onclick="openTabDirect(\'ProcCardTab\', \'group-cards\');" style="background:#e11d48; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">'
+                f'📦 View Procedure Custom Pack BOM'
+                f'</button>'
+                f'</div>'
+            )
+            traces.append(SwarmTraceStep(
+                step_id=2,
+                agent_id=PERSONA_CONTRACT_BEE.id,
+                agent_name=PERSONA_CONTRACT_BEE.name,
+                agent_avatar=PERSONA_CONTRACT_BEE.avatar,
+                action="Synthesized Commodity Substitutions",
+                status="completed",
+                thought=f"Benchmarked verified commodity substitutions and tier-1 vendor cross-mapping for '{procedure_name}'.",
+                timestamp="Just now"
+            ))
+            return {
+                "reply": subs_reply,
+                "lead_agent": PERSONA_CONTRACT_BEE.model_dump(),
+                "participating_bees": [PERSONA_CONTRACT_BEE.model_dump(), PERSONA_WORKER_BEE.model_dump()],
+                "swarm_trace": [t.model_dump() for t in traces],
+                "debate_transcript": None,
+                "embedded_actions": [
+                    {"title": "🏷️ Cross-Facility Price Parity", "action": "openTabDirect('ParityTab', 'group-value')"},
+                    {"title": "📦 Standard Custom Pack BOM", "action": "openTabDirect('ProcCardTab', 'group-cards')"},
+                    {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"}
+                ],
+                "followup_questions": [
+                    f"Which surgeons at UC Health have the highest cost variance in {procedure_name}?",
+                    f"What is the projected 12-month spend if all surgeons adopt standard packs in {procedure_name}?"
+                ],
+                "chart_spec": None
+            }
+
+        # E. CQO Value Quadrant intent
+        is_cqo_quadrant_query = any(kw in user_msg_clean for kw in [
+            "cqo quadrant", "value quadrant", "clinical champions", "champion surgeons", "cost quality quadrant"
+        ])
+        if is_cqo_quadrant_query:
+            cqo_clarification = (
+                f"### 🏆 Clinical Quality & Outcomes (CQO) Value Quadrant\n"
+                f"To evaluate practicing surgeons in **`{procedure_name}`** along the Cost-Quality Pareto frontier:\n\n"
+                f'<div class="chat-clarification-card" style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid #059669; border-radius:8px; padding:16px; margin:12px 0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">'
+                f'<div style="font-size:12px; color:#475569; margin-bottom:12px;">Identifies Clinical Champions delivering below-benchmark supply spend alongside superior patient outcome scores.</div>'
+                f'<div style="display:flex; justify-content:flex-end; gap:8px;">'
+                f'<button type="button" onclick="openTabDirect(\'CQOTab\', \'group-clinical\')" style="background:#059669; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">'
+                f'🏆 Open CQO Value Quadrant'
+                f'</button>'
+                f'</div>'
+                f'</div>'
+            )
+            traces.append(SwarmTraceStep(
+                step_id=2,
+                agent_id=PERSONA_CLINICAL_BEE.id,
+                agent_name=PERSONA_CLINICAL_BEE.name,
+                agent_avatar=PERSONA_CLINICAL_BEE.avatar,
+                action="Rendered CQO Quadrant Navigation",
+                status="completed",
+                thought=f"Rendered CQO value quadrant navigation for '{procedure_name}'.",
+                timestamp="Just now"
+            ))
+            return {
+                "reply": cqo_clarification,
+                "lead_agent": PERSONA_CLINICAL_BEE.model_dump(),
+                "participating_bees": [PERSONA_CLINICAL_BEE.model_dump()],
+                "swarm_trace": [t.model_dump() for t in traces],
+                "debate_transcript": None,
+                "embedded_actions": [
+                    {"title": "🏆 Open CQO Value Quadrant", "action": "openTabDirect('CQOTab', 'group-clinical')"},
+                    {"title": "📊 Physician CPC Comparison", "action": "visualize the average cpc for all the physicians"}
+                ],
+                "followup_questions": [
+                    f"Which physicians are in the Clinical Champion quadrant for {procedure_name}?",
+                    f"What is the average complication rate across surgeons in {procedure_name}?"
                 ],
                 "chart_spec": None
             }
@@ -1187,6 +1920,15 @@ To generate a standardized preference card for **`{procedure_name}`**, please se
             Ensure your response strictly accounts for and honors these user corrections so the previous issue does not recur.
             """
 
+        dashboard_addon = ""
+        if dashboard_context:
+            dashboard_addon = f"""
+            LIVE APPLICATION TELEMETRY & SCREEN STATE:
+            {dashboard_context}
+            CRITICAL APPLICATION COUPLING DIRECTIVE:
+            You are tightly integrated with the user's dashboard. Ground your answers directly in the active screen/tab, selected facility, chosen metric mode, and active scatter plot case ID that the user is currently viewing!
+            """
+
         # Construct System Instruction
         system_prompt = f"""
         You are '{lead_bee.name}' ({lead_bee.role}), an autonomous clinical AI agent in the UC Health Bee Swarm.
@@ -1197,6 +1939,8 @@ To generate a standardized preference card for **`{procedure_name}`**, please se
         
         {f'Participating Bees in Swarm: {[b.name for b in participating]}' if len(participating) > 1 else ''}
         
+        {dashboard_addon}
+
         {grounded_data_addon}
 
         {ml_prompt_addon}

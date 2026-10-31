@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <title>Cost vs. Volume Outlier Dashboard</title>
     <link rel="icon" class="favicon-icon" type="image/x-icon" href="https://qa-ahp.supplycopia.com/assets/images/new-sc-favicon.svg">
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,300..1000;1,300..1000&display=swap" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -54,8 +56,10 @@
             --color-data-neutral-bg: #f1f5f9;
         }
 
+        body, button, input, select, textarea, table, .tablinks, .btn-brand, .executive-kpi-val, .chat-msg { 
+            font-family: 'Mulish', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important; 
+        }
         body { 
-            font-family: 'Open Sans', Arial, sans-serif; 
             font-size: 13px; /* Reduced baseline font size */
             padding: 20px; 
             display: flex; 
@@ -124,7 +128,7 @@
         .tab-dropdown-menu {
             display: none;
             position: absolute;
-            top: calc(100% + 2px);
+            top: 100%;
             left: 0;
             background-color: #fff;
             min-width: 230px;
@@ -135,8 +139,19 @@
             padding: 6px;
             animation: fadeIn 0.15s ease;
         }
-        .tab-group:hover .tab-dropdown-menu {
-            display: block;
+        /* Invisible mouse bridge preventing hover loss on cursor movement */
+        .tab-dropdown-menu::before {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 0;
+            right: 0;
+            height: 12px;
+            background: transparent;
+        }
+        .tab-group:hover .tab-dropdown-menu,
+        .tab-group.hover-open .tab-dropdown-menu {
+            display: block !important;
         }
         .tab-dropdown-item {
             display: flex;
@@ -302,6 +317,12 @@
 
         /* --- Cards & Panels --- */
         #chart-container { width: 100%; height: 400px; background: #fff; padding: 15px; box-sizing: border-box; border-radius: 8px; border: 1px solid var(--card-border); margin-top: 15px; }
+        #chart-container .legendtitletext,
+        .legendtitletext {
+            transform: translateY(0px) !important;
+            dominant-baseline: central !important;
+            alignment-baseline: central !important;
+        }
         .tables-wrapper { display: flex; gap: 20px; width: 100%; height: 400px; margin-top: 20px; }
         .table-panel { flex: 1; background: #fff; border-radius: 8px; border: 1px solid var(--card-border); display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0;}
         
@@ -431,10 +452,10 @@
         #chat-toggle-btn { position: fixed; bottom: 30px; right: 30px; background-color: #fff; color: var(--text-dark); border: 1px solid var(--card-border); border-radius: 50px; padding: 8px 16px 8px 8px; font-size: 13px; font-weight: 600; font-family: inherit; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; z-index: 10000; transition: transform 0.2s, color 0.2s; display: flex; align-items: center; gap: 8px; }
         #chat-toggle-btn:hover { transform: translateY(-2px); color: var(--brand-red); }
         
-        #chatbot-container { position: fixed; bottom: 80px; right: 30px; width: 440px; max-width: calc(100vw - 40px); height: 620px; max-height: calc(100vh - 100px); background-color: #fff; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.18); display: none; flex-direction: column; z-index: 10000; overflow: hidden; border: 1px solid var(--card-border); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        #chatbot-container { position: fixed; bottom: 80px; right: 30px; width: 440px; max-width: calc(100vw - 40px); height: 620px; max-height: calc(100vh - 100px); background-color: #fff; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.18); display: none; flex-direction: column; z-index: 10000; overflow: hidden; border: 1px solid var(--card-border); transform-origin: bottom right; transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1), height 0.35s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.35s ease, box-shadow 0.35s ease, border-radius 0.35s ease; }
         
-        /* Enhanced Lightbox Maximized View */
-        #chatbot-container.chat-maximized { width: 92vw !important; height: 90vh !important; max-width: 1400px !important; max-height: 94vh !important; top: 5vh !important; left: 4vw !important; right: auto !important; bottom: auto !important; z-index: 10005 !important; box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65), 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important; border-radius: 16px !important; }
+        /* Enhanced Lightbox Maximized View - Natural Right-to-Left Expansion */
+        #chatbot-container.chat-maximized { width: min(1360px, calc(100vw - 60px)) !important; height: min(88vh, 880px) !important; max-width: calc(100vw - 60px) !important; max-height: calc(100vh - 60px) !important; right: 30px !important; bottom: 30px !important; top: auto !important; left: auto !important; z-index: 10005 !important; box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65), 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important; border-radius: 16px !important; }
         
         #chat-header { background-color: #fff; color: var(--text-dark); border-bottom: 1px solid var(--card-border); padding: 12px 16px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
         .header-actions { display: flex; align-items: center; gap: 12px; }
@@ -568,6 +589,9 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.03);
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+            min-height: 104px;
+            box-sizing: border-box;
             gap: 4px;
             position: relative;
             overflow: hidden;
@@ -618,6 +642,9 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            margin-top: auto;
+            padding-top: 6px;
+            border-top: 1px solid #f8fafc;
         }
 
         @media print {
@@ -704,14 +731,17 @@
                         <div style="font-size: 11px; color: #64748b;" id="dropdown-user-facility">UC Health Cincinnati Medical Center (uchealth_admin)</div>
                         <div style="font-size: 10.5px; color: #16a34a; font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
                             <span style="display:inline-block; width:6px; height:6px; background:#16a34a; border-radius:50%;"></span>
-                            Enterprise SSO Active (OKTA)
+                            Enterprise SSO Active (Microsoft Entra ID)
                         </div>
                     </div>
                     <button class="user-menu-item" onclick="openAuditLogModal(); toggleUserDropdown();">
                         <span>📋</span> Activity Audit Log
                     </button>
                     <button class="user-menu-item" onclick="openJiraIssueModal(); toggleUserDropdown();">
-                        <span>🎫</span> Report Issue (Jira UCHCQO)
+                        <span>🎫</span> Report Issue & Jira Space UCHCQO
+                    </button>
+                    <button class="user-menu-item" onclick="simulateSelfHealingTest(); toggleUserDropdown();">
+                        <span>🛡️</span> Self-Healing Subsystem & RCA
                     </button>
                     <div style="height: 1px; background: #f1f5f9; margin: 4px 0;"></div>
                     <button class="user-menu-item" onclick="openTabDirect('SwarmTab', 'group-swarm'); toggleUserDropdown();">
@@ -848,15 +878,6 @@
                 </div>
                 <div id="kpi-dash-avg-charges" class="executive-kpi-val">$0.00</div>
                 <div class="executive-kpi-sub">OR, Labor & Facility Overhead</div>
-            </div>
-
-            <div class="executive-kpi-card kpi-amber">
-                <div class="executive-kpi-label">
-                    <span>25th %ile Benchmark Target</span>
-                    <span>🎯</span>
-                </div>
-                <div id="kpi-dash-benchmark" class="executive-kpi-val">$0.00</div>
-                <div class="executive-kpi-sub">Standard CQO Threshold CPC</div>
             </div>
 
             <div class="executive-kpi-card kpi-emerald">
@@ -1567,11 +1588,11 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span id="budget-tuning-summary-metric" style="font-size: 11px; font-weight: 700; color: #15803d; background: #dcfce7; padding: 2px 8px; border-radius: 4px; border: 1px solid #bbf7d0;">Holdout Test MAPE: --%</span>
-                        <button id="btn-toggle-tuning-details" style="border: none; background: transparent; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer;">Details ▼</button>
+                        <button id="btn-toggle-tuning-details" onclick="toggleBudgetTuningDetails()" style="border: none; background: transparent; font-size: 11px; font-weight: 700; color: #475569; cursor: pointer;">Details ▶</button>
                     </div>
                 </div>
                 
-                <div id="budget-tuning-details-content" style="margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
+                <div id="budget-tuning-details-content" style="display: none; margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 8px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
                         <div style="font-size: 11px; color: #475569; max-width: 680px; line-height: 1.5;">
                             <strong>Validation Protocol:</strong> The entire historical dataset is split into training (first <em>N-3</em> months) and holdout test (last 3 recorded months). The algorithm underwent systematic grid search to minimize out-of-sample Test MAPE. Final model refitted across all <em>N</em> months with optimal parameters for forward 12-month projections.
@@ -1909,7 +1930,7 @@
             </button>
         </div>
     </div>
-	<div id="standardize-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
+	<div id="standardize-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 30000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
         <div style="background: #fff; border-radius: 8px; width: 500px; max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); overflow: hidden;">
             <div style="padding: 16px 20px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
                 <h3 style="margin: 0; font-size: 16px; color: var(--text-dark); display: flex; align-items: center; gap: 8px;">⚡ Confirm Standardization</h3>
@@ -1928,104 +1949,234 @@
         </div>
     </div>
 
-    <!-- JIRA ISSUE REPORT MODAL -->
-    <div id="jira-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
-        <div style="background: #fff; border-radius: 10px; width: 560px; max-width: 92%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;">
-            <div style="padding: 16px 20px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+    <!-- JIRA ISSUE & TICKET STATUS MODAL (Space: UCHCQO) -->
+    <div id="jira-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.65); z-index: 30000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+        <div style="background: #fff; border-radius: 12px; width: 680px; max-width: 94%; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); overflow: hidden; border: 1px solid var(--card-border);">
+            <div style="padding: 16px 22px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 18px;">🎫</span>
-                    <h3 style="margin: 0; font-size: 15px; color: var(--text-dark); font-weight: 700;">Report Issue to Jira (Space: UCHCQO)</h3>
+                    <span style="font-size: 20px;">🎫</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px; color: var(--text-dark); font-weight: 800;">Jira Clinical Issue Tracking (Space: UCHCQO)</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Enterprise issue reporting, automated crash capture & ticket resolution lifecycle</p>
+                    </div>
                 </div>
-                <button onclick="closeJiraModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted);">&times;</button>
+                <button onclick="closeJiraModal()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted);">&times;</button>
             </div>
-            <div style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block;">Issue Type</label>
-                        <select id="jira-issue-type" style="width: 100%; padding: 7px 10px; border: 1px solid var(--card-border); border-radius: 6px; font-size: 12px; font-weight: 600; background: #fff;">
-                            <option value="Bug">🐛 Bug / Calculation Anomaly</option>
-                            <option value="Task">📋 Clinical Value Task</option>
-                            <option value="Feature">✨ Feature Request</option>
-                        </select>
+            
+            <!-- Segmented Mode Tabs: [ ✍️ Report New Issue ] vs [ 📑 Ticket Status & History ] -->
+            <div style="display: flex; border-bottom: 1px solid var(--card-border); background: #f1f5f9; padding: 6px 16px 0 16px; gap: 8px;">
+                <button id="jira-tab-btn-report" onclick="switchJiraModalTab('report')" style="padding: 8px 16px; border: none; border-bottom: 3px solid var(--brand-red); background: transparent; font-size: 12px; font-weight: 800; color: var(--text-dark); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    ✍️ Report New Issue
+                </button>
+                <button id="jira-tab-btn-status" onclick="switchJiraModalTab('status')" style="padding: 8px 16px; border: none; border-bottom: 3px solid transparent; background: transparent; font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    📑 Ticket Status & History <span id="jira-ticket-count-badge" style="background: #e2e8f0; color: #334155; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 800;">0</span>
+                </button>
+            </div>
+
+            <div style="padding: 18px 22px; overflow-y: auto; flex: 1;">
+                <!-- TAB 1: Report Issue Form -->
+                <div id="jira-view-report" style="display: flex; flex-direction: column; gap: 14px;">
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block;">Issue Type</label>
+                            <select id="jira-issue-type" style="width: 100%; padding: 8px 10px; border: 1px solid var(--card-border); border-radius: 6px; font-size: 12px; font-weight: 600; background: #fff;">
+                                <option value="Bug">🐛 Bug / Calculation Anomaly</option>
+                                <option value="Task">📋 Clinical Value Task</option>
+                                <option value="Feature">✨ Feature Request</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block;">Priority</label>
+                            <select id="jira-priority" style="width: 100%; padding: 8px 10px; border: 1px solid var(--card-border); border-radius: 6px; font-size: 12px; font-weight: 600; background: #fff;">
+                                <option value="High">🔴 High (Clinical / Financial Impact)</option>
+                                <option value="Medium" selected>🟡 Medium (Standard)</option>
+                                <option value="Low">🟢 Low (Informational)</option>
+                            </select>
+                        </div>
                     </div>
-                    <div style="flex: 1;">
-                        <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block;">Priority</label>
-                        <select id="jira-priority" style="width: 100%; padding: 7px 10px; border: 1px solid var(--card-border); border-radius: 6px; font-size: 12px; font-weight: 600; background: #fff;">
-                            <option value="High">🔴 High (Clinical Impact)</option>
-                            <option value="Medium" selected>🟡 Medium (Standard)</option>
-                            <option value="Low">🟢 Low (Informational)</option>
-                        </select>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block;">Summary / Title</label>
+                        <input type="text" id="jira-summary" placeholder="e.g. Non-equivalent comparison in Cystoscopy preference card..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--card-border); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none;">
                     </div>
+                    <div>
+                        <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block;">Detailed Clinical Description</label>
+                        <textarea id="jira-description" rows="3" placeholder="Provide clinical details, affected surgeon or item sku, and expected behavior..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--card-border); border-radius: 6px; font-size: 12px; font-family: inherit; box-sizing: border-box; resize: vertical; outline: none;"></textarea>
+                    </div>
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin: 0;">Supporting Evidence / Attachments</label>
+                            <span style="font-size: 10.5px; color: #94a3b8;">PDF, Images, CSV, Excel, Word (Max 15MB)</span>
+                        </div>
+                        <div id="jira-dropzone" onclick="document.getElementById('jira-file-input').click()" style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: #f8fafc; transition: all 0.2s;">
+                            <span style="font-size: 20px;">📎</span>
+                            <div style="font-size: 12px; font-weight: 600; color: #1e293b; margin-top: 2px;">Click to browse or drag & drop evidence files</div>
+                            <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Attach purchase order scans, preference card PDFs, invoice disputes, or anomaly spreadsheets</div>
+                            <input type="file" id="jira-file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.gif,.csv,.xlsx,.xls,.doc,.docx,.txt" style="display: none;" onchange="handleJiraFilesSelected(this.files)">
+                        </div>
+                        <div id="jira-attached-files-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 4px; max-height: 110px; overflow-y: auto;"></div>
+                    </div>
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; font-size: 11.5px; color: #475569; display: flex; flex-direction: column; gap: 4px;">
+                        <div><strong>Jira Space:</strong> UCHCQO (supplycopia.atlassian.net)</div>
+                        <div><strong>Default Assignee:</strong> nrayan@supplycopia.com</div>
+                        <div><strong>Attached Context:</strong> <span id="jira-attached-proc" style="color: var(--brand-red); font-weight: 600;">None</span></div>
+                    </div>
+                    <div id="jira-status-message" style="display: none; font-size: 12px; padding: 8px 12px; border-radius: 6px;"></div>
                 </div>
-                <div>
-                    <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block;">Summary / Title</label>
-                    <input type="text" id="jira-summary" placeholder="e.g. Non-equivalent comparison in Cystoscopy preference card..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--card-border); border-radius: 6px; font-size: 13px; box-sizing: border-box; outline: none;">
-                </div>
-                <div>
-                    <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block;">Detailed Clinical Description</label>
-                    <textarea id="jira-description" rows="3" placeholder="Provide clinical details, affected surgeon or item sku, and expected behavior..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--card-border); border-radius: 6px; font-size: 12px; font-family: inherit; box-sizing: border-box; resize: none; outline: none;"></textarea>
-                </div>
-                <div>
+
+                <!-- TAB 2: Live Ticket Status & History -->
+                <div id="jira-view-status" style="display: none; flex-direction: column; gap: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin: 0;">Supporting Evidence / Attachments</label>
-                        <span style="font-size: 10.5px; color: #94a3b8;">PDF, Images, CSV, Excel, Word (Max 15MB)</span>
+                        <span style="font-size: 11.5px; color: #64748b;">Live status of tickets raised in Jira project space <strong>UCHCQO</strong>.</span>
+                        <button onclick="refreshJiraTickets()" class="btn-secondary" style="font-size: 11px; padding: 4px 10px;">🔄 Refresh Status</button>
                     </div>
-                    <div id="jira-dropzone" onclick="document.getElementById('jira-file-input').click()" style="border: 2px dashed #cbd5e1; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; background: #f8fafc; transition: all 0.2s;">
-                        <span style="font-size: 20px;">📎</span>
-                        <div style="font-size: 12px; font-weight: 600; color: #1e293b; margin-top: 2px;">Click to browse or drag & drop evidence files</div>
-                        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Attach purchase order scans, preference card PDFs, invoice disputes, or anomaly spreadsheets</div>
-                        <input type="file" id="jira-file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.gif,.csv,.xlsx,.xls,.doc,.docx,.txt" style="display: none;" onchange="handleJiraFilesSelected(this.files)">
+                    <div id="jira-tickets-container" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="text-align: center; padding: 30px; color: #94a3b8; font-size: 12px;">Loading live tickets from Jira space UCHCQO...</div>
                     </div>
-                    <div id="jira-attached-files-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 4px; max-height: 110px; overflow-y: auto;"></div>
                 </div>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; font-size: 11.5px; color: #475569; display: flex; flex-direction: column; gap: 4px;">
-                    <div><strong>Jira Space:</strong> UCHCQO (supplycopia.atlassian.net)</div>
-                    <div><strong>Default Assignee:</strong> nrayan@supplycopia.com</div>
-                    <div><strong>Attached Context:</strong> <span id="jira-attached-proc" style="color: var(--brand-red); font-weight: 600;">None</span></div>
-                </div>
-                <div id="jira-status-message" style="display: none; font-size: 12px; padding: 8px 12px; border-radius: 6px;"></div>
             </div>
-            <div style="padding: 14px 20px; border-top: 1px solid var(--card-border); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc;">
-                <button class="btn-secondary" onclick="closeJiraModal()">Cancel</button>
-                <button class="btn-brand" id="btn-submit-jira" onclick="submitJiraIssue()">🚀 Submit Jira Ticket</button>
+            
+            <div style="padding: 14px 22px; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+                <button class="btn-secondary" onclick="closeJiraModal()">Close</button>
+                <div id="jira-footer-action-buttons">
+                    <button class="btn-brand" id="btn-submit-jira" onclick="submitJiraIssue()">🚀 Submit Jira Ticket</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ACTIVITY AUDIT LOG MODAL -->
-    <div id="audit-log-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(2px);">
-        <div style="background: #fff; border-radius: 10px; width: 750px; max-width: 94%; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;">
-            <div style="padding: 16px 20px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="font-size: 18px;">📋</span>
-                    <h3 style="margin: 0; font-size: 15px; color: var(--text-dark); font-weight: 700;">UC Health Clinical Activity Audit Log</h3>
+    <!-- ACTIVITY AUDIT LOG MODAL (90-Day Rolling TTL & Low-Memory Engine) -->
+    <div id="audit-log-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.65); z-index: 30000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+        <div style="background: #fff; border-radius: 12px; width: 850px; max-width: 95%; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); overflow: hidden; border: 1px solid var(--card-border);">
+            <div style="padding: 16px 22px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 20px;">📋</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px; color: var(--text-dark); font-weight: 800;">UC Health Clinical Activity Audit Log</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">HIPAA-compliant, tamper-evident interaction logging powered by SQLite WAL engine</p>
+                    </div>
                 </div>
-                <button onclick="closeAuditLogModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted);">&times;</button>
+                <button onclick="closeAuditLogModal()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted);">&times;</button>
             </div>
-            <div style="padding: 16px 20px; overflow-y: auto; flex: 1;">
-                <p style="font-size: 11.5px; color: #64748b; margin-top: 0; margin-bottom: 12px;">Traceable compliance history of cohort queries, benchmark percentiles, and surgeon preference standardizations.</p>
+            
+            <!-- Policy & Controls Bar -->
+            <div style="padding: 12px 22px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #ecfdf5; color: #065f46; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; border: 1px solid #a7f3d0; display: inline-flex; align-items: center; gap: 4px;">
+                        🛡️ Automated 90-Day Purge Daemon Active (Hourly Background Sweep)
+                    </span>
+                    <span id="audit-log-stats-count" style="font-size: 11px; color: #64748b;">Tracking live sessions</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="text" id="audit-log-search-input" placeholder="Search actions or details..." style="padding: 5px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11.5px; width: 180px;" oninput="fetchAuditLogs()">
+                    <select id="audit-log-cat-filter" style="padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 11.5px; font-weight: 600; background: #fff;" onchange="fetchAuditLogs()">
+                        <option value="all">All Categories</option>
+                        <option value="ui_navigation">UI Navigation</option>
+                        <option value="benchmark">Benchmarks</option>
+                        <option value="preference_card">Preference Cards</option>
+                        <option value="alert_config">Live Alerts</option>
+                        <option value="self_healing">Self-Healing</option>
+                        <option value="incident">Incidents / Crashes</option>
+                    </select>
+                    <button onclick="manualPurgeAuditLogs()" class="btn-secondary" style="font-size: 11px; padding: 5px 10px; color: #b91c1c;">🗑️ Purge Expired</button>
+                </div>
+            </div>
+
+            <div style="padding: 16px 22px; overflow-y: auto; flex: 1;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
                     <thead>
-                        <tr style="border-bottom: 2px solid var(--card-border); text-align: left; color: var(--text-muted);">
-                            <th style="padding: 8px 6px; width: 22%;">Timestamp</th>
-                            <th style="padding: 8px 6px; width: 18%;">User</th>
-                            <th style="padding: 8px 6px; width: 25%;">Action</th>
+                        <tr style="border-bottom: 2px solid var(--card-border); text-align: left; color: var(--text-muted); font-size: 11px; text-transform: uppercase;">
+                            <th style="padding: 8px 6px; width: 18%;">Timestamp</th>
+                            <th style="padding: 8px 6px; width: 14%;">User</th>
+                            <th style="padding: 8px 6px; width: 12%;">Category</th>
+                            <th style="padding: 8px 6px; width: 22%;">Action</th>
                             <th style="padding: 8px 6px;">Audit Detail</th>
                         </tr>
                     </thead>
                     <tbody id="audit-log-tbody">
-                        <tr><td colspan="4" style="text-align: center; padding: 30px; color: var(--text-muted);">Loading audit logs...</td></tr>
+                        <tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--text-muted);">Loading audit logs...</td></tr>
                     </tbody>
                 </table>
             </div>
-            <div style="padding: 12px 20px; border-top: 1px solid var(--card-border); display: flex; justify-content: flex-end; background: #f8fafc;">
+            <div style="padding: 12px 22px; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+                <span style="font-size: 11px; color: #94a3b8;">High-throughput queue ensures zero page-load latency.</span>
                 <button class="btn-secondary" onclick="closeAuditLogModal()">Close</button>
             </div>
         </div>
     </div>
 
+    <!-- AUTONOMOUS SAFE SELF-HEALING SUBSYSTEM MODAL -->
+    <div id="self-healing-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 30005; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+        <div style="background: #fff; border-radius: 12px; width: 720px; max-width: 94%; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; border: 1px solid #cbd5e1;">
+            <div style="padding: 16px 22px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 22px;">🛡️</span>
+                    <div>
+                        <h3 style="margin: 0; font-size: 15px; color: var(--text-dark); font-weight: 800;">Autonomous System Self-Healing Subsystem</h3>
+                        <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Automated Root Cause Diagnosis & Supervised Remediation Engine</p>
+                    </div>
+                </div>
+                <button onclick="closeSelfHealingModal()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted);">&times;</button>
+            </div>
+            <div style="padding: 18px 22px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+                <!-- Diagnosis Status Banner -->
+                <div id="self-heal-banner" style="background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #ef4444; border-radius: 6px; padding: 12px 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span id="self-heal-error-type" style="font-size: 12px; font-weight: 800; color: #991b1b; text-transform: uppercase;">Exception Intercepted</span>
+                        <span id="self-heal-diag-id" style="font-size: 11px; font-family: monospace; color: #7f1d1d; background: #fee2e2; padding: 2px 6px; border-radius: 4px;">HEAL-ID</span>
+                    </div>
+                    <div id="self-heal-error-msg" style="font-size: 12px; color: #b91c1c; font-weight: 600;"></div>
+                </div>
+
+                <!-- Root Cause Analysis Box -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px;">
+                    <div style="font-size: 11.5px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <span>🔍</span> Root Cause Analysis (RCA)
+                    </div>
+                    <div id="self-heal-rca-text" style="font-size: 12.5px; color: #1e293b; line-height: 1.5;"></div>
+                    <div id="self-heal-meta" style="margin-top: 8px; font-size: 11px; color: #64748b; display: flex; gap: 16px;"></div>
+                </div>
+
+                <!-- Proposed Implementation Plan Steps -->
+                <div>
+                    <div style="font-size: 11.5px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                        <span>📋</span> Proposed Remediation Implementation Plan
+                    </div>
+                    <div id="self-heal-steps-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </div>
+
+                <!-- User Feedback Textarea for Iteration -->
+                <div style="background: #fdfdfd; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label style="font-size: 11.5px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin: 0;">
+                            ✍️ User Feedback & Plan Adjustments
+                        </label>
+                        <span style="font-size: 10.5px; color: #64748b;">Add instructions or refine remediation parameters</span>
+                    </div>
+                    <textarea id="self-heal-user-feedback" rows="2" placeholder="e.g. Also reset scatter plot bounds and flush cache, or exclude inactive surgeons from cohort..." style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-family: inherit; box-sizing: border-box; resize: vertical; outline: none;"></textarea>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                        <span style="font-size: 10.5px; color: #94a3b8;">Protected by Sentinel Security Guardrails (Anti-SQLi / Anti-Injection)</span>
+                        <button onclick="refineSelfHealingPlan()" class="btn-secondary" style="font-size: 11.5px; padding: 6px 14px; font-weight: 700;">🔄 Refine Plan with Feedback</button>
+                    </div>
+                </div>
+
+                <!-- Security Alert Box (hidden by default) -->
+                <div id="self-heal-security-alert" style="display: none; background: #fff1f2; border: 1px solid #fecdd3; border-left: 4px solid #f43f5e; border-radius: 6px; padding: 10px 14px; font-size: 11.5px; color: #9f1239;"></div>
+
+                <!-- Execution Progress / Result Box -->
+                <div id="self-heal-result-box" style="display: none; background: #ecfdf5; border: 1px solid #a7f3d0; border-left: 4px solid #10b981; border-radius: 6px; padding: 12px 16px; font-size: 12px; color: #065f46;"></div>
+            </div>
+            <div style="padding: 14px 22px; border-top: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+                <button class="btn-secondary" onclick="closeSelfHealingModal()">Cancel / Dismiss</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-secondary" style="color: #64748b; font-size: 12px;" onclick="simulateSelfHealingTest()">🧪 Simulate Test Crash</button>
+                    <button class="btn-brand" id="btn-confirm-self-heal" onclick="confirmAndExecuteHealing()" style="background: #10b981; border: none;">✅ Confirm & Execute Healing Plan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- CQO METHODOLOGY & QUADRANT INTERPRETATION LIGHTBOX MODAL -->
-    <div id="cqo-methodology-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.65); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div id="cqo-methodology-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.65); z-index: 30000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
         <div style="background: #fff; border-radius: 12px; width: 800px; max-width: 94%; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); overflow: hidden; border: 1px solid var(--card-border);">
             <div style="padding: 16px 22px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -2125,7 +2276,7 @@
     </div>
 
     <!-- SURGEON PREFERENCE CARD LIGHTBOX MODAL -->
-    <div id="pref-card-lightbox-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div id="pref-card-lightbox-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 30000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
         <div style="background: #fff; border-radius: 12px; width: 1000px; max-width: 95%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; border: 1px solid var(--card-border);">
             <!-- Modal Header -->
             <div style="padding: 16px 22px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
@@ -2241,7 +2392,7 @@
     </div>
 
     <!-- ==================== SITE-OF-SERVICE MIGRATION MODAL ==================== -->
-    <div id="site-of-service-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div id="site-of-service-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 30000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
         <div style="background: #fff; border-radius: 12px; width: 1050px; max-width: 95%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; border: 1px solid var(--card-border);">
             <!-- Modal Header -->
             <div style="padding: 16px 22px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #eff6ff;">
@@ -2312,7 +2463,7 @@
     </div>
 
     <!-- ==================== PRICE DISCREPANCY & CLAWBACK AUDIT MODAL ==================== -->
-    <div id="price-discrepancy-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div id="price-discrepancy-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 30000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
         <div style="background: #fff; border-radius: 12px; width: 1100px; max-width: 95%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; border: 1px solid var(--card-border);">
             <!-- Modal Header -->
             <div style="padding: 16px 22px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #fffbeb;">
@@ -2387,7 +2538,7 @@
     </div>
 
     <!-- ==================== DISPUTE LETTER / CREDIT MEMO MODAL ==================== -->
-    <div id="dispute-letter-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 11000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div id="dispute-letter-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 31000; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
         <div style="background: #fff; border-radius: 12px; width: 850px; max-width: 95%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; border: 1px solid var(--card-border);">
             <div style="padding: 16px 22px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
                 <div style="display: flex; align-items: center; gap: 10px;">
@@ -3625,8 +3776,41 @@
         }
         
         function getDashboardContext() {
-            let ctx = "--- CURRENT DASHBOARD DATA ON SCREEN ---\n";
+            let ctx = "--- CURRENT DASHBOARD & USER INTERACTION TELEMETRY ---\n";
             
+            // 0. Active Screen & Tab State
+            const currentTab = window.activeTabName || (function() {
+                const visible = document.querySelector('.tabcontent[style*="block"]');
+                return visible ? visible.id : 'CostVarianceTab';
+            })();
+            const tabTitleMap = {
+                'CostVarianceTab': 'Cost & Variance Analytics',
+                'PrefCardTab': 'Surgeon Preference Card Optimizer',
+                'CompareCardsTab': 'Preference Card Multi-Surgeon Comparison',
+                'ProcCardTab': 'Global Procedure Standard Pack (BOM)',
+                'PriceParityTab': 'Price Parity & Cross-Facility Variance',
+                'SubstitutionsTab': 'AI Commodity Substitutions',
+                'PredictTab': 'Predictive Risk-Adjusted Case Cost',
+                'CQOTab': 'Clinical Quality & Outcomes (CQO) Value Quadrant',
+                'BudgetTab': 'Multi-Algorithm Budget Forecasting',
+                'SwarmTab': 'Bee Swarm Agent Governance'
+            };
+            const friendlyTabTitle = tabTitleMap[currentTab] || currentTab;
+            ctx += `[Active User Screen]: ${friendlyTabTitle} (Tab ID: ${currentTab})\n`;
+
+            // Active Filters
+            const activeProc = window.currentProcedure || document.getElementById('procedure-select')?.value || 'Unified Procedure';
+            const activeHosp = document.getElementById('facility-select')?.value || document.getElementById('hospital-select')?.value || 'All Facilities';
+            const activeBench = window.activeBenchmark || document.getElementById('benchmark-select')?.value || '25';
+            const activeMetric = window.currentCostSubTab || window.currentCostMetric || 'supply_spend';
+            const activeOutliers = document.getElementById('outlier-filter-toggle')?.checked || false;
+            const activeCase = window.selectedScatterCaseId || window.selectedCaseId || null;
+
+            ctx += `[Active Filters]: Procedure="${activeProc}", Facility="${activeHosp}", Target Benchmark=${activeBench}th Percentile, Metric Mode="${activeMetric}", Outliers Filter=${activeOutliers ? 'Outliers Only' : 'All Cases'}\n`;
+            if (activeCase) {
+                ctx += `[Selected Case Focus]: Case ID #${activeCase}\n`;
+            }
+
             // 1. Global Metrics
             const totalCases = document.getElementById('total-cases-display')?.innerText || "0";
             const avgCost = document.getElementById('avg-cost-display')?.innerText || "$0.00";
@@ -3965,7 +4149,22 @@
                                 <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px;">
                                     ${actionList.map(act => {
                                         const label = typeof act === 'object' ? (act.title || act.label || act.action) : act;
-                                        return `<button class="btn-chat-action" onclick="executeSwarmAction('${escapeAttr(label)}')" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">⚡ ${escapeHtml(label)}</button>`;
+                                        const actionCode = (typeof act === 'object' && act.action) ? act.action : null;
+                                        const isJs = actionCode && (
+                                            actionCode.startsWith('navigateTo') ||
+                                            actionCode.startsWith('openTabDirect') ||
+                                            actionCode.startsWith('openPrefCard') ||
+                                            actionCode.startsWith('openPrice') ||
+                                            actionCode.startsWith('openSite') ||
+                                            actionCode.startsWith('openESG') ||
+                                            actionCode.startsWith('window.') ||
+                                            (actionCode.includes('(') && actionCode.includes(')'))
+                                        );
+                                        if (isJs) {
+                                            return `<button class="btn-chat-action" onclick="${escapeAttr(actionCode)}" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">⚡ ${escapeHtml(label)}</button>`;
+                                        }
+                                        const queryParam = actionCode || label;
+                                        return `<button class="btn-chat-action" data-action="${escapeAttr(label)}" data-query="${escapeAttr(queryParam)}" onclick="executeSwarmAction(this.getAttribute('data-action'), this.getAttribute('data-query'))" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 12px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer;">⚡ ${escapeHtml(label)}</button>`;
                                     }).join('')}
                                 </div>
                             `;
@@ -4155,6 +4354,129 @@
             }
         };
 
+        window.executeChatPredictCaseCost = async function(btn, procName) {
+            let surgeon = '', age = 65, asa = '2', bmi = 28.5;
+            let resultContainer = null;
+            if (btn) {
+                const container = btn.closest('.chat-clarification-card');
+                if (container) {
+                    const surgSel = container.querySelector('.chat-pred-surgeon');
+                    const ageInput = container.querySelector('.chat-pred-age');
+                    const asaSel = container.querySelector('.chat-pred-asa');
+                    const bmiInput = container.querySelector('.chat-pred-bmi');
+                    resultContainer = container.querySelector('.chat-pred-result-container');
+
+                    if (surgSel) surgeon = surgSel.value;
+                    if (ageInput) age = parseFloat(ageInput.value) || 65;
+                    if (asaSel) asa = asaSel.value;
+                    if (bmiInput) bmi = parseFloat(bmiInput.value) || 28.5;
+                }
+            }
+
+            const proc = procName || window.currentProcedure || "EXCISION OF LESION OR MASS";
+            if (!surgeon || surgeon === 'All Surgeons') {
+                const sel = document.getElementById('surgeon-select') || document.getElementById('predict-surgeon-select');
+                if (sel && sel.options.length > 0) surgeon = sel.options[0].value;
+            }
+
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.innerHTML = '⏳ Computing ML Model...';
+                btn.disabled = true;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/predict-cost`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        procedure_name: proc,
+                        surgeon_name: surgeon,
+                        age: age,
+                        asa_rating: asa,
+                        bmi: bmi
+                    })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                const costNum = data.predicted_cost || 0;
+                const costStr = `$${costNum.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                const factors = data.top_factors || [];
+                const factorsHtml = factors.length > 0
+                    ? `<div style="margin-top:8px; font-size:11px; color:#475569;"><strong>Key Predictive Cost Drivers:</strong> <ul style="margin:4px 0 0 16px; padding:0;">${factors.map(f => `<li>${escapeHtml(f)}</li>`).join('')}</ul></div>`
+                    : '';
+
+                if (resultContainer) {
+                    resultContainer.style.display = 'block';
+                    resultContainer.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                            <div>
+                                <span style="font-size:10px; font-weight:700; color:#6d28d9; text-transform:uppercase; letter-spacing:0.5px;">Machine Learning Projected Spend</span>
+                                <div style="font-size:22px; font-weight:800; color:#5b21b6; margin-top:2px;">${costStr}</div>
+                            </div>
+                            <span style="background:#ede9fe; color:#6d28d9; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; border:1px solid #ddd6fe;">GradientBoost / XGBoost</span>
+                        </div>
+                        <div style="font-size:11px; color:#475569; line-height:1.4; background:#fff; padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0;">
+                            Target Surgeon: <strong>Dr. ${escapeHtml(surgeon)}</strong> &nbsp;|&nbsp; Age: <strong>${age}</strong> &nbsp;|&nbsp; ASA: <strong>${escapeHtml(asa)}</strong> &nbsp;|&nbsp; BMI: <strong>${bmi}</strong>
+                        </div>
+                        ${factorsHtml}
+                        <div style="margin-top:10px; display:flex; justify-content:flex-end; gap:6px;">
+                            <button type="button" class="btn-chat-action" onclick="navigateToPredictTabWithParams('${escapeAttr(proc)}', '${escapeAttr(surgeon)}', ${age}, '${escapeAttr(asa)}', ${bmi})" style="background:#8b5cf6; color:#fff; border:none; border-radius:6px; padding:6px 14px; font-size:11px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 1px 3px rgba(139,92,246,0.3);">
+                                📊 Open in Full Predictive Modeling Tab
+                            </button>
+                        </div>
+                    `;
+                }
+
+                if (window.logUserActivity) {
+                    window.logUserActivity('Predictive Case Cost', `Predicted ${costStr} for Dr. ${surgeon} in ${proc} (ASA ${asa}, Age ${age}, BMI ${bmi})`, 'predictive');
+                }
+            } catch (err) {
+                alert(`Prediction error: ${err.message}`);
+            } finally {
+                if (btn) {
+                    btn.innerHTML = origHtml || '🧠 Predict Case Cost';
+                    btn.disabled = false;
+                }
+            }
+        };
+
+        window.navigateToPredictTabWithParams = function(proc, surgeon, age, asa, bmi) {
+            if (typeof openTabDirect === 'function') {
+                openTabDirect('PredictTab', 'group-swarm');
+            } else if (typeof openTabByName === 'function') {
+                openTabByName('PredictTab');
+            }
+
+            setTimeout(() => {
+                const sSelect = document.getElementById('predict-surgeon-select');
+                if (sSelect && surgeon) {
+                    let matchFound = false;
+                    for (let opt of sSelect.options) {
+                        if (opt.value.trim().toUpperCase() === surgeon.trim().toUpperCase() || opt.value.includes(surgeon)) {
+                            sSelect.value = opt.value;
+                            matchFound = true;
+                            break;
+                        }
+                    }
+                    if (!matchFound) {
+                        sSelect.appendChild(new Option(surgeon, surgeon, true, true));
+                    }
+                }
+                const aInput = document.getElementById('predict-age');
+                if (aInput && age) aInput.value = age;
+                const asaSelect = document.getElementById('predict-asa');
+                if (asaSelect && asa) asaSelect.value = asa;
+                const bInput = document.getElementById('predict-bmi');
+                if (bInput && bmi) bInput.value = bmi;
+
+                if (typeof runPrediction === 'function') {
+                    runPrediction();
+                }
+            }, 250);
+        };
+
         window.executePrefCardFromChat = function(btn, procName) {
             let surgVal = 'All Surgeons';
             if (btn) {
@@ -4229,6 +4551,190 @@
             if (chatInput) {
                 chatInput.value = `Compare preference cards for Dr. ${surg1} and Dr. ${surg2}`;
                 sendChatMessage();
+            }
+        };
+
+        window.executeMultiSurgeonCompareFromChat = function(btn, procName) {
+            let selectedSurgeons = [];
+            if (btn) {
+                const container = btn.closest('.chat-clarification-card');
+                if (container) {
+                    const checkboxes = container.querySelectorAll('.compare-surg-checkbox:checked');
+                    checkboxes.forEach(cb => {
+                        if (cb.value && !selectedSurgeons.includes(cb.value)) {
+                            selectedSurgeons.push(cb.value);
+                        }
+                    });
+                }
+            }
+            if (selectedSurgeons.length < 2) {
+                alert("Please select at least two physicians to compare.");
+                return;
+            }
+            // Save state for seamless in-app navigation
+            window.lastComparedSurgeons = selectedSurgeons;
+            window.lastComparedProcedure = procName || window.currentProcedure;
+
+            const chatInput = document.getElementById('chat-input');
+            if (chatInput) {
+                const surgStr = selectedSurgeons.map(s => `Dr. ${s}`).join(" and ");
+                chatInput.value = `Compare preference cards for ${surgStr}`;
+                sendChatMessage();
+            }
+        };
+
+        window.navigateToCompareCardsWithSurgeons = async function(procedureName, surgeons) {
+            console.log('[Navigate to Compare Cards]', procedureName, surgeons);
+            let surgeonList = [];
+            if (Array.isArray(surgeons)) {
+                surgeonList = surgeons.slice();
+            } else if (typeof surgeons === 'string') {
+                try {
+                    const parsed = JSON.parse(surgeons);
+                    if (Array.isArray(parsed)) surgeonList = parsed;
+                    else surgeonList = [surgeons];
+                } catch(e) {
+                    surgeonList = surgeons.replace(/,\s*Dr\.\s*/gi, '|||')
+                                          .replace(/\s+and\s+(?:Dr\.\s*)?/gi, '|||')
+                                          .split('|||')
+                                          .map(s => s.trim())
+                                          .filter(Boolean);
+                }
+            }
+            surgeonList = surgeonList.map(s => s.replace(/^Dr\.\s*/i, '').trim()).filter(Boolean);
+            if (surgeonList.length === 0 && window.lastComparedSurgeons && window.lastComparedSurgeons.length >= 2) {
+                surgeonList = window.lastComparedSurgeons.slice();
+            }
+
+            // Persist in session
+            window.lastComparedSurgeons = surgeonList;
+            if (procedureName) window.lastComparedProcedure = procedureName;
+
+            // 1. Immediately switch tab to Compare Preference Cards
+            if (typeof openTabDirect === 'function') {
+                openTabDirect('CompareCardsTab', 'group-cards');
+            } else if (typeof openTab === 'function') {
+                openTab(null, 'CompareCardsTab');
+            }
+
+            // 2. Set procedure if specified and different from current active procedure
+            const proc = (procedureName || window.currentProcedure || '').trim();
+            if (proc && proc !== window.currentProcedure) {
+                window.currentProcedure = proc;
+                const procSel = $('#procedure-select');
+                if (procSel.length) procSel.val(proc);
+                if (typeof loadDashboardData === 'function') {
+                    await loadDashboardData(proc);
+                }
+            } else if ((!window.masterData || !window.masterData.cases || window.masterData.cases.length === 0) && proc) {
+                if (typeof loadDashboardData === 'function') {
+                    await loadDashboardData(proc);
+                }
+            }
+
+            // 3. Ensure options exist in #compare-surgeons-multi
+            const compSelect = $('#compare-surgeons-multi');
+            compSelect.prop('disabled', false);
+            $('#btn-compare-cards').prop('disabled', false);
+
+            const matchedValues = [];
+            surgeonList.forEach(target => {
+                const targetClean = target.toUpperCase();
+                let foundVal = null;
+                compSelect.find('option').each(function() {
+                    const optVal = $(this).val().trim().toUpperCase();
+                    const optTxt = $(this).text().trim().toUpperCase();
+                    if (optVal === targetClean || optTxt === targetClean || optVal.includes(targetClean) || targetClean.includes(optVal)) {
+                        foundVal = $(this).val();
+                    }
+                });
+                if (foundVal) {
+                    if (!matchedValues.includes(foundVal)) matchedValues.push(foundVal);
+                } else {
+                    compSelect.append(new Option(target, target, true, true));
+                    if (!matchedValues.includes(target)) matchedValues.push(target);
+                }
+            });
+
+            // Fallback to top 2 options if none specified
+            if (matchedValues.length < 2) {
+                compSelect.find('option').each(function(idx) {
+                    if (idx < 2 && !matchedValues.includes($(this).val())) {
+                        matchedValues.push($(this).val());
+                    }
+                });
+            }
+
+            // 4. Set values in Select2 and trigger change event
+            compSelect.val(matchedValues).trigger('change');
+
+            // 5. Automatically trigger fetchCardComparison()!
+            if (matchedValues.length >= 2 && typeof fetchCardComparison === 'function') {
+                const tbody = document.getElementById('compare-tbody');
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:35px; color:#0284c7; font-weight:600;"><span class="spinner-small" style="margin-right:8px;">⏳</span>Auto-generating side-by-side preference card comparison for ${matchedValues.map(s => 'Dr. ' + s).join(', ')}...</td></tr>`;
+                }
+                await fetchCardComparison();
+            }
+
+            // 6. Condense chatbot if in maximized view so user sees application comparison immediately
+            const chatContainer = document.getElementById('chatbot-container');
+            if (chatContainer && chatContainer.classList.contains('chat-maximized')) {
+                chatContainer.classList.remove('chat-maximized');
+                const maxBtn = document.getElementById('btn-chat-maximize');
+                if (maxBtn) maxBtn.innerText = '⤢';
+            }
+
+            // 7. Scroll smoothly to comparison panel
+            setTimeout(() => {
+                const compPanel = document.querySelector('#CompareCardsTab .table-panel');
+                if (compPanel) compPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 150);
+        };
+
+        window.navigateToPrefCardWithSurgeon = async function(procedureName, surgeonName) {
+            console.log('[Navigate to Pref Card]', procedureName, surgeonName);
+            if (typeof openTabDirect === 'function') {
+                openTabDirect('PrefCardTab', 'group-cards');
+            } else if (typeof openTab === 'function') {
+                openTab(null, 'PrefCardTab');
+            }
+
+            const proc = (procedureName || window.currentProcedure || '').trim();
+            if (proc && proc !== window.currentProcedure) {
+                window.currentProcedure = proc;
+                const procSel = $('#procedure-select');
+                if (procSel.length) procSel.val(proc);
+                if (typeof loadDashboardData === 'function') {
+                    await loadDashboardData(proc);
+                }
+            }
+
+            const surgSelect = document.getElementById('pref-surgeon-select');
+            if (surgSelect && surgeonName) {
+                const cleanSurg = surgeonName.replace(/^Dr\.\s*/i, '').trim().toUpperCase();
+                let found = false;
+                for (let opt of surgSelect.options) {
+                    const optVal = opt.value.trim().toUpperCase();
+                    if (optVal === cleanSurg || optVal.includes(cleanSurg) || cleanSurg.includes(optVal)) {
+                        surgSelect.value = opt.value;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found && surgSelect.options.length > 0) {
+                    surgSelect.appendChild(new Option(surgeonName, surgeonName, true, true));
+                }
+                if (typeof fetchPreferenceCard === 'function') {
+                    await fetchPreferenceCard();
+                }
+            }
+
+            const chatContainer = document.getElementById('chatbot-container');
+            if (chatContainer && chatContainer.classList.contains('chat-maximized')) {
+                chatContainer.classList.remove('chat-maximized');
+                const maxBtn = document.getElementById('btn-chat-maximize');
+                if (maxBtn) maxBtn.innerText = '⤢';
             }
         };
 
@@ -4359,8 +4865,12 @@
             // Deactivate all tab-groups
             document.querySelectorAll('.tab-group').forEach(tg => tg.classList.remove('active'));
 
+            window.activeTabName = tabName;
             const targetEl = document.getElementById(tabName);
             if (targetEl) targetEl.style.display = "block";
+            if (window.logUserActivity) {
+                window.logUserActivity('Tab Navigation', `Navigated to ${tabName}`, 'ui_navigation');
+            }
             
             let matched = false;
             if (evt && evt.currentTarget && evt.currentTarget.classList.contains('tablinks')) {
@@ -4782,7 +5292,11 @@
                         if (drawerProc) drawerProc.innerText = this.value;
                         const cqoLabel = document.getElementById('cqo-cohort-label');
                         if (cqoLabel) cqoLabel.innerText = `Procedure: ${this.value}`;
+                        if (window.logUserActivity) {
+                            window.logUserActivity('Procedure Cohort Switch', `Switched active cohort to ${this.value}`, 'ui_navigation');
+                        }
                         loadDashboardData(this.value); 
+                        fetchNotifications(this.value);
                         if (document.getElementById('CQOTab')?.style.display === 'block') {
                             if (typeof fetchCQOSummary === 'function') fetchCQOSummary();
                         }
@@ -4806,6 +5320,7 @@
         async function loadDashboardData(procedure) {
             showLoading();
             try {
+                fetchNotifications(procedure);
                 const res = await fetch(`${API_BASE}/data/${encodeURIComponent(procedure)}`);
                 window.masterData = await res.json();
                 
@@ -5143,7 +5658,6 @@
             $('#kpi-dash-avg-cpc').text(`$${avgCostVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
             $('#kpi-dash-intensity').text(`${avgIntensity}%`);
             $('#kpi-dash-avg-charges').text(avgChgVal > 0 ? `$${avgChgVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '$0.00');
-            $('#kpi-dash-benchmark').text(`$${p25Val.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
             $('#kpi-dash-savings').text(`$${savingsOpp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
             $('#kpi-dash-outliers').text(`${outlierCasesCount} Outlier${outlierCasesCount === 1 ? '' : 's'}`);
 
@@ -5982,7 +6496,7 @@
                 plot_bgcolor: 'white', 
                 paper_bgcolor: 'white', 
                 legend: { 
-                    title: { text: 'Classification: ', side: 'left', font: { size: 11, color: '#475569', family: 'system-ui, sans-serif' } }, 
+                    title: { text: 'Classification: ', side: 'left', font: { size: 11, color: '#475569', family: "'Mulish', sans-serif" } }, 
                     orientation: 'h', 
                     x: 0.99, 
                     xanchor: 'right', 
@@ -5991,7 +6505,7 @@
                     bgcolor: 'rgba(255, 255, 255, 0.95)',
                     bordercolor: '#e2e8f0',
                     borderwidth: 1,
-                    font: { size: 11, color: '#1e293b' }
+                    font: { size: 11, color: '#1e293b', family: "'Mulish', sans-serif" }
                 }, 
                 margin: { t: 65, b: 80, l: 95, r: 35 },
                 clickmode: 'event+select'
@@ -6291,9 +6805,11 @@
         // ==================== NOTIFICATIONS & PUSH ALERT CENTER ====================
         let systemNotifications = [];
 
-        async function fetchNotifications() {
+        async function fetchNotifications(procOverride) {
             try {
-                const res = await fetch(`${API_BASE}/notifications`);
+                const proc = procOverride !== undefined ? procOverride : (window.currentProcedure || '');
+                const url = proc ? `${API_BASE}/notifications?procedure=${encodeURIComponent(proc)}` : `${API_BASE}/notifications`;
+                const res = await fetch(url);
                 if (!res.ok) return;
                 const data = await res.json();
                 systemNotifications = data.notifications || [];
@@ -6319,18 +6835,25 @@
             }
             
             listEl.innerHTML = notifs.map(n => `
-                <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="handleNotifClick('${n.id}', '${n.action_tab}')">
+                <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="handleNotifClick('${n.id}', '${n.action_tab}')" style="cursor: pointer; transition: all 0.15s;">
                     <div class="notif-icon-box" style="background: ${n.icon_bg || '#f1f5f9'};">
                         ${n.icon || '🔔'}
                     </div>
-                    <div class="notif-content">
-                        <div class="notif-item-title">
-                            <span>${escapeHtml(n.title)}</span>
-                            <span class="notif-item-time">${escapeHtml(n.time)}</span>
+                    <div class="notif-content" style="flex: 1;">
+                        <div class="notif-item-title" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+                            <div style="font-weight: 700; color: #1e293b; font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                <span>${escapeHtml(n.title)}</span>
+                                ${n.bee ? `<span style="background: #f1f5f9; color: #475569; font-size: 9.5px; padding: 1px 5px; border-radius: 4px; font-weight: 700;">${escapeHtml(n.bee)}</span>` : ''}
+                                ${n.procedure && n.procedure !== 'All Procedures' ? `<span style="background: #eff6ff; color: #1d4ed8; font-size: 9.5px; padding: 1px 6px; border-radius: 4px; font-weight: 700; border: 1px solid #bfdbfe;">${escapeHtml(n.procedure)}</span>` : ''}
+                            </div>
+                            <span class="notif-item-time" style="font-size: 10px; color: #94a3b8; flex-shrink: 0;">${escapeHtml(n.time)}</span>
                         </div>
-                        <div class="notif-item-desc">${escapeHtml(n.desc)}</div>
-                        <div style="font-size: 10px; font-weight: 700; color: #2563eb; display: flex; align-items: center; gap: 4px;">
-                            <span>Open in ${escapeHtml(n.action_tab)}</span> <span>&rarr;</span>
+                        <div class="notif-item-desc" style="font-size: 11.5px; color: #475569; margin: 4px 0 6px 0; line-height: 1.4;">${escapeHtml(n.desc)}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                            ${n.kpi_impact ? `<span style="font-size: 10.5px; font-weight: 800; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px;">${escapeHtml(n.kpi_impact)}</span>` : '<span></span>'}
+                            <div style="font-size: 11px; font-weight: 700; color: var(--brand-red); display: flex; align-items: center; gap: 4px;">
+                                <span>${escapeHtml(n.action_label || `Open ${n.action_tab}`)}</span> <span>&rarr;</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -6370,6 +6893,16 @@
             }
             const dropdown = document.getElementById('notif-dropdown');
             if (dropdown) dropdown.style.display = 'none';
+
+            // Apply global procedure filter based on alert context if specified and different
+            const targetProc = notif ? notif.procedure : null;
+            if (targetProc && targetProc !== 'All Procedures' && targetProc !== window.currentProcedure) {
+                window.currentProcedure = targetProc;
+                const procSel = $('#procedure-select');
+                if (procSel.length) {
+                    procSel.val(targetProc).trigger('change');
+                }
+            }
             
             if (actionTab) {
                 openTabDirect(actionTab);
@@ -6395,6 +6928,11 @@
                     if (document.getElementById('header-user-role')) document.getElementById('header-user-role').innerText = u.username || "uchealth_admin";
                     if (document.getElementById('dropdown-user-name')) document.getElementById('dropdown-user-name').innerText = u.display_name || "UC Health Clinical Value";
                     if (document.getElementById('dropdown-user-facility')) document.getElementById('dropdown-user-facility').innerText = `${u.facility || "UC Health Cincinnati Medical Center"} (${u.username})`;
+                    if (document.getElementById('header-user-avatar')) {
+                        const words = (u.display_name || "UC").trim().split(" ");
+                        const initials = words.length > 1 ? (words[0][0] + words[words.length - 1][0]).toUpperCase() : words[0].substring(0, 2).toUpperCase();
+                        document.getElementById('header-user-avatar').innerText = initials || "UC";
+                    }
                 }
             } catch (e) {
                 console.warn("Auth endpoint fallback", e);
@@ -6487,6 +7025,183 @@
             }, false);
         }
 
+        // ==================== ACTIVITY AUDIT LOGGING HELPER (SQLite WAL 90-Day Retention) ====================
+        window.logUserActivity = function(action, detail, category = 'ui_navigation') {
+            try {
+                fetch(`${API_BASE}/audit-log`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: String(action),
+                        detail: String(detail),
+                        category: String(category),
+                        user: 'uchealth_admin'
+                    })
+                }).catch(() => {});
+            } catch(e) {}
+        };
+
+        // Multi-Threaded Client-Side Error & Crash Reporting
+        window.addEventListener('error', function(event) {
+            try {
+                fetch(`${API_BASE}/jira/report-client-exception`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        error_name: (event.error && event.error.name) || 'ClientJavaScriptError',
+                        message: event.message || 'Unknown runtime error',
+                        stack: (event.error && event.error.stack) || `At ${event.filename}:${event.lineno}:${event.colno}`,
+                        context: {
+                            procedure: window.currentProcedure || "All Procedures",
+                            tab: document.querySelector('.tabcontent[style*="block"]')?.id || "UnknownTab",
+                            url: window.location.href
+                        }
+                    })
+                }).catch(() => {});
+            } catch(e) {}
+        });
+
+        window.addEventListener('unhandledrejection', function(event) {
+            try {
+                const reason = event.reason;
+                fetch(`${API_BASE}/jira/report-client-exception`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        error_name: 'UnhandledPromiseRejection',
+                        message: (reason && reason.message) || String(reason),
+                        stack: (reason && reason.stack) || 'Promise rejection',
+                        context: {
+                            procedure: window.currentProcedure || "All Procedures",
+                            tab: document.querySelector('.tabcontent[style*="block"]')?.id || "UnknownTab"
+                        }
+                    })
+                }).catch(() => {});
+            } catch(e) {}
+        });
+
+        // ==================== JIRA ISSUE & STATUS TRACKING (Space: UCHCQO) ====================
+        function switchJiraModalTab(mode) {
+            const reportBtn = document.getElementById('jira-tab-btn-report');
+            const statusBtn = document.getElementById('jira-tab-btn-status');
+            const reportView = document.getElementById('jira-view-report');
+            const statusView = document.getElementById('jira-view-status');
+            const footerActions = document.getElementById('jira-footer-action-buttons');
+
+            if (mode === 'status') {
+                if (reportBtn) { reportBtn.style.borderBottom = '3px solid transparent'; reportBtn.style.color = '#64748b'; }
+                if (statusBtn) { statusBtn.style.borderBottom = '3px solid var(--brand-red)'; statusBtn.style.color = 'var(--text-dark)'; }
+                if (reportView) reportView.style.display = 'none';
+                if (statusView) statusView.style.display = 'flex';
+                if (footerActions) footerActions.style.display = 'none';
+                refreshJiraTickets();
+            } else {
+                if (reportBtn) { reportBtn.style.borderBottom = '3px solid var(--brand-red)'; reportBtn.style.color = 'var(--text-dark)'; }
+                if (statusBtn) { statusBtn.style.borderBottom = '3px solid transparent'; statusBtn.style.color = '#64748b'; }
+                if (reportView) reportView.style.display = 'flex';
+                if (statusView) statusView.style.display = 'none';
+                if (footerActions) footerActions.style.display = 'block';
+            }
+        }
+
+        async function refreshJiraTickets() {
+            const container = document.getElementById('jira-tickets-container');
+            const countBadge = document.getElementById('jira-ticket-count-badge');
+            if (container) container.innerHTML = `<div style="text-align: center; padding: 25px; color: #94a3b8; font-size: 12px;">Querying tickets in Jira project UCHCQO...</div>`;
+
+            try {
+                const res = await fetch(`${API_BASE}/jira/recent-tickets`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const issues = data.issues || [];
+                if (countBadge) countBadge.innerText = issues.length;
+
+                if (issues.length === 0) {
+                    if (container) container.innerHTML = `<div style="text-align: center; padding: 25px; color: #64748b; font-size: 12px;">No active tickets in project UCHCQO.</div>`;
+                    return;
+                }
+
+                if (container) {
+                    container.innerHTML = issues.map(iss => {
+                        const st = (iss.status || 'Open').toLowerCase();
+                        let badgeBg = '#eff6ff', badgeColor = '#1d4ed8', badgeBorder = '#bfdbfe';
+                        if (st.includes('progress')) {
+                            badgeBg = '#fef3c7'; badgeColor = '#b45309'; badgeBorder = '#fde68a';
+                        } else if (st.includes('review')) {
+                            badgeBg = '#f3e8ff'; badgeColor = '#7e22ce'; badgeBorder = '#e9d5ff';
+                        } else if (st.includes('resolved') || st.includes('done') || st.includes('closed')) {
+                            badgeBg = '#ecfdf5'; badgeColor = '#047857'; badgeBorder = '#a7f3d0';
+                        }
+
+                        const isBugOrAuto = (iss.type === 'Bug' || (iss.summary || '').includes('[AUTO-EXCEPTION]'));
+                        const healBtn = isBugOrAuto ? `
+                            <button onclick="event.stopPropagation(); triggerSelfHealingForTicket('${escapeHtml(iss.key)}', '${escapeHtml(iss.summary)}')" class="btn-secondary" style="font-size: 10.5px; padding: 3px 8px; font-weight: 700; color: #059669; border-color: #a7f3d0; background: #ecfdf5;">
+                                🛡️ Self-Heal
+                            </button>
+                        ` : '';
+
+                        return `
+                            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 6px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <a href="${iss.url}" target="_blank" style="font-weight: 800; font-size: 12px; color: #2563eb; text-decoration: none; font-family: monospace;">
+                                            ${escapeHtml(iss.key)} ↗
+                                        </a>
+                                        <span style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; padding: 2px 8px; border-radius: 12px; font-size: 10.5px; font-weight: 700; text-transform: uppercase;">
+                                            ${escapeHtml(iss.status || 'Open')}
+                                        </span>
+                                        <span style="font-size: 11px; color: #64748b; font-weight: 600;">
+                                            ${iss.type === 'Bug' ? '🐛 Bug' : (iss.type === 'Feature' ? '✨ Feature' : '📋 Task')}
+                                        </span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        ${healBtn}
+                                        <span style="font-size: 10.5px; color: #94a3b8;">${escapeHtml(iss.created || '')}</span>
+                                    </div>
+                                </div>
+                                <div style="font-size: 12px; color: #1e293b; font-weight: 600; line-height: 1.4;">
+                                    ${escapeHtml(iss.summary)}
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: #64748b; margin-top: 2px;">
+                                    <span>Assignee: <strong>${escapeHtml(iss.assignee || 'nrayan@supplycopia.com')}</strong></span>
+                                    <span>Space: <strong>UCHCQO</strong></span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (err) {
+                if (container) container.innerHTML = `<div style="text-align: center; padding: 25px; color: #ef4444; font-size: 12px;">Failed to query Jira tickets: ${err.message}</div>`;
+            }
+        }
+
+        function triggerSelfHealingForTicket(ticketKey, summary) {
+            closeJiraModal();
+            fetch(`${API_BASE}/self-heal/diagnose`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    error_type: "JiraReportedAnomaly",
+                    error_message: summary,
+                    stack_trace: `Referenced Jira Ticket: ${ticketKey}`,
+                    context: {
+                        procedure: window.currentProcedure || "All Procedures",
+                        tab: document.querySelector('.tabcontent[style*="block"]')?.id || "Application Context"
+                    }
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.diagnostic) {
+                    data.diagnostic.jira_ticket_key = ticketKey;
+                    openSelfHealingModal(data.diagnostic);
+                }
+            })
+            .catch(err => {
+                alert(`Self-healing diagnosis error: ${err.message}`);
+            });
+        }
+
         function openJiraIssueModal() {
             const modal = document.getElementById('jira-modal');
             if (!modal) return;
@@ -6504,9 +7219,11 @@
             window.jiraSelectedFiles = [];
             renderJiraAttachedFilesList();
             initJiraDropzone();
+            switchJiraModalTab('report');
             const btn = document.getElementById('btn-submit-jira');
             if (btn) { btn.innerText = "🚀 Submit Jira Ticket"; btn.disabled = false; }
             modal.style.display = 'flex';
+            if (window.logUserActivity) window.logUserActivity('Modal Open', 'Opened Jira issue tracking modal', 'ui_navigation');
         }
 
         function closeJiraModal() {
@@ -6567,7 +7284,8 @@
                         statusMsg.innerHTML = `✅ Successfully created <strong><a href="${data.issue_url}" target="_blank" style="color: #15803d; text-decoration: underline;">${data.issue_key}</a></strong> in Jira space UCHCQO${attachBadge}! Assigned to nrayan@supplycopia.com.`;
                     }
                     if (btn) btn.innerText = "✅ Created";
-                    setTimeout(() => { closeJiraModal(); }, 2800);
+                    if (window.logUserActivity) window.logUserActivity('Jira Ticket Created', `Created ${data.issue_key}: ${summary}`, 'general');
+                    setTimeout(() => { switchJiraModalTab('status'); }, 1800);
                 } else {
                     throw new Error(data.detail || data.message || "Failed to create ticket");
                 }
@@ -6582,39 +7300,300 @@
             }
         }
 
-        // ==================== ACTIVITY AUDIT LOG MODAL ====================
+        // ==================== ACTIVITY AUDIT LOG MODAL (SQLite WAL 90-Day Retention) ====================
         async function openAuditLogModal() {
             const modal = document.getElementById('audit-log-modal');
             if (!modal) return;
             modal.style.display = 'flex';
+            fetchAuditLogs();
+            if (window.logUserActivity) window.logUserActivity('Modal Open', 'Viewed Activity Audit Log', 'compliance');
+        }
+
+        async function fetchAuditLogs() {
             const tbody = document.getElementById('audit-log-tbody');
-            if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 25px; color: var(--text-muted);">Fetching immutable audit trail...</td></tr>`;
+            const searchInput = document.getElementById('audit-log-search-input')?.value || '';
+            const catFilter = document.getElementById('audit-log-cat-filter')?.value || 'all';
+            const statsCountEl = document.getElementById('audit-log-stats-count');
+
+            if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 25px; color: var(--text-muted);">Fetching immutable audit trail from SQLite WAL engine...</td></tr>`;
 
             try {
-                const res = await fetch(`${API_BASE}/audit-log`);
+                const url = new URL(`${API_BASE}/audit-log`, window.location.origin);
+                if (searchInput) url.searchParams.set('search', searchInput);
+                if (catFilter && catFilter !== 'all') url.searchParams.set('category', catFilter);
+
+                const res = await fetch(url.toString());
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
                 const events = data.audit_events || [];
+                const stats = data.stats || {};
+
+                if (statsCountEl) {
+                    statsCountEl.innerText = `${stats.total_events || events.length} total events | Automated 90-day purge active (hourly background sweep)`;
+                }
+
                 if (events.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 25px; color: var(--text-muted);">No recorded audit events.</td></tr>`;
+                    if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 25px; color: var(--text-muted);">No audit events match your filter criteria.</td></tr>`;
                     return;
                 }
-                tbody.innerHTML = events.map(e => `
-                    <tr style="border-bottom: 1px solid #f1f5f9;">
-                        <td style="padding: 8px 6px; color: #64748b; font-family: monospace;">${escapeHtml(e.timestamp)}</td>
-                        <td style="padding: 8px 6px; font-weight: 600; color: #1e293b;">${escapeHtml(e.user)}</td>
-                        <td style="padding: 8px 6px; font-weight: 600; color: #2563eb;">${escapeHtml(e.action)}</td>
-                        <td style="padding: 8px 6px; color: #334155;">${escapeHtml(e.detail)}</td>
-                    </tr>
-                `).join('');
+
+                if (tbody) {
+                    tbody.innerHTML = events.map(e => {
+                        let catBg = '#f1f5f9', catColor = '#475569';
+                        if (e.category === 'benchmark') { catBg = '#fef3c7'; catColor = '#b45309'; }
+                        else if (e.category === 'preference_card') { catBg = '#e0f2fe'; catColor = '#0369a1'; }
+                        else if (e.category === 'self_healing') { catBg = '#ecfdf5'; catColor = '#047857'; }
+                        else if (e.category === 'incident') { catBg = '#fee2e2'; catColor = '#b91c1c'; }
+                        else if (e.category === 'security') { catBg = '#ffe4e6'; catColor = '#be123c'; }
+
+                        return `
+                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                <td style="padding: 8px 6px; color: #64748b; font-family: monospace; font-size: 11px;">${escapeHtml(e.timestamp)}</td>
+                                <td style="padding: 8px 6px; font-weight: 600; color: #1e293b;">${escapeHtml(e.user)}</td>
+                                <td style="padding: 8px 6px;">
+                                    <span style="background: ${catBg}; color: ${catColor}; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;">
+                                        ${escapeHtml(e.category || 'general')}
+                                    </span>
+                                </td>
+                                <td style="padding: 8px 6px; font-weight: 700; color: #2563eb;">${escapeHtml(e.action)}</td>
+                                <td style="padding: 8px 6px; color: #334155;">${escapeHtml(e.detail)}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
             } catch (err) {
-                if (tbody) tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 25px; color: #ef4444;">Failed to load audit logs: ${err.message}</td></tr>`;
+                if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 25px; color: #ef4444;">Failed to load audit logs: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function manualPurgeAuditLogs() {
+            if (!confirm("Execute automated 90-day retention purge? Records older than 90 days will be permanently removed to protect memory.")) return;
+            try {
+                const res = await fetch(`${API_BASE}/audit-log/purge?days=90`, { method: 'POST' });
+                const data = await res.json();
+                alert(`Purge complete: ${data.records_purged} expired records purged. System memory protected.`);
+                fetchAuditLogs();
+            } catch (e) {
+                alert(`Error executing purge: ${e.message}`);
             }
         }
 
         function closeAuditLogModal() {
             const modal = document.getElementById('audit-log-modal');
             if (modal) modal.style.display = 'none';
+        }
+
+        // ==================== AUTONOMOUS SAFE SELF-HEALING SUBSYSTEM ====================
+        window.activeHealingDiagnostic = null;
+
+        function openSelfHealingModal(diag) {
+            window.activeHealingDiagnostic = diag;
+            const modal = document.getElementById('self-healing-modal');
+            if (!modal) return;
+
+            document.getElementById('self-heal-error-type').innerText = diag.error_type || "Runtime Exception Intercepted";
+            document.getElementById('self-heal-diag-id').innerText = diag.diagnostic_id || "HEAL-SESSION";
+            document.getElementById('self-heal-error-msg').innerText = diag.error_message || "System anomaly detected";
+            document.getElementById('self-heal-rca-text').innerText = diag.root_cause_analysis || "Root cause diagnosis ready for execution.";
+            
+            const metaEl = document.getElementById('self-heal-meta');
+            if (metaEl) {
+                metaEl.innerHTML = `
+                    <span>Impacted Cohort: <strong>${escapeHtml(diag.impacted_procedure || 'All')}</strong></span>
+                    <span>Active Tab: <strong>${escapeHtml(diag.impacted_tab || 'Current')}</strong></span>
+                    <span>Severity: <strong>${escapeHtml(diag.severity || 'High')}</strong></span>
+                `;
+            }
+
+            renderHealingSteps(diag.plan_steps || []);
+            
+            const secAlert = document.getElementById('self-heal-security-alert');
+            if (secAlert) secAlert.style.display = 'none';
+            const resBox = document.getElementById('self-heal-result-box');
+            if (resBox) resBox.style.display = 'none';
+            const btn = document.getElementById('btn-confirm-self-heal');
+            if (btn) { btn.innerText = "✅ Confirm & Execute Healing Plan"; btn.disabled = false; }
+
+            modal.style.display = 'flex';
+        }
+
+        function renderHealingSteps(steps) {
+            const cont = document.getElementById('self-heal-steps-container');
+            if (!cont) return;
+            if (!steps || steps.length === 0) {
+                cont.innerHTML = `<div style="font-size: 11.5px; color: #64748b;">No actions required. System healthy.</div>`;
+                return;
+            }
+
+            cont.innerHTML = steps.map((s, idx) => `
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 14px; display: flex; align-items: flex-start; gap: 10px;">
+                    <span style="background: #e2e8f0; color: #1e293b; font-weight: 800; font-size: 11px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        ${idx + 1}
+                    </span>
+                    <div style="flex: 1;">
+                        <div style="font-size: 12px; font-weight: 700; color: #1e293b;">${escapeHtml(s.title || s.action_id)}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${escapeHtml(s.description)}</div>
+                    </div>
+                    <span style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px;">
+                        Whitelisted Action
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        async function refineSelfHealingPlan() {
+            if (!window.activeHealingDiagnostic) return;
+            const feedback = document.getElementById('self-heal-user-feedback')?.value || '';
+            const secAlert = document.getElementById('self-heal-security-alert');
+
+            if (secAlert) secAlert.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API_BASE}/self-heal/evaluate-plan`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        diagnostic_id: window.activeHealingDiagnostic.diagnostic_id,
+                        user_feedback: feedback
+                    })
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    if (secAlert) {
+                        secAlert.style.display = 'block';
+                        secAlert.innerHTML = `<strong>⚠️ Sentinel Security Alert:</strong> ${escapeHtml(data.detail || 'Prohibited input rejected.')}`;
+                    }
+                    return;
+                }
+
+                window.activeHealingDiagnostic = data.diagnostic;
+                renderHealingSteps(data.diagnostic.plan_steps || []);
+                alert("Remediation plan updated with your feedback!");
+            } catch (err) {
+                if (secAlert) {
+                    secAlert.style.display = 'block';
+                    secAlert.innerText = `Evaluation error: ${err.message}`;
+                }
+            }
+        }
+
+        async function confirmAndExecuteHealing() {
+            if (!window.activeHealingDiagnostic) return;
+            const btn = document.getElementById('btn-confirm-self-heal');
+            const resBox = document.getElementById('self-heal-result-box');
+            const notes = document.getElementById('self-heal-user-feedback')?.value || '';
+
+            if (btn) { btn.innerText = "Executing Healing Handlers..."; btn.disabled = true; }
+
+            try {
+                const res = await fetch(`${API_BASE}/self-heal/execute`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        diagnostic_id: window.activeHealingDiagnostic.diagnostic_id,
+                        approved_actions: window.activeHealingDiagnostic.proposed_actions,
+                        notes: notes
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    if (resBox) {
+                        resBox.style.display = 'block';
+                        resBox.innerHTML = `
+                            <div style="font-weight: 800; margin-bottom: 4px;">🎉 Self-Healing Remediations Successfully Executed!</div>
+                            <div>${escapeHtml(data.message)} (Elapsed: ${data.latency_ms}ms | Health: ${data.system_health})</div>
+                        `;
+                    }
+                    if (btn) btn.innerText = "✅ System Healed";
+                    fetchNotifications();
+                    setTimeout(() => { closeSelfHealingModal(); }, 2400);
+                } else {
+                    throw new Error(data.detail || "Healing execution failed");
+                }
+            } catch (err) {
+                alert(`Healing execution failed: ${err.message}`);
+                if (btn) { btn.innerText = "Retry Healing Execution"; btn.disabled = false; }
+            }
+        }
+
+        async function simulateSelfHealingTest() {
+            try {
+                const res = await fetch(`${API_BASE}/test/simulate-exception`);
+                const data = await res.json();
+                if (data.diagnostic) {
+                    openSelfHealingModal(data.diagnostic);
+                }
+            } catch (e) {
+                alert(`Simulation notice: ${e.message}`);
+            }
+        }
+
+        function closeSelfHealingModal() {
+            const modal = document.getElementById('self-healing-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        // ==================== CHAT LIVE ALERT ACTIVATION HANDLER ====================
+        async function activateChatLiveAlert(btn) {
+            const card = btn.closest('.chat-clarification-card') || document;
+            const proc = card.querySelector('#chat-alert-proc')?.value || window.currentProcedure || "All Procedures";
+            const metric = card.querySelector('#chat-alert-metric')?.value || "cpc_variance";
+            const operator = card.querySelector('#chat-alert-operator')?.value || ">";
+            const threshold = parseFloat(card.querySelector('#chat-alert-threshold')?.value || "500");
+            const chBell = card.querySelector('#chat-alert-ch-bell')?.checked;
+            const chJira = card.querySelector('#chat-alert-ch-jira')?.checked;
+            const chEmail = card.querySelector('#chat-alert-ch-email')?.checked;
+            const statusMsg = card.querySelector('#chat-alert-status-msg');
+
+            const channels = [];
+            if (chBell) channels.push("in_app");
+            if (chJira) channels.push("jira");
+            if (chEmail) channels.push("email");
+
+            btn.disabled = true;
+            btn.innerText = "Activating Swarm Surveillance...";
+
+            try {
+                const res = await fetch(`${API_BASE}/alerts/configure`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        procedure: proc,
+                        metric: metric,
+                        operator: operator,
+                        threshold: threshold,
+                        channels: channels,
+                        user: "uchealth_admin"
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    btn.innerText = "✅ Alert Active";
+                    btn.style.background = "#10b981";
+                    if (statusMsg) {
+                        statusMsg.style.display = 'block';
+                        statusMsg.style.background = '#ecfdf5';
+                        statusMsg.style.color = '#065f46';
+                        statusMsg.innerHTML = `✅ <strong>Live Alert Activated!</strong> Swarm is continuously scanning <em>${escapeHtml(proc)}</em>. Breaches will dispatch directly to In-App Bell & Jira UCHCQO.`;
+                    }
+                    fetchNotifications();
+                    if (window.logUserActivity) window.logUserActivity('Live Alert Configured', `Configured threshold ${metric} ${operator} ${threshold} for ${proc}`, 'alert_config');
+                } else {
+                    throw new Error(data.detail || "Failed to configure alert");
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerText = "Retry Activation";
+                if (statusMsg) {
+                    statusMsg.style.display = 'block';
+                    statusMsg.style.background = '#fee2e2';
+                    statusMsg.style.color = '#b91c1c';
+                    statusMsg.innerText = `Error activating alert: ${err.message}`;
+                }
+            }
         }
 
         // ==================== CQO METHODOLOGY & INTERPRETATION MODAL ====================
@@ -6806,8 +7785,7 @@
 
         function simulateLogout() {
             if (confirm("Sign out of UC Health Clinical Value System (SSO Session)?")) {
-                alert("Logged out. Redirecting to UC Health Okta authentication portal...");
-                window.location.reload();
+                window.location.href = "/logout";
             }
         }
 
@@ -6824,6 +7802,32 @@
                 if (userMenu) userMenu.style.display = 'none';
             }
         });
+
+        // Tab Group Hover-Intent Grace Period & Direct Dropdown Navigation
+        (function initTabHoverGrace() {
+            function bindHover() {
+                document.querySelectorAll('.tab-group').forEach(tg => {
+                    let hideTimer = null;
+                    tg.addEventListener('mouseenter', () => {
+                        if (hideTimer) clearTimeout(hideTimer);
+                        document.querySelectorAll('.tab-group').forEach(other => {
+                            if (other !== tg) other.classList.remove('hover-open');
+                        });
+                        tg.classList.add('hover-open');
+                    });
+                    tg.addEventListener('mouseleave', () => {
+                        hideTimer = setTimeout(() => {
+                            tg.classList.remove('hover-open');
+                        }, 280);
+                    });
+                });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bindHover);
+            } else {
+                bindHover();
+            }
+        })();
 
         // ==================== BUDGET FORECASTING & SCENARIO ENGINE ====================
         let budgetForecastChart = null;
@@ -6970,12 +7974,13 @@
             const el = document.getElementById('budget-tuning-details-content');
             const btn = document.getElementById('btn-toggle-tuning-details');
             if (!el) return;
-            if (el.style.display === 'none') {
+            const isHidden = (el.style.display === 'none' || getComputedStyle(el).display === 'none');
+            if (isHidden) {
                 el.style.display = 'block';
-                if (btn) btn.innerText = 'Hide Details ▲';
+                if (btn) btn.innerText = 'Hide Details ▼';
             } else {
                 el.style.display = 'none';
-                if (btn) btn.innerText = 'Details ▼';
+                if (btn) btn.innerText = 'Details ▶';
             }
         }
 

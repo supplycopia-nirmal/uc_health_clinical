@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SupplyCopia | Making Healthcare Affordable, One Part at a Time</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/static/login_assets/new-sc-favicon.svg">
+  <link rel="shortcut icon" href="/static/login_assets/new-sc-favicon.svg">
+  <link rel="alternate icon" type="image/png" href="/SC_Logo.png">
+  <link rel="stylesheet" href="/static/login.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Mulish:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container-wrapper">
+    <!-- Left Column: Carousel Slider -->
+    <div class="slider-container">
+      <img src="/static/login_assets/Group_4099.svg" alt="SupplyCopia" class="mainLogo">
+
+      <div class="carousel-viewport">
+        <!-- Slide 1: CFO -->
+        <div class="slide-item active" data-slide="0">
+          <div class="picsum-img-wrapper">
+            <div class="image-slider">
+              <img src="/static/login_assets/slider_Img_01.png" alt="CFO">
+            </div>
+          </div>
+          <div class="carousel-caption">
+            <p>We make life better for <span class="slider-main-text">CFO</span></p>
+          </div>
+        </div>
+
+        <!-- Slide 2: Supply Chain -->
+        <div class="slide-item" data-slide="1">
+          <div class="picsum-img-wrapper">
+            <div class="image-slider">
+              <img src="/static/login_assets/slider_Img_02.png" alt="Supply Chain">
+            </div>
+          </div>
+          <div class="carousel-caption">
+            <p>We make life better for <span class="slider-main-text">Supply Chain</span></p>
+          </div>
+        </div>
+
+        <!-- Slide 3: Data & Analytics -->
+        <div class="slide-item" data-slide="2">
+          <div class="picsum-img-wrapper">
+            <div class="image-slider">
+              <img src="/static/login_assets/slider_Img_03.png" alt="Data & Analytics">
+            </div>
+          </div>
+          <div class="carousel-caption">
+            <p>We make life better for <span class="slider-main-text">Data & Analytics</span></p>
+          </div>
+        </div>
+
+        <!-- Slide 4: Sales -->
+        <div class="slide-item" data-slide="3">
+          <div class="picsum-img-wrapper">
+            <div class="image-slider">
+              <img src="/static/login_assets/slider_Img_04.png" alt="Sales">
+            </div>
+          </div>
+          <div class="carousel-caption">
+            <p>We make life better for <span class="slider-main-text">Sales</span></p>
+          </div>
+        </div>
+
+        <!-- Carousel Indicators -->
+        <div class="carousel-indicators">
+          <span class="dot active" onclick="goToSlide(0)"></span>
+          <span class="dot" onclick="goToSlide(1)"></span>
+          <span class="dot" onclick="goToSlide(2)"></span>
+          <span class="dot" onclick="goToSlide(3)"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: SSO Login Form -->
+    <div class="form-container">
+      <div class="org-logo-wrapper">
+        <img src="/static/uc_health_logo.svg" alt="UC Health" class="org-logo">
+      </div>
+
+      <div class="main-content">
+        <h1 class="get-started">Get started</h1>
+        <p class="email-valid">Sign in with your organization SSO to access the Clinical Quality Optimization (CQO) Studio.</p>
+
+        <div class="sso-button-group">
+          <a href="/saml/login" class="primary-btn-normal sso-login-button" id="btnSsoLogin">
+            <svg class="sso-icon" viewBox="0 0 21 21" width="20" height="20">
+              <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+              <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+              <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+              <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+            </svg>
+            <span>Sign in with SupplyCopia SSO</span>
+          </a>
+
+          <!-- Local dev helper (auto-displayed on localhost or with ?dev=true) -->
+          <div id="devBypassWrapper" style="display:none; text-align:center; margin-top:10px;">
+            <a href="/saml/dev-login" class="dev-bypass-link" title="Use mock authentication for localhost testing">
+              ⚡ Local Developer Bypass (Test User)
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Section replicating sc-demo.supplycopia.com -->
+      <div class="bottom-info">
+        <div class="footer-wrapper">
+          <div class="link-text">
+            <a href="https://www.supplycopia.com/about-us/" target="_blank">About Us</a>
+            <span class="seperator">|</span>
+            <a href="https://www.supplycopia.com/ceo-corner/" target="_blank">CEO Corner</a>
+            <span class="seperator">|</span>
+            <a href="https://www.supplycopia.com/customer-stories/" target="_blank">Customer Stories</a>
+            <span class="seperator">|</span>
+            <a href="https://www.supplycopia.com/blogs/" target="_blank">Blog</a>
+            <span class="seperator">|</span>
+            <a href="https://www.supplycopia.com/contact-us/" target="_blank">Contact Us</a>
+            <span class="seperator">|</span>
+            <a href="https://www.supplycopia.com/terms-of-service/" target="_blank">Terms</a>
+            <span class="seperator">|</span>
+            <a href="https://www.supplycopia.com/privacy-policy/" target="_blank">Privacy policy</a>
+          </div>
+          <div class="icon-wrapper">
+            <div class="reserved-text">
+              &copy; <span id="currentYear">2026</span> <a href="https://www.supplycopia.com/" target="_blank">SupplyCopia Inc.</a> | All Rights Reserved
+            </div>
+            <div class="link-icons">
+              <a href="https://www.linkedin.com/company/supplycopia/mycompany/" target="_blank" title="LinkedIn">
+                <img src="/static/login_assets/linkedin-icon.svg" alt="LinkedIn">
+              </a>
+              <a href="https://www.youtube.com/channel/UCIN4jaNLnDnR5kBy1u-mFog" target="_blank" title="YouTube">
+                <img src="/static/login_assets/youtube-icon.svg" alt="YouTube">
+              </a>
+              <a href="https://www.facebook.com/supplycopia" target="_blank" title="Facebook">
+                <img src="/static/login_assets/facebook-icon.svg" alt="Facebook">
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Dynamic Year
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+    // Preserve returnUrl
+    const urlParams = new URLSearchParams(window.location.search);
+    const returnUrl = urlParams.get('returnUrl') || '/';
+    const ssoBtn = document.getElementById('btnSsoLogin');
+    if (ssoBtn) {
+      ssoBtn.href = `/saml/login?returnUrl=${encodeURIComponent(returnUrl)}`;
+    }
+    const devLink = document.querySelector('.dev-bypass-link');
+    if (devLink) {
+      devLink.href = `/saml/dev-login?returnUrl=${encodeURIComponent(returnUrl)}`;
+    }
+
+    // Check if on localhost to display dev bypass link
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '0.0.0.0' || window.location.search.includes('dev=true')) {
+      var devBypass = document.getElementById('devBypassWrapper');
+      if (devBypass) devBypass.style.display = 'block';
+    }
+
+    // Carousel Slider Logic
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide-item');
+    const dots = document.querySelectorAll('.carousel-indicators .dot');
+    let slideInterval = null;
+
+    function goToSlide(index) {
+      slides[currentSlide].classList.remove('active');
+      dots[currentSlide].classList.remove('active');
+      currentSlide = (index + slides.length) % slides.length;
+      slides[currentSlide].classList.add('active');
+      dots[currentSlide].classList.add('active');
+      resetTimer();
+    }
+
+    function nextSlide() {
+      goToSlide(currentSlide + 1);
+    }
+
+    function resetTimer() {
+      if (slideInterval) clearInterval(slideInterval);
+      slideInterval = setInterval(nextSlide, 4500);
+    }
+
+    resetTimer();
+  </script>
+</body>
+</html>

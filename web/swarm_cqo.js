@@ -728,33 +728,26 @@ function showSwarmToast(message, icon = '⚡') {
 // Execute Swarm Recommended Action
 function executeSwarmAction(actionText, actionKey) {
     console.log(`[Swarm Action] Executing: ${actionText} (key: ${actionKey})`);
-    const lower = (actionText || "").toLowerCase();
-    const key = (actionKey || "").toLowerCase();
-    
-    if (key === 'standardize_substitution' || lower.includes('standardize') || lower.includes('parity') || lower.includes('arbitrage') || lower.includes('substitute')) {
-        showSwarmToast(`Executing Standardized Substitution: Navigating to Price Parity & Commodity Analysis...`, '🏷️');
-        if (typeof openTabDirect === 'function') {
-            openTabDirect('ParityTab', 'group-value');
-        } else if (typeof openTabByName === 'function') {
-            openTabByName('ParityTab');
+    const rawText = (actionText || "").replace(/^[⚡📊🗂️📈📦🔍🧠⚖️🏆💸🏷️👨‍⚕️🏥🌱\s]+/, '').trim();
+    const rawKey = (actionKey || "").replace(/^[⚡📊🗂️📈📦🔍🧠⚖️🏆💸🏷️👨‍⚕️🏥🌱\s]+/, '').trim();
+    const lower = rawText.toLowerCase();
+    const key = rawKey.toLowerCase();
+
+    // 1. Surgeon Preference Card (MUST BE CHECKED BEFORE GENERAL STANDARDIZATION)
+    if (key.includes('preference card') || lower.includes('preference card') || lower.includes('pref card') || key === 'align_preference_card') {
+        // If it's a prompt asking to generate preference card, send to chat
+        if (key.includes('generate') || lower.includes('generate') || lower.includes('consensus')) {
+            showSwarmToast(`Engaging Preference Card Engine...`, '🗂️');
+            const chatContainer = document.getElementById('chatbot-container');
+            if (chatContainer && chatContainer.style.display !== 'flex') toggleChat();
+            const input = document.getElementById('chat-input');
+            if (input) {
+                input.value = rawKey || rawText || "generate standardized surgeon preference card";
+                sendChatMessage();
+            }
+            return;
         }
-        setTimeout(() => { if (typeof fetchPriceParity === 'function') fetchPriceParity(); }, 120);
-    } else if (key === 'contain_leakage' || lower.includes('leakage') || lower.includes('off-contract')) {
-        showSwarmToast(`Engaging Off-Contract Leakage Sentinel across preferred suppliers...`, '💸');
-        if (typeof openTabDirect === 'function') {
-            openTabDirect('LeakageTab', 'group-value');
-        } else if (typeof openTabByName === 'function') {
-            openTabByName('LeakageTab');
-        }
-    } else if (key === 'apply_bom_pack' || lower.includes('pack') || lower.includes('hold cart') || lower.includes('bom')) {
-        showSwarmToast(`Optimizing Procedure Custom Pack & Hold Cart Placement...`, '📦');
-        if (typeof openTabDirect === 'function') {
-            openTabDirect('ProcCardTab', 'group-cards');
-        } else if (typeof openTabByName === 'function') {
-            openTabByName('ProcCardTab');
-        }
-        setTimeout(() => { if (typeof fetchProcedureCard === 'function') fetchProcedureCard(); }, 120);
-    } else if (key === 'align_preference_card' || lower.includes('preference card') || lower.includes('align standardized') || lower.includes('surgeon')) {
+
         showSwarmToast(`Opening Surgeon Preference Card Alignment Engine...`, '👨‍⚕️');
         if (typeof openTabDirect === 'function') {
             openTabDirect('PrefCardTab', 'group-cards');
@@ -780,7 +773,47 @@ function executeSwarmAction(actionText, actionKey) {
                 }
             }, 300);
         }
-    } else if (key === 'lock_budget_runrate' || lower.includes('budget') || lower.includes('run-rate') || lower.includes('run rate') || lower.includes('commit')) {
+    } else if (key.includes('compare cards') || lower.includes('compare cards') || lower.includes('side-by-side') || (lower.includes('compare') && (lower.includes('surgeons') || lower.includes('physicians')) && !lower.includes('cpc'))) {
+        showSwarmToast(`Opening Preference Card Multi-Surgeon Comparison...`, '⚖️');
+        const surgeons = (window.lastComparedSurgeons && window.lastComparedSurgeons.length >= 2) ? window.lastComparedSurgeons : [];
+        const proc = window.lastComparedProcedure || window.currentProcedure;
+        if (typeof navigateToCompareCardsWithSurgeons === 'function') {
+            navigateToCompareCardsWithSurgeons(proc, surgeons);
+        } else if (typeof openTabDirect === 'function') {
+            openTabDirect('CompareCardsTab', 'group-cards');
+        }
+    } else if (lower.includes('physician cpc') || lower.includes('cpc comparison') || key.includes('cpc') || lower.includes('visualize the average cpc')) {
+        showSwarmToast(`Rendering Physician CPC Distribution & Variance Chart...`, '📊');
+        const chatContainer = document.getElementById('chatbot-container');
+        if (chatContainer && chatContainer.style.display !== 'flex') toggleChat();
+        const input = document.getElementById('chat-input');
+        if (input) {
+            input.value = "visualize the average cpc for all the physicians";
+            sendChatMessage();
+        }
+    } else if (key === 'standardize_substitution' || lower.includes('parity') || lower.includes('arbitrage') || lower.includes('substitute') || lower.includes('commodity substitution')) {
+        showSwarmToast(`Executing Standardized Substitution: Navigating to Price Parity & Commodity Analysis...`, '🏷️');
+        if (typeof openTabDirect === 'function') {
+            openTabDirect('ParityTab', 'group-value');
+        } else if (typeof openTabByName === 'function') {
+            openTabByName('ParityTab');
+        }
+        setTimeout(() => { if (typeof fetchPriceParity === 'function') fetchPriceParity(); }, 120);
+    } else if (key === 'contain_leakage' || lower.includes('leakage') || lower.includes('off-contract')) {
+        showSwarmToast(`Engaging Off-Contract Leakage Sentinel across preferred suppliers...`, '💸');
+        if (typeof openTabDirect === 'function') {
+            openTabDirect('LeakageTab', 'group-value');
+        } else if (typeof openTabByName === 'function') {
+            openTabByName('LeakageTab');
+        }
+    } else if (key === 'apply_bom_pack' || lower.includes('pack') || lower.includes('hold cart') || lower.includes('bom')) {
+        showSwarmToast(`Optimizing Procedure Custom Pack & Hold Cart Placement...`, '📦');
+        if (typeof openTabDirect === 'function') {
+            openTabDirect('ProcCardTab', 'group-cards');
+        } else if (typeof openTabByName === 'function') {
+            openTabByName('ProcCardTab');
+        }
+    } else if (key === 'lock_budget_runrate' || (lower.includes('budget') && !key.includes('forecast'))) {
         showSwarmToast(`Locking Savings Target into 12-Month Operating Budget Trajectory...`, '📊');
         if (typeof openTabDirect === 'function') {
             openTabDirect('BudgetTab', 'group-value');
@@ -804,7 +837,7 @@ function executeSwarmAction(actionText, actionKey) {
             openESGCarbonModal();
         }
     } else {
-        // Query Ask The Bee
+        // Query Ask The Bee with clean prompt
         showSwarmToast(`Mobilizing Bee Hive Swarm for inquiry...`, '🐝');
         const chatContainer = document.getElementById('chatbot-container');
         if (chatContainer && chatContainer.style.display !== 'flex') {
@@ -812,7 +845,8 @@ function executeSwarmAction(actionText, actionKey) {
         }
         const input = document.getElementById('chat-input');
         if (input) {
-            input.value = `Execute strategic action: ${actionText}`;
+            const cleanQuery = rawKey || rawText;
+            input.value = cleanQuery;
             sendChatMessage();
         }
     }

@@ -1,0 +1,278 @@
+[
+  {
+    "key": "UCHCQO-18",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:40:12\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-18",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-17",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:40:05\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-17",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-16",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:40:05\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-16",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-15",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:40:05\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-15",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-14",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:40:03\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-14",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-13",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:40:00\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-13",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-12",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:39:16\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-12",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-11",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:30:26\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-11",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-10",
+    "summary": "[AUTO-EXCEPTION] TypeError: Cannot read properties of undefined in procedure chart (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:30:26\n*Source:* frontend_ui\n*Active Procedure:* TOTAL KNEE ARTHROPLASTY\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* TypeError\n\n*Message:* Cannot read properties of undefined in procedure chart\n\nh4. Traceback Stack Trace:\n{code:python}\nTypeError: Cannot read properties\n    at renderScatterPlot (index.html:1200)\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"TOTAL KNEE ARTHROPLASTY\",\n  \"tab\": \"CQOTab\"\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-10",
+    "source": "frontend_ui",
+    "stack_trace": "TypeError: Cannot read properties\n    at renderScatterPlot (index.html:1200)",
+    "context": {
+      "procedure": "TOTAL KNEE ARTHROPLASTY",
+      "tab": "CQOTab"
+    }
+  },
+  {
+    "key": "UCHCQO-9",
+    "summary": "[AUTO-EXCEPTION] TypeError: Cannot read properties of undefined in procedure chart (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:29:58\n*Source:* frontend_ui\n*Active Procedure:* TOTAL KNEE ARTHROPLASTY\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* TypeError\n\n*Message:* Cannot read properties of undefined in procedure chart\n\nh4. Traceback Stack Trace:\n{code:python}\nTypeError: Cannot read properties\n    at renderScatterPlot (index.html:1200)\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"TOTAL KNEE ARTHROPLASTY\",\n  \"tab\": \"CQOTab\"\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-9",
+    "source": "frontend_ui",
+    "stack_trace": "TypeError: Cannot read properties\n    at renderScatterPlot (index.html:1200)",
+    "context": {
+      "procedure": "TOTAL KNEE ARTHROPLASTY",
+      "tab": "CQOTab"
+    }
+  },
+  {
+    "key": "UCHCQO-8",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:29:58\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-8",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-7",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:27:18\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-7",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-6",
+    "summary": "[AUTO-EXCEPTION] TypeError: Cannot read properties of undefined in procedure chart (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:27:18\n*Source:* frontend_ui\n*Active Procedure:* TOTAL KNEE ARTHROPLASTY\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* TypeError\n\n*Message:* Cannot read properties of undefined in procedure chart\n\nh4. Traceback Stack Trace:\n{code:python}\nTypeError: Cannot read properties\n    at renderScatterPlot (index.html:1200)\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"TOTAL KNEE ARTHROPLASTY\",\n  \"tab\": \"CQOTab\"\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-6",
+    "source": "frontend_ui",
+    "stack_trace": "TypeError: Cannot read properties\n    at renderScatterPlot (index.html:1200)",
+    "context": {
+      "procedure": "TOTAL KNEE ARTHROPLASTY",
+      "tab": "CQOTab"
+    }
+  },
+  {
+    "key": "UCHCQO-5",
+    "summary": "[AUTO-EXCEPTION] TypeError: Cannot read properties of undefined in procedure chart (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:26:08\n*Source:* frontend_ui\n*Active Procedure:* TOTAL KNEE ARTHROPLASTY\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* TypeError\n\n*Message:* Cannot read properties of undefined in procedure chart\n\nh4. Traceback Stack Trace:\n{code:python}\nTypeError: Cannot read properties\n    at renderScatterPlot (index.html:1200)\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"TOTAL KNEE ARTHROPLASTY\",\n  \"tab\": \"CQOTab\"\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-5",
+    "source": "frontend_ui",
+    "stack_trace": "TypeError: Cannot read properties\n    at renderScatterPlot (index.html:1200)",
+    "context": {
+      "procedure": "TOTAL KNEE ARTHROPLASTY",
+      "tab": "CQOTab"
+    }
+  },
+  {
+    "key": "UCHCQO-4",
+    "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:26:08\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-4",
+    "source": "simulated_test",
+    "stack_trace": "Traceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n",
+    "context": {
+      "procedure": "EXCISION OF LESION OR MASS",
+      "tab": "CQOTab",
+      "simulation": true
+    }
+  },
+  {
+    "key": "UCHCQO-101",
+    "summary": "Initial baseline telemetry across 1.37M records verified",
+    "status": "Resolved",
+    "type": "Task",
+    "priority": "Medium",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-101"
+  }
+]

@@ -1,0 +1,345 @@
+/* SupplyCopia Login Page Styles - Replicating sc-demo.supplycopia.com */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap');
+
+:root {
+  --primaryColor: #e43946;
+  --ssoButtonColor: #e43946;
+  --ssoButtonHover: #cc2835;
+  --textDark: #2b2b2b;
+  --textSecondary: #525252;
+  --textMuted: #787878;
+  --bgGradientStart: #ffe9eb;
+  --bgGradientEnd: #ffdcdf;
+  --borderColor: #e0e0e0;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  font-family: 'Open Sans', sans-serif;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.container-wrapper {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Left Slider Column */
+.slider-container {
+  width: 35%;
+  min-width: 380px;
+  height: 100vh;
+  position: relative;
+  background: transparent linear-gradient(180deg, var(--bgGradientStart), var(--bgGradientEnd)) 0 0 no-repeat padding-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  user-select: none;
+}
+
+.slider-container .mainLogo {
+  position: absolute;
+  top: 46px;
+  left: 60px;
+  height: 38px;
+  width: auto;
+}
+
+.carousel-viewport {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.slide-item {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: fadeIn 0.45s ease-in-out;
+  width: 100%;
+}
+
+.slide-item.active {
+  display: flex;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0.3; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.picsum-img-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 250px;
+}
+
+.image-slider {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-slider img {
+  max-width: 280px;
+  max-height: 230px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.06));
+}
+
+.carousel-caption {
+  margin-top: 28px;
+  text-align: center;
+}
+
+.carousel-caption p {
+  font: normal normal 600 22px/30px 'Open Sans', sans-serif;
+  letter-spacing: 0px;
+  color: #0A0A0A;
+}
+
+.slider-main-text {
+  color: var(--primaryColor);
+  font-weight: 700;
+}
+
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.carousel-indicators .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #c4c4c4;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.carousel-indicators .dot.active {
+  width: 24px;
+  border-radius: 4px;
+  background-color: var(--primaryColor);
+}
+
+/* Right Form Column */
+.form-container {
+  width: 65%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-left: 8%;
+  padding-right: 8%;
+  position: relative;
+  background-color: #ffffff;
+}
+
+.org-logo-wrapper {
+  position: absolute;
+  top: 33px;
+  right: 48px;
+}
+
+.org-logo {
+  height: 64px;
+  max-width: 240px;
+  object-fit: contain;
+}
+
+.main-content {
+  margin-top: auto;
+  margin-bottom: auto;
+  max-width: 440px;
+  width: 100%;
+}
+
+.get-started {
+  font: normal normal 700 38px/52px 'Open Sans', sans-serif;
+  letter-spacing: 0;
+  color: var(--textDark);
+  margin-bottom: 6px;
+}
+
+.email-valid {
+  font: normal normal 400 16px/24px 'Open Sans', sans-serif;
+  letter-spacing: 0;
+  color: var(--textSecondary);
+  margin-bottom: 32px;
+}
+
+.sso-button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.primary-btn-normal.sso-login-button {
+  width: 100%;
+  height: 48px;
+  background-color: var(--ssoButtonColor);
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  font: normal normal 600 15px/20px 'Open Sans', sans-serif;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(228, 57, 70, 0.28);
+  transition: all 0.2s ease;
+}
+
+.primary-btn-normal.sso-login-button:hover {
+  background-color: var(--ssoButtonHover);
+  box-shadow: 0 6px 14px rgba(228, 57, 70, 0.38);
+  transform: translateY(-1px);
+}
+
+.primary-btn-normal.sso-login-button:active {
+  transform: translateY(0);
+}
+
+.sso-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.dev-bypass-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #8c8c8c;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.dev-bypass-link:hover {
+  color: #333333;
+  text-decoration: underline;
+}
+
+/* Footer Section */
+.bottom-info {
+  margin-bottom: 24px;
+}
+
+.footer-wrapper {
+  width: fit-content;
+}
+
+.footer-wrapper a {
+  font: normal normal normal 12px/17px 'Open Sans', sans-serif;
+  letter-spacing: 0;
+  color: var(--textMuted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-wrapper a:hover {
+  color: var(--textDark);
+  text-decoration: underline;
+}
+
+.link-text {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  line-height: 1.8;
+}
+
+.seperator {
+  font: normal normal normal 12px/17px 'Open Sans', sans-serif;
+  color: var(--textMuted);
+  margin-right: 4px;
+  margin-left: 4px;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.reserved-text {
+  font: normal normal normal 12px/17px 'Open Sans', sans-serif;
+  color: var(--textDark);
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.reserved-text a {
+  color: var(--textDark);
+  font-weight: 600;
+}
+
+.link-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.link-icons a {
+  display: inline-flex;
+  align-items: center;
+}
+
+.link-icons img {
+  width: 22px;
+  height: 22px;
+  opacity: 0.75;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.link-icons img:hover {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 1024px) {
+  .slider-container {
+    display: none;
+  }
+  .form-container {
+    width: 100%;
+    padding: 32px;
+  }
+  .org-logo-wrapper {
+    position: static;
+    margin-bottom: 24px;
+  }
+}

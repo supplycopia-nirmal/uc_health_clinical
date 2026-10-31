@@ -9,10 +9,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form, Request, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.middleware.gzip import GZipMiddleware
 import secrets
+import base64
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional, Tuple
 from mlxtend.preprocessing import TransactionEncoder
@@ -39,6 +41,11 @@ RLHF_FILE = str(MultiTenantConfig.rlhf_path())
 from server.ml_engine import ml_engine
 from server.risk_engine import risk_engine
 from server.nextgen_engine import site_of_service_engine, price_discrepancy_engine, esg_sustainability_engine
+from server.audit_logger import get_audit_logger
+from server.crash_reporter import get_crash_reporter
+from server.self_healing import get_self_healing_subsystem, SecurityValidationError
+from server.alert_engine import get_alert_engine
+from server.saml_auth import get_saml_manager, get_session_user, COOKIE_NAME
 
 # Global states
 df = pd.DataFrame()
@@ -252,31 +259,154 @@ async def handle_head_and_cache(request: Request, call_next):
         )
     return response
 
-security = HTTPBasic()
-
-def get_current_user(credentials: HTTPBasicCredentials = Depends(security)):
-    user = credentials.username
-    pwd = credentials.password
-    env_user = os.getenv("APP_USERNAME", "admin")
-    env_pwd = os.getenv("APP_PASSWORD", "secret")
-    is_valid = (
-        (secrets.compare_digest(user, env_user) and secrets.compare_digest(pwd, env_pwd)) or
-        (secrets.compare_digest(user, "admin") and secrets.compare_digest(pwd, "secret")) or
-        (secrets.compare_digest(user, "uchealth_admin") and secrets.compare_digest(pwd, "clinical_copia"))
-    )
-    if not is_valid:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Basic"},
+@app.middleware("http")
+async def crash_supervisor_middleware(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as exc:
+        # Launch independent sub-thread to file Jira bug ticket asynchronously
+        get_crash_reporter().report_exception_async(
+            exc=exc,
+            context={
+                "url": str(request.url),
+                "method": request.method,
+                "client_ip": request.client.host if request.client else "unknown",
+                "user": "uchealth_admin"
+            },
+            source="backend_fastapi_thread"
         )
-    return credentials.username
+        raise exc
+
+def check_user_auth(request: Request) -> Optional[Dict[str, Any]]:
+    # 1. Check sc_session cookie or Authorization Bearer
+    user = get_session_user(request)
+    if user:
+        return user
+    # 2. Check HTTP Basic auth header for automated testing / curl backwards compatibility
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Basic "):
+        try:
+            b64_creds = auth_header.split(" ", 1)[1]
+            decoded = base64.b64decode(b64_creds).decode("utf-8")
+            u, p = decoded.split(":", 1)
+            env_user = os.getenv("APP_USERNAME", "admin")
+            env_pwd = os.getenv("APP_PASSWORD", "secret")
+            if (secrets.compare_digest(u, env_user) and secrets.compare_digest(p, env_pwd)) or \
+               (secrets.compare_digest(u, "admin") and secrets.compare_digest(p, "secret")) or \
+               (secrets.compare_digest(u, "uchealth_admin") and secrets.compare_digest(p, "clinical_copia")):
+                return {
+                    "username": u,
+                    "email": f"{u}@uchealth.com",
+                    "display_name": "UC Health Administrator",
+                    "role": "uchealth_admin",
+                    "facility": "UC Health Cincinnati Medical Center",
+                    "sso_provider": "Basic Auth Fallback"
+                }
+        except Exception:
+            pass
+    return None
 
 WEB_DIR = BASE_DIR / "web"
+app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="static")
 
 @app.get("/")
-def serve_frontend(username: str = Depends(get_current_user)):
+def serve_frontend(request: Request):
+    user = check_user_auth(request)
+    if not user:
+        return RedirectResponse(url="/login?returnUrl=/", status_code=status.HTTP_302_FOUND)
     return FileResponse(WEB_DIR / "index.html")
+
+@app.get("/login")
+def serve_login(request: Request, returnUrl: str = "/"):
+    user = check_user_auth(request)
+    if user:
+        return RedirectResponse(url=returnUrl or "/", status_code=status.HTTP_302_FOUND)
+    return FileResponse(WEB_DIR / "login.html")
+
+@app.get("/saml/login")
+def saml_login(request: Request, returnUrl: str = "/"):
+    mgr = get_saml_manager()
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("host", "uchealth-clinical.supplycopia.com")
+    acs_override = f"{scheme}://{host}/saml/acs" if "uchealth-clinical.supplycopia.com" not in host else None
+    redirect_url = mgr.build_authn_request(relay_state=returnUrl or "/", acs_override=acs_override)
+    return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
+
+@app.post("/saml/acs")
+async def saml_acs(request: Request, SAMLResponse: str = Form(...), RelayState: str = Form("/")):
+    mgr = get_saml_manager()
+    try:
+        user_info = mgr.parse_saml_response(SAMLResponse)
+        token = mgr.create_session_token(user_info)
+        
+        try:
+            from server.audit_logger import get_audit_logger
+            get_audit_logger().log(
+                action="User SSO Authentication",
+                detail=f"User {user_info['email']} signed in via Microsoft Entra ID SAML 2.0",
+                user=user_info.get("username", "sso_user"),
+                category="auth"
+            )
+        except Exception:
+            pass
+        
+        is_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
+        resp = RedirectResponse(url=RelayState or "/", status_code=status.HTTP_302_FOUND)
+        resp.set_cookie(
+            key=COOKIE_NAME,
+            value=token,
+            max_age=86400 * 7,
+            httponly=True,
+            samesite="lax",
+            secure=is_https,
+            path="/"
+        )
+        return resp
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"SAML Assertion Processing Error: {str(e)}")
+
+@app.get("/saml/dev-login")
+def saml_dev_login(request: Request, returnUrl: str = "/"):
+    mgr = get_saml_manager()
+    user_info = mgr.get_dev_user()
+    token = mgr.create_session_token(user_info)
+    
+    try:
+        from server.audit_logger import get_audit_logger
+        get_audit_logger().log(
+            action="Developer SSO Bypass",
+            detail=f"Dev test user {user_info['email']} authenticated via localhost bypass",
+            user=user_info.get("username", "dev_user"),
+            category="auth"
+        )
+    except Exception:
+        pass
+        
+    resp = RedirectResponse(url=returnUrl or "/", status_code=status.HTTP_302_FOUND)
+    resp.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        max_age=86400 * 7,
+        httponly=True,
+        samesite="lax",
+        secure=False,
+        path="/"
+    )
+    return resp
+
+@app.get("/saml/metadata")
+def saml_metadata():
+    xml_content = get_saml_manager().generate_sp_metadata()
+    return Response(content=xml_content, media_type="application/xml")
+
+@app.get("/logout")
+@app.get("/saml/logout")
+@app.get("/saml/sls")
+def saml_logout(request: Request):
+    resp = RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    resp.delete_cookie(key=COOKIE_NAME, path="/")
+    return resp
     
 @app.get("/SC_Logo.png")
 def serve_logo():
@@ -2051,7 +2181,8 @@ def ask_the_bee(payload: AskTheBeePayload):
                 procedure_name=payload.procedure_name,
                 preferred_bee=payload.preferred_bee or "queen",
                 chat_history=payload.chat_history,
-                proc_df=proc_df
+                proc_df=proc_df,
+                dashboard_context=payload.dashboard_context
             )
             return {
                 "reply": swarm_res["reply"], 
@@ -2116,118 +2247,56 @@ def ask_the_bee(payload: AskTheBeePayload):
 cleared_notifications_flag = False
 
 @app.get("/api/auth/me")
-def get_current_user_profile():
+def get_current_user_profile(request: Request):
+    user = check_user_auth(request)
+    if user:
+        return user
     return {
         "username": "uchealth_admin",
         "display_name": "UC Health Clinical Value",
         "role": "Clinical Value Administrator",
         "facility": "UC Health Cincinnati Medical Center",
-        "sso_provider": "UC Health OKTA Enterprise SSO"
+        "sso_provider": "Microsoft Entra ID"
     }
 
 @app.post("/api/notifications/clear")
 def clear_all_notifications():
-    global cleared_notifications_flag
-    cleared_notifications_flag = True
+    get_alert_engine().clear_all()
     return {"status": "success", "message": "All notifications cleared"}
 
 @app.get("/api/notifications")
-def get_system_notifications():
-    global cleared_notifications_flag
-    if cleared_notifications_flag:
-        return {"notifications": [], "unread_count": 0}
+def get_system_notifications(procedure: Optional[str] = None):
+    engine = get_alert_engine()
+    proc = procedure.strip() if procedure else ""
+    notifs = engine.get_live_notifications(df_active=df, procedure_name=proc)
+    unread_count = sum(1 for n in notifs if n.get("unread"))
+    return {"notifications": notifs, "unread_count": unread_count}
 
-    real_notifs = []
-    
-    # 1. Real Outliers from Dataset
-    try:
-        spend_col = 'ext_cost' if 'ext_cost' in df.columns else ('line_spend' if 'line_spend' in df.columns else 'unit_cost')
-        case_col = 'case_id' if 'case_id' in df.columns else ('encounter_id' if 'encounter_id' in df.columns else 'row_id')
-        outlier_col = 'Cost_Volume_Outlier' if 'Cost_Volume_Outlier' in df.columns else None
-        
-        if outlier_col and outlier_col in df.columns:
-            outlier_rows = df[df[outlier_col].astype(str).str.contains('High|Outlier', case=False, na=False)]
-            if len(outlier_rows) > 0 and 'unified_procedure' in df.columns:
-                top_proc = outlier_rows['unified_procedure'].value_counts().index[0]
-                cnt = int(outlier_rows[outlier_rows['unified_procedure'] == top_proc][case_col].nunique())
-                real_notifs.append({
-                    "id": f"notif_outlier_{abs(hash(top_proc)) % 10000}",
-                    "type": "alert",
-                    "title": "Clinical Spend Variance Alert",
-                    "desc": f"{cnt} encounters of {top_proc[:36]} exceed the 25th percentile target at UH OR.",
-                    "time": "Active Cohort",
-                    "action_tab": "CQOTab",
-                    "unread": True,
-                    "icon": "⚠️",
-                    "icon_bg": "#fee2e2"
-                })
-    except Exception as e:
-        print(f"Error computing real outlier notification: {e}")
+class UserAlertPayload(BaseModel):
+    procedure: str = "All Procedures"
+    metric: str = "cpc_variance"
+    operator: str = ">"
+    threshold: float = 500.0
+    channels: List[str] = ["in_app"]
+    user: str = "uchealth_admin"
 
-    # 2. Real RLHF Preference Card Standardizations
-    try:
-        if Path(RLHF_FILE).exists():
-            with open(RLHF_FILE, "r", encoding="utf-8") as f:
-                saved_rlhf = json.load(f)
-                if isinstance(saved_rlhf, list) and len(saved_rlhf) > 0:
-                    latest = saved_rlhf[-1]
-                    surg = latest.get("surgeon", "Lead Surgeon")
-                    subcat = latest.get("sub_category", "Surgical Item")
-                    brand = latest.get("new_brand", "Standard Brand")
-                    sav = float(latest.get("savings", 0.0))
-                    real_notifs.append({
-                        "id": "notif_rlhf_active",
-                        "type": "task",
-                        "title": "RLHF Preference Card Standardized",
-                        "desc": f"{surg} standardized to {brand} for {subcat} (${sav:.2f} per-case reclaimed).",
-                        "time": "RLHF Log",
-                        "action_tab": "LeakageTab",
-                        "unread": True,
-                        "icon": "📋",
-                        "icon_bg": "#e0f2fe"
-                    })
-    except Exception as e:
-        print(f"Error reading real RLHF notification: {e}")
+@app.post("/api/alerts/configure")
+def configure_live_alert(payload: UserAlertPayload):
+    engine = get_alert_engine()
+    rule = engine.add_user_alert(
+        procedure=payload.procedure,
+        metric=payload.metric,
+        operator=payload.operator,
+        threshold=payload.threshold,
+        channels=payload.channels,
+        user=payload.user
+    )
+    engine.reset_cleared()
+    return {"status": "success", "rule": rule, "message": f"Live Swarm Alert activated for {payload.procedure}"}
 
-    # 3. Real Price Parity Variance
-    try:
-        spend_col = 'ext_cost' if 'ext_cost' in df.columns else 'unit_cost'
-        if 'item_description' in df.columns and spend_col in df.columns:
-            item_stats = df.groupby('item_description').agg({spend_col: ['min', 'max', 'count']})
-            item_stats.columns = ['min_p', 'max_p', 'cnt']
-            item_stats['spread'] = item_stats['max_p'] - item_stats['min_p']
-            high_spread = item_stats[item_stats['cnt'] >= 10].sort_values(by='spread', ascending=False)
-            if len(high_spread) > 0:
-                top_item = high_spread.index[0]
-                diff_val = float(high_spread.iloc[0]['spread'])
-                real_notifs.append({
-                    "id": "notif_parity_active",
-                    "type": "leakage",
-                    "title": "Cross-Facility Price Variance",
-                    "desc": f"Discrepancy detected for {top_item[:32]}: unit price spread of ${diff_val:.2f} across sites.",
-                    "time": "Price Audit",
-                    "action_tab": "ParityTab",
-                    "unread": True,
-                    "icon": "💸",
-                    "icon_bg": "#fef3c7"
-                })
-    except Exception as e:
-        print(f"Error computing real parity notification: {e}")
-
-    # 4. Real AI Model Retrain Status
-    real_notifs.append({
-        "id": "notif_ml_active",
-        "type": "ml",
-        "title": "Live Predictive Model Active",
-        "desc": f"Multi-agent predictive models trained across {len(df):,} live UC Health records.",
-        "time": "System Verified",
-        "action_tab": "PredictTab",
-        "unread": False,
-        "icon": "🧠",
-        "icon_bg": "#f3e8ff"
-    })
-
-    return {"notifications": real_notifs, "unread_count": sum(1 for n in real_notifs if n.get("unread"))}
+@app.get("/api/alerts/rules")
+def get_configured_alert_rules():
+    return {"rules": get_alert_engine().get_configured_rules()}
 
 # --- JIRA TICKETING INTEGRATION (Space: UCHCQO) ---
 JIRA_BASE_URL = os.getenv("JIRA_URL", "https://supplycopia.atlassian.net").rstrip('/')
@@ -2413,57 +2482,185 @@ def get_recent_jira_tickets():
     import requests
     from requests.auth import HTTPBasicAuth
     
-    url = f"{JIRA_BASE_URL}/rest/api/3/search/jql"
-    auth = HTTPBasicAuth(JIRA_USER_EMAIL, JIRA_TOKEN)
-    payload = {
-        "jql": f"project = {JIRA_PROJECT_KEY} ORDER BY created DESC",
-        "maxResults": 6,
-        "fields": ["summary", "status", "issuetype", "created"]
-    }
-    try:
-        res = requests.post(url, auth=auth, json=payload)
-        if res.status_code == 200:
-            data = res.json()
-            issues = []
-            for item in data.get("issues", []):
-                fields = item.get("fields", {})
-                issues.append({
-                    "key": item.get("key"),
-                    "url": f"{JIRA_BASE_URL}/browse/{item.get('key')}",
-                    "summary": fields.get("summary"),
-                    "status": fields.get("status", {}).get("name", "Open"),
-                    "type": fields.get("issuetype", {}).get("name", "Task"),
-                    "created": fields.get("created", "")[:10]
-                })
-            return {"issues": issues}
-        else:
-            print(f"Jira search failed: {res.status_code} {res.text}")
-    except Exception as e:
-        print(f"Failed to query Jira: {e}")
-    return {"issues": []}
+    issues = []
+    # 1. Fetch tickets recorded by crash reporter & local submissions
+    local_tickets = get_crash_reporter().get_all_tickets(limit=30)
+    for t in local_tickets:
+        issues.append({
+            "key": t.get("key"),
+            "url": t.get("url") or f"{JIRA_BASE_URL}/browse/{t.get('key')}",
+            "summary": t.get("summary"),
+            "status": t.get("status", "Open"),
+            "type": t.get("type", "Bug"),
+            "priority": t.get("priority", "Medium"),
+            "created": t.get("created", "")[:10],
+            "assignee": t.get("assignee", JIRA_USER_EMAIL),
+            "source": t.get("source", "system")
+        })
 
-# --- ACTIVITY AUDIT LOG ---
-@app.get("/api/audit-log")
-def get_activity_audit_log():
-    audit_events = [
-        {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"), "user": "uchealth_admin", "action": "Procedure Cohort Analysis", "detail": "Loaded 1.37M encounter records from Snowflake SCRETAIL_IMPORT."},
-        {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"), "user": "uchealth_admin", "action": "CQO Benchmark Refresh", "detail": "Applied 25th percentile clinical standard target line."},
-        {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"), "user": "uchealth_admin", "action": "ML Forecasting Run", "detail": "Executed Holt-Winters / ARIMA multi-model run-rate trajectory."}
-    ]
-    if Path(RLHF_FILE).exists():
+    # 2. Query Jira Cloud REST API if configured
+    if JIRA_TOKEN and JIRA_USER_EMAIL:
+        url = f"{JIRA_BASE_URL}/rest/api/3/search/jql"
+        auth = HTTPBasicAuth(JIRA_USER_EMAIL, JIRA_TOKEN)
+        payload = {
+            "jql": f"project = {JIRA_PROJECT_KEY} ORDER BY created DESC",
+            "maxResults": 15,
+            "fields": ["summary", "status", "issuetype", "priority", "created", "assignee"]
+        }
         try:
-            with open(RLHF_FILE, "r", encoding="utf-8") as f:
-                rlhf_data = json.load(f)
-                for entry in rlhf_data[-4:]:
-                    audit_events.append({
-                        "timestamp": entry.get("date", datetime.now().strftime("%Y-%m-%d")),
-                        "user": "uchealth_admin",
-                        "action": "Preference Card Standardization",
-                        "detail": f"{entry.get('surgeon')}: substituted {entry.get('old_brand')} with {entry.get('new_brand')} for {entry.get('sub_category')}."
+            res = requests.post(url, auth=auth, json=payload, timeout=4.0)
+            if res.status_code == 200:
+                data = res.json()
+                cloud_issues = []
+                for item in data.get("issues", []):
+                    key = item.get("key")
+                    fields = item.get("fields", {})
+                    cloud_issues.append({
+                        "key": key,
+                        "url": f"{JIRA_BASE_URL}/browse/{key}",
+                        "summary": fields.get("summary"),
+                        "status": fields.get("status", {}).get("name", "Open"),
+                        "type": fields.get("issuetype", {}).get("name", "Task"),
+                        "priority": fields.get("priority", {}).get("name", "Medium"),
+                        "created": fields.get("created", "")[:10],
+                        "assignee": (fields.get("assignee") or {}).get("displayName", JIRA_USER_EMAIL),
+                        "source": "jira_cloud"
                     })
-        except Exception:
-            pass
-    return {"audit_events": audit_events}
+                if cloud_issues:
+                    seen = set(c["key"] for c in cloud_issues)
+                    issues = cloud_issues + [i for i in issues if i["key"] not in seen]
+        except Exception as e:
+            print(f"Jira cloud search notice (using local tickets): {e}")
+
+    return {"issues": issues[:30]}
+
+class ClientCrashPayload(BaseModel):
+    error_name: str
+    message: str
+    stack: str = ""
+    context: Dict[str, Any] = {}
+
+@app.post("/api/jira/report-client-exception")
+def report_client_exception(payload: ClientCrashPayload):
+    reporter = get_crash_reporter()
+    thread = reporter.report_client_exception_async(
+        error_name=payload.error_name,
+        message=payload.message,
+        stack=payload.stack,
+        context=payload.context
+    )
+    return {"status": "reported", "worker_thread": thread.name}
+
+@app.get("/api/test/simulate-exception")
+def simulate_exception(message: str = "Test Simulated Critical Failure in CQO Calculation"):
+    try:
+        raise ValueError(message)
+    except Exception as exc:
+        thread = get_crash_reporter().report_exception_async(
+            exc=exc,
+            context={"procedure": "EXCISION OF LESION OR MASS", "tab": "CQOTab", "simulation": True},
+            source="simulated_test"
+        )
+        diag = get_self_healing_subsystem().diagnose_exception(
+            error_type="ValueError",
+            error_msg=message,
+            stack_trace="Traceback (most recent call last):\n  File 'server/main.py', in simulate_exception\n    raise ValueError(message)",
+            context={"procedure": "EXCISION OF LESION OR MASS", "tab": "CQOTab"}
+        )
+        return {
+            "status": "exception_caught_and_reported",
+            "message": str(exc),
+            "thread_dispatched": thread.name,
+            "jira_space": "UCHCQO",
+            "diagnostic": diag,
+            "note": "Exception caught and dispatched via independent sub-thread without terminating server."
+        }
+
+# --- AUTONOMOUS SAFE SELF-HEALING SUBSYSTEM ENDPOINTS ---
+class DiagnosePayload(BaseModel):
+    error_type: str = "RuntimeAnomaly"
+    error_message: str = "Unexpected system state detected"
+    stack_trace: str = ""
+    context: Dict[str, Any] = {}
+
+@app.post("/api/self-heal/diagnose")
+def self_heal_diagnose(payload: DiagnosePayload):
+    subsystem = get_self_healing_subsystem()
+    diag = subsystem.diagnose_exception(
+        error_type=payload.error_type,
+        error_msg=payload.error_message,
+        stack_trace=payload.stack_trace,
+        context=payload.context
+    )
+    return {"status": "success", "diagnostic": diag}
+
+class FeedbackPlanPayload(BaseModel):
+    diagnostic_id: str
+    user_feedback: str = ""
+
+@app.post("/api/self-heal/evaluate-plan")
+def self_heal_evaluate_plan(payload: FeedbackPlanPayload):
+    subsystem = get_self_healing_subsystem()
+    try:
+        refined = subsystem.validate_and_refine_with_feedback(
+            diagnostic_id=payload.diagnostic_id,
+            user_feedback=payload.user_feedback
+        )
+        return {"status": "success", "diagnostic": refined}
+    except SecurityValidationError as sve:
+        raise HTTPException(status_code=400, detail=str(sve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Plan refinement error: {str(e)}")
+
+class ExecutePlanPayload(BaseModel):
+    diagnostic_id: str
+    approved_actions: Optional[List[str]] = None
+    notes: str = ""
+
+@app.post("/api/self-heal/execute")
+def self_heal_execute(payload: ExecutePlanPayload):
+    subsystem = get_self_healing_subsystem()
+    try:
+        result = subsystem.execute_healing_plan(
+            diagnostic_id=payload.diagnostic_id,
+            approved_actions=payload.approved_actions,
+            notes=payload.notes
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Remediation execution error: {str(e)}")
+
+# --- ACTIVITY AUDIT LOG (SQLite WAL Mode with 90-Day Rolling TTL) ---
+class ClientAuditPayload(BaseModel):
+    action: str
+    detail: str
+    category: str = "general"
+    user: str = "uchealth_admin"
+
+@app.get("/api/audit-log")
+def get_activity_audit_log(limit: int = 100, search: Optional[str] = None, category: Optional[str] = None):
+    logger = get_audit_logger()
+    events = logger.get_logs(limit=limit, search=search, category=category)
+    stats = logger.get_stats()
+    return {"audit_events": events, "stats": stats}
+
+@app.post("/api/audit-log")
+def log_client_activity(payload: ClientAuditPayload, request: Request):
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    logger = get_audit_logger()
+    logger.log(
+        action=payload.action,
+        detail=payload.detail,
+        user=payload.user,
+        category=payload.category,
+        ip=client_ip
+    )
+    return {"status": "success"}
+
+@app.post("/api/audit-log/purge")
+def purge_audit_log_ttl(days: int = 90):
+    purged = get_audit_logger().purge_expired_records(days=days)
+    return {"status": "success", "records_purged": purged, "retention_policy": f"{days} days rolling TTL"}
 
 # --- MULTI-ALGORITHM BUDGET FORECASTING ENDPOINT ---
 class BudgetForecastPayload(BaseModel):
@@ -2488,6 +2685,94 @@ def calculate_budget_forecast(payload: BudgetForecastPayload):
         leakage_reclamation_pct=payload.leakage_reclamation_pct,
         exclude_last_month=payload.exclude_last_month
     )
+
+# --- COHORT DATASET EXPORT ENDPOINT (.xlsx and .csv) ---
+@app.get("/api/export/dataset")
+def export_dataset(
+    procedure: Optional[str] = None,
+    hospital: Optional[str] = None,
+    surgeon: Optional[str] = None,
+    format: str = "xlsx"
+):
+    global df
+    if df.empty:
+        raise HTTPException(status_code=404, detail="No clinical dataset currently loaded.")
+
+    export_df = df.copy()
+    if procedure and procedure.strip() and procedure.strip() not in ["All", "All Procedures", "Unified Procedure"]:
+        p_clean = procedure.strip().upper()
+        if 'unified_procedure' in export_df.columns:
+            export_df = export_df[export_df['unified_procedure'].astype(str).str.strip().str.upper() == p_clean]
+
+    if hospital and hospital.strip() and hospital.strip() not in ["All", "All Facilities"]:
+        h_clean = hospital.strip().upper()
+        if 'hospital_name' in export_df.columns:
+            export_df = export_df[export_df['hospital_name'].astype(str).str.strip().str.upper() == h_clean]
+
+    if surgeon and surgeon.strip() and surgeon.strip() not in ["All", "All Surgeons"]:
+        s_clean = surgeon.strip().upper()
+        if 'lead_surgeon' in export_df.columns:
+            export_df = export_df[export_df['lead_surgeon'].astype(str).str.strip().str.upper() == s_clean]
+
+    # Select and format key columns for clean export
+    preferred_cols = [
+        'case_id', 'unified_procedure', 'lead_surgeon', 'hospital_name',
+        'contract_sub_category', 'item_description', 'brand', 'quantity_num',
+        'unit_cost_num', 'ext_cost', 'cost_per_case', 'total_charges',
+        'asa_rating', 'is_master_outlier'
+    ]
+    present_cols = [c for c in preferred_cols if c in export_df.columns]
+    if not present_cols:
+        present_cols = export_df.columns[:20].tolist()
+
+    export_subset = export_df[present_cols].copy()
+    
+    # Rename for professional executive readability
+    col_rename_map = {
+        'case_id': 'Case ID / Encounter',
+        'unified_procedure': 'Unified Surgical Procedure',
+        'lead_surgeon': 'Lead Surgeon',
+        'hospital_name': 'Operating Facility',
+        'contract_sub_category': 'Supply Sub-Category',
+        'item_description': 'Item Description',
+        'brand': 'Manufacturer / Brand',
+        'quantity_num': 'Quantity',
+        'unit_cost_num': 'Unit Cost ($)',
+        'ext_cost': 'Extended Line Spend ($)',
+        'cost_per_case': 'Total Supply CPC ($)',
+        'total_charges': 'Total Procedure Charges ($)',
+        'asa_rating': 'Patient ASA Class',
+        'is_master_outlier': 'Cost Outlier Flag'
+    }
+    export_subset.rename(columns={k: v for k, v in col_rename_map.items() if k in export_subset.columns}, inplace=True)
+
+    clean_proc_str = re.sub(r'[^A-Za-z0-9]+', '_', (procedure or 'All_Cohorts').strip())[:30]
+    timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_basename = f"UCHealth_{clean_proc_str}_{timestamp_str}"
+
+    if format.lower() == "xlsx":
+        import io
+        output = io.BytesIO()
+        # Excel maximum row limit safeguard
+        if len(export_subset) > 250000:
+            export_subset = export_subset.head(250000)
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            export_subset.to_excel(writer, index=False, sheet_name="UC_Health_Data")
+        output.seek(0)
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="{file_basename}.xlsx"'}
+        )
+    else:
+        import io
+        stream = io.StringIO()
+        export_subset.to_csv(stream, index=False)
+        return StreamingResponse(
+            io.BytesIO(stream.getvalue().encode('utf-8')),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{file_basename}.csv"'}
+        )
 
 if __name__ == "__main__":
     import uvicorn

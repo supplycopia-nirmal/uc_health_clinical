@@ -1,0 +1,50 @@
+[
+  {
+    "id": "rule_54935",
+    "procedure": "TOTAL KNEE ARTHROPLASTY",
+    "metric": "cpc_variance",
+    "metric_label": "Cost-Per-Case (CPC) Variance",
+    "operator": ">",
+    "threshold": 750.0,
+    "unit": "$",
+    "channels": [
+      "in_app",
+      "jira"
+    ],
+    "created_by": "uchealth_admin",
+    "created_at": "2026-10-31 16:30:26",
+    "status": "active"
+  },
+  {
+    "id": "rule_cpc_variance_knee",
+    "procedure": "TOTAL KNEE ARTHROPLASTY",
+    "metric": "cpc_variance",
+    "metric_label": "Physician CPC Variance",
+    "operator": ">",
+    "threshold": 450.0,
+    "unit": "$",
+    "channels": [
+      "in_app",
+      "jira"
+    ],
+    "created_by": "Ask The Bee Swarm",
+    "created_at": "2026-10-31 16:26:09",
+    "status": "active"
+  },
+  {
+    "id": "rule_off_contract_trocars",
+    "procedure": "EXCISION OF LESION OR MASS",
+    "metric": "off_contract_spend",
+    "metric_label": "Off-Contract Spend Leakage",
+    "operator": ">",
+    "threshold": 2500.0,
+    "unit": "$",
+    "channels": [
+      "in_app",
+      "jira"
+    ],
+    "created_by": "Contract Bee",
+    "created_at": "2026-10-31 16:26:09",
+    "status": "active"
+  }
+]
