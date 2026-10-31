@@ -139,5 +139,6 @@ def get_snowflake_connection():
         role=MultiTenantConfig.SNOWFLAKE_ROLE,
         warehouse=MultiTenantConfig.SNOWFLAKE_WAREHOUSE,
         database=MultiTenantConfig.SNOWFLAKE_DATABASE,
-        schema=MultiTenantConfig.SNOWFLAKE_SCHEMA
+        schema=MultiTenantConfig.SNOWFLAKE_SCHEMA,
+        server_session_keep_alive=False
     )

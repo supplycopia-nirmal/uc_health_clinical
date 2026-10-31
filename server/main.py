@@ -221,13 +221,27 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def add_cache_control_header(request, call_next):
+async def handle_head_and_cache(request: Request, call_next):
+    is_head = (request.method == "HEAD")
+    if is_head:
+        request.scope["method"] = "GET"
+        
     response = await call_next(request)
-    if request.method == "GET":
+    
+    if request.method == "GET" or is_head:
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         else:
             response.headers["Cache-Control"] = "public, max-age=3600"
+
+    if is_head:
+        from starlette.responses import Response
+        return Response(
+            content=b"",
+            status_code=response.status_code,
+            headers=dict(response.headers),
+            media_type=response.media_type
+        )
     return response
 
 security = HTTPBasic()

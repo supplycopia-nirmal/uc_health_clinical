@@ -1260,7 +1260,7 @@ class ClinicalMLEngine:
 
         text = f"""### 🎯 Comorbidity-Adjusted Expected CPC & Risk Stratification (O/E Ratio)
 **Procedure Cohort**: `{procedure_name}` &nbsp;|&nbsp; **Cohort Baseline Mean**: **${res.get('cohort_mean_cpc', 0):,.2f}**  
-**Multivariate Model**: L2-Regularized Acuity Regressor controlling for ASA Grade, BMI $\ge$ 30, Age, Diabetes, and Smoking.
+**Multivariate Model**: L2-Regularized Acuity Regressor controlling for ASA Grade, BMI $\\ge$ 30, Age, Diabetes, and Smoking.
 
 | Practicing Physician | Cases | Raw CPC | Expected CPC | O/E Ratio | Risk-Adjusted Clinical Tier |
 |:---|:---:|:---:|:---:|:---:|:---|
@@ -1460,7 +1460,7 @@ class ClinicalMLEngine:
 {mat_rows}
 
 > [!NOTE]
-> Relocating items with $<80\%$ utilization from pre-opened custom packs onto the **Sterile Hold Cart** eliminates opened-but-unused item incineration waste, directly advancing UC Health's decarbonization and ESG benchmarks.
+> Relocating items with $<80\\%$ utilization from pre-opened custom packs onto the **Sterile Hold Cart** eliminates opened-but-unused item incineration waste, directly advancing UC Health's decarbonization and ESG benchmarks.
 """.strip()
 
         chart_labels = list(mat_breakdown.keys())

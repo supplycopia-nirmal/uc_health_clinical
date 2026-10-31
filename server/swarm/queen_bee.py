@@ -803,7 +803,7 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
 {hold_tbl}
 
 > [!NOTE]
-> Moving items with $<80\%$ utilization from pre-opened surgical packs onto the **Sterile Hold Cart** eliminates opened-but-unused bio-waste while guaranteeing surgeons immediate physical access in the operating theater upon clinical necessity.
+> Moving items with $<80\\%$ utilization from pre-opened surgical packs onto the **Sterile Hold Cart** eliminates opened-but-unused bio-waste while guaranteeing surgeons immediate physical access in the operating theater upon clinical necessity.
 
 <div style="margin: 14px 0 6px 0; display: flex; gap: 8px; flex-wrap: wrap;">
     <button class="btn-chat-action" onclick="openPrefCardLightbox('{procedure_name}', '{target_surg}')" style="background: #e11d48; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(225,29,72,0.25);">
