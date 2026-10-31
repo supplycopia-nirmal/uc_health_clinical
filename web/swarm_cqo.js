@@ -61,6 +61,54 @@ const STATIC_PERSONAS = [
         avatar: "👨‍⚕️",
         specialty: "Surgeon Autonomy, Nuance & Case Complexity Adjustments",
         description: "Represents physician clinical judgment, protects surgeon choice in high-acuity/revision cases, prevents burnout from aggressive procurement mandates, and powers the RLHF alignment loop."
+    },
+    {
+        id: "migration_bee",
+        name: "Migration Bee",
+        role: "Site-of-Service & ASC Shift Specialist",
+        avatar: "🏥",
+        specialty: "Inpatient-to-ASC Shift & Facility Overhead Arbitrage",
+        description: "Flags low-acuity cases (ASA 1-2, younger cohorts) routinely performed in high-overhead hospital ORs (UH OR, WCH OR) that can safely migrate to the Outpatient Surgery Center (UH ASC), projecting facility-overhead margin expansion."
+    },
+    {
+        id: "audit_bee",
+        name: "Audit Bee",
+        role: "Price Discrepancy & Rebate Clawback Auditor",
+        avatar: "⚖️",
+        specialty: "Cross-Facility Invoice Auditing & Vendor Overcharge Recovery",
+        description: "Cross-tabulates item master numbers and vendor unit costs across UC Health facilities. Detects identical catalog items billed at higher rates at specific sites to generate automated credit memo demand notices."
+    },
+    {
+        id: "eco_bee",
+        name: "Eco Bee",
+        role: "Green OR Bio-Waste & ESG Sentinel",
+        avatar: "🌱",
+        specialty: "Clinical Bio-Waste Mass (kg) & Scope 3 Carbon Footprint",
+        description: "Quantifies the environmental impact of opened-but-unused hold items and over-stuffed custom packs. Converts eliminated clinical plastic/metal surgical waste into kilograms of bio-waste avoided and Scope 3 metric tons of CO2e reduced."
+    },
+    {
+        id: "payer_bee",
+        name: "Payer Bee",
+        role: "DRG Reimbursement & Managed Care Margin Analyst",
+        avatar: "💰",
+        specialty: "MS-DRG Case-Mix, Carve-Outs & Contribution Margin",
+        description: "Bridges surgical supply costs with DRG fixed payments, commercial fee-for-service carve-outs, and Medicare allowable margins, ensuring supply standardization directly protects net operating margin."
+    },
+    {
+        id: "flow_bee",
+        name: "Flow Bee",
+        role: "OR Turnover & SPD De-Cluttering Specialist",
+        avatar: "⏱️",
+        specialty: "Sterile Processing (SPD) Tray Rationalization & OR Turnover Minutes",
+        description: "Analyzes instrument tray utilization and sterile processing burdens. Reduces unused instruments on surgical trays to accelerate room turnover times and lower Central Sterile reprocessing costs."
+    },
+    {
+        id: "governance_bee",
+        name: "Governance Bee",
+        role: "Value Analysis Committee (CAC) Coordinator",
+        avatar: "🏛️",
+        specialty: "Clinical Evidence Grading & System-Wide Value Analysis",
+        description: "Synthesizes multi-agent evidence into formal Clinical Advisory Committee (CAC) voting dossiers, tracks clinical exception request approval rates, and monitors health-system policy compliance."
     }
 ];
 
@@ -417,36 +465,60 @@ async function renderValueQuadrant(percentile) {
             ],
             annotations: [
                 {
-                    x: benchCost * 0.4,
-                    y: 9.8,
+                    xref: 'paper',
+                    yref: 'paper',
+                    x: 0.16,
+                    y: 0.96,
                     text: '<b>🌟 CLINICAL CHAMPIONS</b><br><span style="font-size:10px;">Low Cost • High Quality</span>',
                     showarrow: false,
                     font: { size: 11, color: '#047857' },
-                    align: 'center'
+                    align: 'center',
+                    bgcolor: 'rgba(255, 255, 255, 0.92)',
+                    bordercolor: '#bbf7d0',
+                    borderwidth: 1,
+                    borderpad: 4
                 },
                 {
-                    x: benchCost * 2.2,
-                    y: 9.8,
+                    xref: 'paper',
+                    yref: 'paper',
+                    x: 0.84,
+                    y: 0.96,
                     text: '<b>💎 PREFERENCE-HEAVY</b><br><span style="font-size:10px;">High Cost • High Quality</span>',
                     showarrow: false,
                     font: { size: 11, color: '#1d4ed8' },
-                    align: 'center'
+                    align: 'center',
+                    bgcolor: 'rgba(255, 255, 255, 0.92)',
+                    bordercolor: '#bfdbfe',
+                    borderwidth: 1,
+                    borderpad: 4
                 },
                 {
-                    x: benchCost * 0.4,
-                    y: 5.3,
+                    xref: 'paper',
+                    yref: 'paper',
+                    x: 0.16,
+                    y: 0.06,
                     text: '<b>⚠️ UNDER-RESOURCED</b><br><span style="font-size:10px;">Low Cost • Lower Quality</span>',
                     showarrow: false,
                     font: { size: 11, color: '#b45309' },
-                    align: 'center'
+                    align: 'center',
+                    bgcolor: 'rgba(255, 255, 255, 0.92)',
+                    bordercolor: '#fde68a',
+                    borderwidth: 1,
+                    borderpad: 4
                 },
                 {
-                    x: benchCost * 2.2,
-                    y: 5.3,
+                    xref: 'paper',
+                    yref: 'paper',
+                    x: 0.84,
+                    y: 0.06,
                     text: '<b>🚨 URGENT ALIGNMENT</b><br><span style="font-size:10px;">High Cost • Lower Quality</span>',
                     showarrow: false,
                     font: { size: 11, color: '#b91c1c' },
-                    align: 'center'
+                    align: 'center',
+                    bgcolor: 'rgba(255, 255, 255, 0.92)',
+                    bordercolor: '#fecaca',
+                    borderwidth: 1,
+                    borderpad: 4
                 }
             ],
             legend: {
@@ -496,15 +568,15 @@ async function fetchSwarmAudit() {
     const drawerSynthesis = document.getElementById('drawer-synthesis-text');
     
     if (btn) {
-        btn.innerText = "⏳ Swarm Mobilizing (6 Bees)...";
+        btn.innerText = "⏳ Swarm Mobilizing (12 Bees)...";
         btn.disabled = true;
     }
-    if (traceStatus) traceStatus.innerText = "Swarm Deliberating in Parallel...";
+    if (traceStatus) traceStatus.innerText = "12 Swarm Agents Deliberating in Parallel...";
     
     const initialTrace = `
-        <div class="trace-item"><span class="trace-badge trace-running">Mobilizing</span><span>👑 Queen Bee dispatched Scout Bee, Clinical Bee, Contract Bee, Worker Bee, and Surgeon Bee...</span></div>
-        <div class="trace-item"><span class="trace-badge trace-running">Auditing</span><span>Scout Bee parsing cases for rogue card variance & Isolation Forest outliers...</span></div>
-        <div class="trace-item"><span class="trace-badge trace-running">Validating</span><span>Clinical Bee auditing safety metrics (SSI, Readmissions, Mortality, ALOS)...</span></div>
+        <div class="trace-item"><span class="trace-badge trace-running">Mobilizing</span><span>👑 Queen Bee dispatched 11 worker bees across clinical safety, contract parity, site migration, price discrepancies, and ESG bio-waste...</span></div>
+        <div class="trace-item"><span class="trace-badge trace-running">Auditing</span><span>Scout & Audit Bees parsing cases for rogue card variance & cross-hospital price spreads...</span></div>
+        <div class="trace-item"><span class="trace-badge trace-running">Validating</span><span>Clinical & Migration Bees auditing outcomes, ASA acuity, and Outpatient ASC viability...</span></div>
     `;
     if (traceBox) traceBox.innerHTML = initialTrace;
     if (drawerTrace) drawerTrace.innerHTML = initialTrace;
@@ -584,9 +656,15 @@ async function fetchSwarmAudit() {
             if (actionsButtons) {
                 actionsButtons.innerHTML = actions.map(act => {
                     const label = typeof act === 'object' ? (act.label || act.action) : act;
+                    const actionKey = typeof act === 'object' ? (act.action || '') : '';
+                    const safeLabel = (typeof escapeHtml === 'function') ? escapeHtml(label) : label.replace(/"/g, '&quot;');
+                    const safeKey = (typeof escapeHtml === 'function') ? escapeHtml(actionKey) : actionKey.replace(/"/g, '&quot;');
                     return `
-                        <button class="btn-chat-action" style="padding: 6px 14px; font-size: 12px;" onclick="executeSwarmAction('${label}')">
-                            ⚡ ${label}
+                        <button class="btn-chat-action" style="padding: 9px 18px; font-size: 12px; margin: 4px; border-radius: 6px; cursor: pointer; transition: all 0.2s;" 
+                                data-action="${safeLabel}" 
+                                data-action-key="${safeKey}" 
+                                onclick="executeSwarmAction(this.getAttribute('data-action'), this.getAttribute('data-action-key'))">
+                            ⚡ ${safeLabel}
                         </button>
                     `;
                 }).join('');
@@ -606,27 +684,130 @@ async function fetchSwarmAudit() {
     }
 }
 
+// Floating Toast Notification for Action Confirmation
+function showSwarmToast(message, icon = '⚡') {
+    let toast = document.getElementById('swarm-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'swarm-toast';
+        toast.style.cssText = `
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f172a;
+            color: #ffffff;
+            padding: 12px 22px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            z-index: 100000;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            pointer-events: none;
+        `;
+        document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<span style="font-size: 16px;">${icon}</span> <span>${message}</span>`;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+
+    if (window.swarmToastTimeout) clearTimeout(window.swarmToastTimeout);
+    window.swarmToastTimeout = setTimeout(() => {
+        if (toast) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(-15px)';
+        }
+    }, 3200);
+}
+
 // Execute Swarm Recommended Action
-function executeSwarmAction(actionText) {
-    console.log(`[Swarm Action] Executing: ${actionText}`);
-    const lower = actionText.toLowerCase();
+function executeSwarmAction(actionText, actionKey) {
+    console.log(`[Swarm Action] Executing: ${actionText} (key: ${actionKey})`);
+    const lower = (actionText || "").toLowerCase();
+    const key = (actionKey || "").toLowerCase();
     
-    if (lower.includes('quadrant') || lower.includes('cqo') || lower.includes('cost vs')) {
-        openTabByName('CQOTab');
-    } else if (lower.includes('leakage') || lower.includes('off-contract')) {
-        openTabByName('LeakageTab');
-    } else if (lower.includes('parity') || lower.includes('arbitrage') || lower.includes('contract')) {
-        openTabByName('ParityTab');
-        if (typeof fetchPriceParity === 'function') fetchPriceParity();
-    } else if (lower.includes('pack') || lower.includes('core') || lower.includes('hold list')) {
-        openTabByName('ProcCardTab');
-        if (typeof fetchProcedureCard === 'function') fetchProcedureCard();
-    } else if (lower.includes('preference card') || lower.includes('surgeon')) {
-        openTabByName('PrefCardTab');
+    if (key === 'standardize_substitution' || lower.includes('standardize') || lower.includes('parity') || lower.includes('arbitrage') || lower.includes('substitute')) {
+        showSwarmToast(`Executing Standardized Substitution: Navigating to Price Parity & Commodity Analysis...`, '🏷️');
+        if (typeof openTabDirect === 'function') {
+            openTabDirect('ParityTab', 'group-value');
+        } else if (typeof openTabByName === 'function') {
+            openTabByName('ParityTab');
+        }
+        setTimeout(() => { if (typeof fetchPriceParity === 'function') fetchPriceParity(); }, 120);
+    } else if (key === 'contain_leakage' || lower.includes('leakage') || lower.includes('off-contract')) {
+        showSwarmToast(`Engaging Off-Contract Leakage Sentinel across preferred suppliers...`, '💸');
+        if (typeof openTabDirect === 'function') {
+            openTabDirect('LeakageTab', 'group-value');
+        } else if (typeof openTabByName === 'function') {
+            openTabByName('LeakageTab');
+        }
+    } else if (key === 'apply_bom_pack' || lower.includes('pack') || lower.includes('hold cart') || lower.includes('bom')) {
+        showSwarmToast(`Optimizing Procedure Custom Pack & Hold Cart Placement...`, '📦');
+        if (typeof openTabDirect === 'function') {
+            openTabDirect('ProcCardTab', 'group-cards');
+        } else if (typeof openTabByName === 'function') {
+            openTabByName('ProcCardTab');
+        }
+        setTimeout(() => { if (typeof fetchProcedureCard === 'function') fetchProcedureCard(); }, 120);
+    } else if (key === 'align_preference_card' || lower.includes('preference card') || lower.includes('align standardized') || lower.includes('surgeon')) {
+        showSwarmToast(`Opening Surgeon Preference Card Alignment Engine...`, '👨‍⚕️');
+        if (typeof openTabDirect === 'function') {
+            openTabDirect('PrefCardTab', 'group-cards');
+        } else if (typeof openTabByName === 'function') {
+            openTabByName('PrefCardTab');
+        }
+        
+        // Extract surgeon name if present (e.g. Dr. GOBBLE, RYAN MICHAEL)
+        const match = (actionText || "").match(/Dr\.\s*([^(\n]+)/i);
+        if (match && match[1]) {
+            const targetSurg = match[1].trim().toUpperCase();
+            setTimeout(() => {
+                const surgSelect = document.getElementById('pref-surgeon-select');
+                if (surgSelect) {
+                    for (let opt of surgSelect.options) {
+                        const optVal = opt.value.trim().toUpperCase();
+                        if (optVal && (optVal.includes(targetSurg) || targetSurg.includes(optVal))) {
+                            surgSelect.value = opt.value;
+                            if (typeof fetchPreferenceCard === 'function') fetchPreferenceCard();
+                            break;
+                        }
+                    }
+                }
+            }, 300);
+        }
+    } else if (key === 'lock_budget_runrate' || lower.includes('budget') || lower.includes('run-rate') || lower.includes('run rate') || lower.includes('commit')) {
+        showSwarmToast(`Locking Savings Target into 12-Month Operating Budget Trajectory...`, '📊');
+        if (typeof openTabDirect === 'function') {
+            openTabDirect('BudgetTab', 'group-value');
+        } else if (typeof openTabByName === 'function') {
+            openTabByName('BudgetTab');
+        }
+        setTimeout(() => { if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast(); }, 120);
+    } else if (key === 'migrate_site_of_service' || lower.includes('outpatient asc') || lower.includes('shift') || lower.includes('migrate')) {
+        showSwarmToast(`Opening Site-of-Service ASC Migration Engine...`, '🏥');
+        if (typeof openSiteOfServiceMigrationModal === 'function') {
+            openSiteOfServiceMigrationModal();
+        }
+    } else if (key === 'audit_discrepancy' || lower.includes('price discrepanc') || lower.includes('clawback') || lower.includes('demand notice')) {
+        showSwarmToast(`Opening Price Discrepancy & Clawback Audit Engine...`, '⚖️');
+        if (typeof openPriceDiscrepancyModal === 'function') {
+            openPriceDiscrepancyModal();
+        }
+    } else if (key === 'reduce_esg_waste' || lower.includes('bio-waste') || lower.includes('esg') || lower.includes('carbon')) {
+        showSwarmToast(`Opening Custom Pack ESG Bio-Waste & Carbon Footprint Index...`, '🌱');
+        if (typeof openESGCarbonModal === 'function') {
+            openESGCarbonModal();
+        }
     } else {
         // Query Ask The Bee
+        showSwarmToast(`Mobilizing Bee Hive Swarm for inquiry...`, '🐝');
         const chatContainer = document.getElementById('chatbot-container');
-        if (chatContainer.style.display !== 'flex') {
+        if (chatContainer && chatContainer.style.display !== 'flex') {
             toggleChat();
         }
         const input = document.getElementById('chat-input');
@@ -637,8 +818,54 @@ function executeSwarmAction(actionText) {
     }
 }
 
+// Reset Swarm State on Procedure Change
+window.resetSwarmState = function() {
+    const synthesisBox = document.getElementById('swarm-synthesis-content');
+    const consensusBadge = document.getElementById('swarm-consensus-badge');
+    const debateSection = document.getElementById('swarm-debate-section');
+    const debateList = document.getElementById('swarm-debate-list');
+    const actionsSection = document.getElementById('swarm-actions-section');
+    const actionsButtons = document.getElementById('swarm-actions-buttons');
+    const drawerSynthesis = document.getElementById('drawer-synthesis-text');
+    const drawerTranscript = document.getElementById('drawer-debate-transcript');
+    const traceStatus = document.getElementById('swarm-trace-status');
+    const traceBox = document.getElementById('swarm-trace-container');
+    const drawerTrace = document.getElementById('drawer-trace-list');
+    const btn = document.getElementById('btn-run-swarm-audit');
+    const drawerBtn = document.getElementById('btn-drawer-audit');
+
+    if (btn) {
+        btn.innerText = "🐝 Launch Autonomous Hive Audit";
+        btn.disabled = false;
+    }
+    if (drawerBtn) {
+        drawerBtn.innerText = "🐝 Launch Full Hive Audit";
+        drawerBtn.disabled = false;
+    }
+    if (consensusBadge) consensusBadge.style.display = 'none';
+    if (synthesisBox) {
+        synthesisBox.innerHTML = '<p style="color: var(--text-muted); margin: 0;">Select a procedure from the top selector and click <b>Launch Autonomous Hive Audit</b> to mobilize all specialized bees across clinical safety, contract pricing, BOM packs, and rogue variances.</p>';
+    }
+    if (debateSection) debateSection.style.display = 'none';
+    if (debateList) debateList.innerHTML = '';
+    if (actionsSection) actionsSection.style.display = 'none';
+    if (actionsButtons) actionsButtons.innerHTML = '';
+    if (drawerSynthesis) {
+        drawerSynthesis.innerHTML = '<p style="color: var(--text-muted); margin: 0;">Ready to execute autonomous multi-agent audit for this procedure. Click "Launch Full Hive Audit" to synthesize cross-domain intelligence.</p>';
+    }
+    if (drawerTranscript) drawerTranscript.innerHTML = '';
+    if (traceStatus) traceStatus.innerText = "System Idle - Waiting for Audit Trigger";
+    if (traceBox) {
+        traceBox.innerHTML = '<div class="trace-item"><span class="trace-badge trace-completed">System</span><span>Bee Hive initialized. Ready for procedure audit.</span></div>';
+    }
+    if (drawerTrace) {
+        drawerTrace.innerHTML = '<div class="trace-item"><span class="trace-badge trace-completed">System</span><span>Bee Hive ready for procedure audit.</span></div>';
+    }
+};
+
 // Initialize Swarm and CQO on page ready
 $(document).ready(function() {
     fetchSwarmPersonas();
     fetchCQOSummary();
 });
+

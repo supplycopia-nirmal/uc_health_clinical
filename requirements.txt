@@ -11,3 +11,4 @@ mlxtend>=0.23.0
 xgboost>=2.1.0
 openai>=1.40.0
 orjson>=3.10.0
+python-multipart>=0.0.9

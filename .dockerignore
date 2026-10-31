@@ -1,0 +1,28 @@
+# Git and environment
+.git/
+.venv/
+env/
+venv/
+
+# Environment files and credentials (CRITICAL: Never bake secrets into image layers)
+.env
+*.p8
+*.key
+*.pem
+*.cer
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Large raw data files (mount as volumes if needed)
+data/*.csv
+data/*.parquet
+data/jira_attachments/*
+!data/jira_attachments/.gitkeep

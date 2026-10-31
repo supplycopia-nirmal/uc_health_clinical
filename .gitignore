@@ -16,6 +16,16 @@ data/*.parquet
 # Keep RLHF feedback template
 !data/rlhf_preference_cards.jsonl
 
+# Jira Attachments
+data/jira_attachments/*
+!data/jira_attachments/.gitkeep
+
+# Sensitive Keys and Certificates
+*.p8
+*.key
+*.pem
+*.cer
+
 # Operating System
 .DS_Store
 Thumbs.db

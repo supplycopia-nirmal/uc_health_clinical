@@ -78,3 +78,4 @@ class SwarmChatResponse(BaseModel):
     debate_transcript: Optional[List[SwarmMessage]] = None
     embedded_actions: Optional[List[Dict[str, str]]] = None
     followup_questions: Optional[List[str]] = None
+    chart_spec: Optional[Dict[str, Any]] = None

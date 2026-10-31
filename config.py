@@ -97,6 +97,8 @@ def get_snowflake_connection():
     key_path = Path(MultiTenantConfig.PRIVATE_KEY_PATH)
     if not key_path.exists():
         fallback = ROOT_DIR / "lambda_migration._rsa_key.p8"
+        if not fallback.exists():
+            fallback = BASE_DIR / "lambda_migration._rsa_key.p8"
         if fallback.exists():
             key_path = fallback
         else:
