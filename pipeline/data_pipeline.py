@@ -57,6 +57,7 @@ def extract_from_snowflake(limit_top_procs: int = 100) -> pd.DataFrame:
                 COALESCE(NULLIF(TRIM(ITEM_DESCRIPTION), ''), 'UNKNOWN') AS "item_description",
                 COALESCE(SUPPLY_UNIT_PRICE, 0.0) AS "unit_cost",
                 COALESCE(LINE_SPEND, TOTAL_ACQUISITION_COST, 0.0) AS "line_spend",
+                COALESCE(TOTAL_CHARGES, 0.0) AS "total_charges",
                 COALESCE(NULLIF(TRIM(LEAD_SURGEON), ''), 'UNASSIGNED') AS "lead_surgeon",
                 COALESCE(NULLIF(TRIM(PATIENT_AGE_BUCKET), ''), 'Not Specified') AS "patient_age_bucket",
                 COALESCE(NULLIF(TRIM(ASA_RATING), ''), 'Not Specified') AS "asa_rating",
@@ -122,13 +123,19 @@ def detect_anomalies_and_build_boms(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.
     df['quantity'] = pd.to_numeric(df['quantity'], errors='coerce').fillna(1.0)
     df['unit_cost'] = pd.to_numeric(df['unit_cost'], errors='coerce').fillna(0.0)
     df['line_spend'] = pd.to_numeric(df['line_spend'], errors='coerce').fillna(0.0)
+    if 'total_charges' in df.columns:
+        df['total_charges'] = pd.to_numeric(df['total_charges'], errors='coerce').fillna(0.0)
+    else:
+        df['total_charges'] = 0.0
     
-    # Calculate case-level total quantity and total cost
+    # Calculate case-level total quantity, total supply cost, and deduplicated total procedure charge
     print("Aggregating case-level metrics...")
-    case_metrics = df.groupby(['unified_procedure', 'case_id']).agg(
-        Total_Case_Quantity=('quantity', 'sum'),
-        Total_Case_Cost=('line_spend', 'sum')
-    ).reset_index()
+    agg_kwargs = {
+        'Total_Case_Quantity': ('quantity', 'sum'),
+        'Total_Case_Cost': ('line_spend', 'sum'),
+        'Total_Procedure_Charges': ('total_charges', 'first')
+    }
+    case_metrics = df.groupby(['unified_procedure', 'case_id']).agg(**agg_kwargs).reset_index()
     
     case_metrics['Cost_Volume_Outlier'] = 'No'
     case_metrics['Composition_Outlier'] = 'No'
@@ -221,17 +228,26 @@ def detect_anomalies_and_build_boms(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.
     
     # Merge case level metrics back onto full line-item dataset
     print("Merging anomaly metrics to line-item dataset...")
+    case_cols_to_merge = [
+        'case_id', 'Total_Case_Quantity', 'Total_Case_Cost', 'Total_Procedure_Charges',
+        'Cost_Volume_Outlier', 'Composition_Outlier', 'Is_Master_Outlier',
+        'IF_Anomaly_Score', 'Anomaly_Type_Detail', 'Outlier_Items'
+    ]
     df_merged = pd.merge(
         df,
-        case_metrics[['case_id', 'Total_Case_Quantity', 'Total_Case_Cost', 'Cost_Volume_Outlier',
-                      'Composition_Outlier', 'Is_Master_Outlier', 'IF_Anomaly_Score',
-                      'Anomaly_Type_Detail', 'Outlier_Items']],
+        case_metrics[[c for c in case_cols_to_merge if c in case_metrics.columns]],
         on='case_id',
         how='left'
     )
     
-    # Map cost_per_case to Total_Case_Cost
+    # Map cost_per_case and total_charges
     df_merged['cost_per_case'] = df_merged['Total_Case_Cost']
+    df_merged['total_charges'] = df_merged.get('Total_Procedure_Charges', 0.0)
+    df_merged['supply_intensity_pct'] = np.where(
+        df_merged['total_charges'] > 0,
+        np.round((df_merged['cost_per_case'] / df_merged['total_charges']) * 100, 2),
+        0.0
+    )
     
     # Convert BOM records to DataFrame
     bom_df = pd.DataFrame(bom_records)

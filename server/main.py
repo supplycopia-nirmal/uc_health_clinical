@@ -113,6 +113,14 @@ async def lifespan(app: FastAPI):
         elif 'quantity_num' in df.columns and 'unit_cost_num' in df.columns:
             df['ext_cost'] = df['quantity_num'] * df['unit_cost_num']
 
+        # Total procedure charges (labor, OR time, overhead & supplies)
+        if 'total_charges' in df.columns:
+            df['total_charges_num'] = pd.to_numeric(df['total_charges'].astype(str).replace(r'[^\d.-]', '', regex=True), errors='coerce').fillna(0.0)
+        elif 'total_procedure_charges' in df.columns:
+            df['total_charges_num'] = pd.to_numeric(df['total_procedure_charges'].astype(str).replace(r'[^\d.-]', '', regex=True), errors='coerce').fillna(0.0)
+        else:
+            df['total_charges_num'] = 0.0
+
         # Patient clinical acuity & anomaly indicators for CQO
         if 'asa_rating' in df.columns:
             def _parse_asa(val):
@@ -410,7 +418,11 @@ def _get_procedure_data_cached(procedure_name: str):
             data['items_list'].sort(key=lambda x: (sort_order.get(x['status'], 4), -x['total_cost']))
             del data['used_subcats'] 
 
-    case_cols_we_want = ['hospital_name', 'case_id', 'total_case_quantity', 'cost_per_case', 'cost_volume_outlier', 'anomaly_type_detail', 'lead_surgeon', 'asa_rating']
+    case_cols_we_want = [
+        'hospital_name', 'case_id', 'total_case_quantity', 'cost_per_case', 
+        'cost_volume_outlier', 'anomaly_type_detail', 'lead_surgeon', 'asa_rating',
+        'total_charges', 'total_charges_num', 'total_procedure_charges', 'supply_intensity_pct'
+    ]
     actual_case_cols = [c for c in case_cols_we_want if c in filtered_df.columns]
     
     case_df = filtered_df.drop_duplicates(subset=['case_id']).copy()
@@ -422,11 +434,16 @@ def _get_procedure_data_cached(procedure_name: str):
     final_records = []
     for row in case_records:
         c_id = str(row.get('case_id', '')).strip()
+        chg = float(row.get('total_charges') or row.get('total_procedure_charges') or row.get('total_charges_num') or 0.0)
+        cpc = float(row.get('cost_per_case') or 0.0)
+        intensity = float(row.get('supply_intensity_pct') or (round((cpc / chg * 100), 2) if chg > 0 else 0.0))
         final_row = {
             'hospital_name': row.get('hospital_name'),
             'case_id': c_id,
             'Total_Case_Quantity': row.get('total_case_quantity'),
-            'cost_per_case': row.get('cost_per_case'),
+            'cost_per_case': cpc,
+            'total_charges': chg,
+            'supply_intensity_pct': intensity,
             'Cost_Volume_Outlier': row.get('cost_volume_outlier'),
             'Anomaly_Type_Detail': row.get('anomaly_type_detail'),
             'lead_surgeon': row.get('lead_surgeon'),
@@ -916,6 +933,19 @@ def get_cqo_summary(procedure: Optional[str] = None, percentile: int = 25):
             })
         service_lines.sort(key=lambda x: x["encounters"], reverse=True)
 
+    # Deduplicated procedure charges (strictly once per case_id)
+    chg_col = 'total_charges_num' if 'total_charges_num' in target_df.columns else ('total_charges' if 'total_charges' in target_df.columns else None)
+    if chg_col:
+        unique_case_charges = target_df.drop_duplicates(subset=['case_id'])[chg_col]
+        total_charges_sum = float(pd.to_numeric(unique_case_charges, errors='coerce').fillna(0.0).sum())
+        avg_total_charges = float(pd.to_numeric(unique_case_charges, errors='coerce').fillna(0.0).mean()) if total_encounters > 0 else 0.0
+    else:
+        total_charges_sum = 0.0
+        avg_total_charges = 0.0
+
+    avg_cpc = (total_spend / total_encounters) if total_encounters > 0 else 0.0
+    overall_supply_intensity = (avg_cpc / avg_total_charges * 100) if avg_total_charges > 0 else 0.0
+
     result = {
         "total_encounters": total_encounters,
         "outpatient_count": outp_count,
@@ -927,6 +957,9 @@ def get_cqo_summary(procedure: Optional[str] = None, percentile: int = 25):
         "mortality_rate": 0.32,
         "alos_days": 2.09,
         "total_spend": round(total_spend, 2),
+        "total_charges_sum": round(total_charges_sum, 2),
+        "avg_total_charges": round(avg_total_charges, 2),
+        "supply_intensity_pct": round(overall_supply_intensity, 1),
         "med_supply_cost": round(med_cost, 2),
         "implant_cost": round(imp_cost, 2),
         "contracted_spend": round(contracted_spend, 2),

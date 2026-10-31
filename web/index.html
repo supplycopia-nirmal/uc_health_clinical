@@ -749,17 +749,37 @@
 
         <div id="physician-scatter-container" style="width: 100%; height: 450px; background: #fff; box-sizing: border-box; border-radius: 8px; border: 1px solid var(--card-border); overflow: hidden;"></div>
         
-        <div id="chart-container" style="width: 100%; height: 450px; background: #fff; box-sizing: border-box; border-radius: 8px; border: 1px solid var(--card-border); margin-top: 20px; overflow: hidden;"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 25px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 12px; font-weight: 700; color: #334155;">Case Scatter Dimension:</span>
+                <div style="display: inline-flex; border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden; background: #f8fafc; padding: 2px;">
+                    <button id="btn-metric-cpc" onclick="switchCaseScatterMetric('cpc')" style="padding: 4px 12px; font-size: 11px; font-weight: 700; border: none; background: #0284c7; color: #fff; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                        📦 Supply Spend (CPC)
+                    </button>
+                    <button id="btn-metric-charges" onclick="switchCaseScatterMetric('charges')" style="padding: 4px 12px; font-size: 11px; font-weight: 600; border: none; background: transparent; color: #475569; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                        🏥 Total Procedure Charges (Labor + OR Overhead)
+                    </button>
+                    <button id="btn-metric-intensity" onclick="switchCaseScatterMetric('intensity')" style="padding: 4px 12px; font-size: 11px; font-weight: 600; border: none; background: transparent; color: #475569; border-radius: 4px; cursor: pointer; transition: all 0.2s;">
+                        ⚡ Supply Intensity (%)
+                    </button>
+                </div>
+            </div>
+            <div style="font-size: 11px; color: #64748b; font-weight: 600;">
+                <span style="color: #4f46e5;">● Dispersed View</span> active for coincident pack cases
+            </div>
+        </div>
+        
+        <div id="chart-container" style="width: 100%; height: 450px; background: #fff; box-sizing: border-box; border-radius: 8px; border: 1px solid var(--card-border); overflow: hidden;"></div>
         
 		<div class="tables-wrapper">
             <div class="table-panel">
                 <div class="table-header">
                     <h4 class="header-title">Case Summary</h4>
-                    <div class="header-metrics">Total Cases: <strong id="total-cases-display">0</strong> &nbsp;|&nbsp; Avg Qty: <strong id="avg-qty-display">0</strong> &nbsp;|&nbsp; Avg Cost: <strong id="avg-cost-display">$0.00</strong></div>
+                    <div class="header-metrics">Total Cases: <strong id="total-cases-display">0</strong> &nbsp;|&nbsp; Avg Qty: <strong id="avg-qty-display">0</strong> &nbsp;|&nbsp; Avg Cost: <strong id="avg-cost-display">$0.00</strong> &nbsp;|&nbsp; Avg Charge: <strong id="avg-charge-display" style="color: #0284c7;">$0.00</strong> &nbsp;|&nbsp; Supply Burden: <strong id="supply-intensity-display" style="color: #7c3aed;">0.0%</strong></div>
                 </div>
                 <div class="table-scroll">
                     <table id="data-table">
-                        <thead><tr><th>Case ID</th><th>Surgeon</th><th>Qty</th><th>Cost</th><th>Outlier</th><th>Match %</th></tr></thead>
+                        <thead><tr><th>Case ID</th><th>Surgeon</th><th>Qty</th><th>Supply CPC</th><th>Total Charges</th><th>Intensity</th><th>Outlier</th><th>Match %</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -4778,15 +4798,28 @@
 
             window.pointLookup = {};
             window.selectedCaseId = null; 
-            let totalQty = 0; let totalCost = 0; let count = 0;
+            let totalQty = 0; let totalCost = 0; let totalCharges = 0; let count = 0;
             window.filteredCases.forEach(r => {
-                const q = parseFloat(r.Total_Case_Quantity); const c = parseFloat(r.cost_per_case);
-                if (!isNaN(q) && !isNaN(c)) { totalQty += q; totalCost += c; count++; }
+                const q = parseFloat(r.Total_Case_Quantity); 
+                const c = parseFloat(r.cost_per_case);
+                const chg = parseFloat(r.total_charges || 0);
+                if (!isNaN(q) && !isNaN(c)) { 
+                    totalQty += q; 
+                    totalCost += c; 
+                    totalCharges += chg;
+                    count++; 
+                }
             });
 
             $('#total-cases-display').text(window.filteredCases.length);
             $('#avg-qty-display').text(count > 0 ? (totalQty/count).toFixed(1) : '0');
-            $('#avg-cost-display').text(count > 0 ? `$${(totalCost/count).toLocaleString(undefined, {minimumFractionDigits: 2})}` : '$0.00');
+            const avgCostVal = count > 0 ? (totalCost/count) : 0;
+            const avgChgVal = count > 0 ? (totalCharges/count) : 0;
+            const avgIntensity = avgChgVal > 0 ? ((avgCostVal / avgChgVal) * 100).toFixed(1) : '0.0';
+
+            $('#avg-cost-display').text(count > 0 ? `$${avgCostVal.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '$0.00');
+            $('#avg-charge-display').text(avgChgVal > 0 ? `$${avgChgVal.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '$0.00');
+            $('#supply-intensity-display').text(`${avgIntensity}%`);
 
             renderChart(window.filteredCases, window.currentProcedure);
             if (window.cpcScatterMode === 'risk') {
@@ -5452,12 +5485,39 @@
 			} catch (err) { console.error(err); alert("Failed to build procedure card."); } finally { btn.innerText = "Generate Global Procedure Card"; btn.disabled = false; }
         }
 
+        window.caseScatterMetric = window.caseScatterMetric || 'cpc';
+
+        window.switchCaseScatterMetric = function(mode) {
+            window.caseScatterMetric = mode;
+            ['cpc', 'charges', 'intensity'].forEach(m => {
+                const btn = document.getElementById(`btn-metric-${m}`);
+                if (btn) {
+                    if (m === mode) {
+                        btn.style.background = '#0284c7';
+                        btn.style.color = '#fff';
+                        btn.style.fontWeight = '700';
+                    } else {
+                        btn.style.background = 'transparent';
+                        btn.style.color = '#475569';
+                        btn.style.fontWeight = '600';
+                    }
+                }
+            });
+            renderChart(window.filteredCases, window.currentProcedure);
+        };
+
         function renderChart(data, procedure) {
+            const metricMode = window.caseScatterMetric || 'cpc';
             // Extract valid cases
             const validRows = [];
             data.forEach(row => {
                 const xVal = parseFloat(row.Total_Case_Quantity);
-                const yVal = parseFloat(row.cost_per_case);
+                let yVal = parseFloat(row.cost_per_case);
+                if (metricMode === 'charges') {
+                    yVal = parseFloat(row.total_charges || 0);
+                } else if (metricMode === 'intensity') {
+                    yVal = parseFloat(row.supply_intensity_pct || 0);
+                }
                 if (!isNaN(xVal) && !isNaN(yVal)) {
                     validRows.push({ ...row, _origX: xVal, _origY: yVal });
                 }
@@ -5472,12 +5532,13 @@
                 if (r._origY > maxY) maxY = r._origY;
             });
             const spanX = Math.max(maxX - minX, 4);
-            const spanY = Math.max(maxY - minY, 30);
+            const spanY = Math.max(maxY - minY, metricMode === 'intensity' ? 5 : 30);
+            const yThreshold = metricMode === 'intensity' ? 0.5 : (metricMode === 'charges' ? 50 : 1.5);
 
-            // Group points by spatial collision (same integer quantity and within $1.50 cost)
+            // Group points by spatial collision
             const collisionGroups = {};
             validRows.forEach((r, idx) => {
-                const key = `${Math.round(r._origX)}_${Math.round(r._origY / 1.5)}`;
+                const key = `${Math.round(r._origX)}_${Math.round(r._origY / yThreshold)}`;
                 if (!collisionGroups[key]) collisionGroups[key] = [];
                 collisionGroups[key].push(idx);
             });
@@ -5488,7 +5549,7 @@
             let overlappingCaseCount = 0;
 
             validRows.forEach((row, idx) => {
-                const key = `${Math.round(row._origX)}_${Math.round(row._origY / 1.5)}`;
+                const key = `${Math.round(row._origX)}_${Math.round(row._origY / yThreshold)}`;
                 const group = collisionGroups[key] || [idx];
                 const groupSize = group.length;
                 const posInGroup = group.indexOf(idx);
@@ -5505,7 +5566,7 @@
                     const angle = (2 * Math.PI * ringIndex) / itemsInRing + (ring * 0.4);
 
                     const radiusX = (spanX * 0.016 * ring) || (0.15 * ring);
-                    const radiusY = (spanY * 0.020 * ring) || (1.6 * ring);
+                    const radiusY = (spanY * 0.020 * ring) || ((metricMode === 'intensity' ? 0.3 : 1.6) * ring);
 
                     plotX += radiusX * Math.cos(angle);
                     plotY += radiusY * Math.sin(angle);
@@ -5515,7 +5576,11 @@
                     ? `<br><span style="color: #4f46e5; font-weight: 700;">● Standardized Pack Case (${posInGroup + 1} of ${groupSize} cases with identical metrics)</span>`
                     : '';
 
-                const hoverText = `<b>Surgeon:</b> ${row.lead_surgeon || 'Unknown'}<br><b>Case:</b> ${row.case_id}<br><b>Total Qty:</b> ${row._origX} | <b>Cost:</b> $${row._origY.toLocaleString(undefined, {minimumFractionDigits: 2})}<br><b>Outlier:</b> ${row.Cost_Volume_Outlier || 'No'}${overlapNote}`;
+                const cpcVal = parseFloat(row.cost_per_case || 0);
+                const chgVal = parseFloat(row.total_charges || 0);
+                const intensityVal = parseFloat(row.supply_intensity_pct || (chgVal > 0 ? (cpcVal / chgVal * 100) : 0));
+
+                const hoverText = `<b>Surgeon:</b> ${row.lead_surgeon || 'Unknown'}<br><b>Case ID:</b> ${row.case_id}<br><b>Total Qty:</b> ${row._origX} units<br><b>Supply Spend:</b> $${cpcVal.toLocaleString(undefined, {minimumFractionDigits: 2})}<br><b>Total Procedure Charges:</b> $${chgVal.toLocaleString(undefined, {minimumFractionDigits: 2})}<br><b>Supply Burden:</b> ${intensityVal.toFixed(1)}% of total charge<br><b>Outlier:</b> ${row.Cost_Volume_Outlier || 'No'}${overlapNote}`;
 
                 if (row.Cost_Volume_Outlier && row.Cost_Volume_Outlier.trim() === 'Yes') {
                     outlierX.push(plotX); outlierY.push(plotY); outlierText.push(hoverText); outlierIds.push(row.case_id);
@@ -5539,9 +5604,22 @@
                 marker: { color: '#e64552', size: 12, opacity: 0.9, line: { width: 1.5, color: '#ffffff' } } 
             };
 
+            let yAxisTitle = 'Surgical Supply Cost Per Case ($)';
+            let yTickFormat = '$,.0f';
+            let chartMetricName = 'Surgical Supply Cost';
+            if (metricMode === 'charges') {
+                yAxisTitle = 'Total Procedure Charges ($) (Labor, OR Room Time & Overhead)';
+                yTickFormat = '$,.0f';
+                chartMetricName = 'Total Procedure Charges';
+            } else if (metricMode === 'intensity') {
+                yAxisTitle = 'Supply Cost Intensity Ratio (%)';
+                yTickFormat = '.1f';
+                chartMetricName = 'Supply Intensity Ratio (%)';
+            }
+
             const chartTitle = overlappingCaseCount > 0
-                ? `Cost vs. Volume Anomalies — ${validRows.length} Cases (Identical Pack Cases Dispersed)`
-                : `Cost vs. Volume Anomalies — ${validRows.length} Cases`;
+                ? `${chartMetricName} vs. Volume — ${validRows.length} Cases (Identical Pack Cases Dispersed)`
+                : `${chartMetricName} vs. Volume — ${validRows.length} Cases`;
 
             const layout = { 
                 autosize: true, 
@@ -5555,8 +5633,9 @@
                     gridcolor: '#f1f5f9'
                 }, 
                 yaxis: { 
-                    title: { text: 'Cost Per Case ($)', standoff: 15 }, 
-                    tickformat: '$,.0f', 
+                    title: { text: yAxisTitle, standoff: 15 }, 
+                    tickformat: yTickFormat, 
+                    ticksuffix: metricMode === 'intensity' ? '%' : '',
                     automargin: true,
                     showline: true,
                     linecolor: '#cbd5e1',
@@ -5624,14 +5703,30 @@
                 const tr = document.createElement('tr'); tr.id = `row-${row.case_id}`;
                 const matchPct = row.variance_data && row.variance_data.construct_match_pct !== undefined ? row.variance_data.construct_match_pct + '%' : 'N/A';
                 const matchColor = parseFloat(matchPct) < 80 ? 'var(--brand-red)' : '#166534';
-                tr.innerHTML = `<td title="${row.case_id}">${row.case_id.split('-').pop()}</td><td>${row.lead_surgeon || 'Unknown'}</td><td>${row.Total_Case_Quantity}</td><td>$${row.cost_per_case ? row.cost_per_case.toLocaleString(undefined, {minimumFractionDigits: 2}) : '0.00'}</td><td style="color: ${row.Cost_Volume_Outlier === 'Yes' ? 'var(--brand-red)' : '#166534'}">${row.Cost_Volume_Outlier}</td><td style="color: ${matchColor}; font-weight: bold;">${matchPct}</td>`;
+                
+                const cpcVal = parseFloat(row.cost_per_case || 0);
+                const chgVal = parseFloat(row.total_charges || 0);
+                const intensityVal = parseFloat(row.supply_intensity_pct || (chgVal > 0 ? (cpcVal / chgVal * 100) : 0));
+                const chgText = chgVal > 0 ? `$${chgVal.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '$0.00';
+                const intensityText = chgVal > 0 ? `${intensityVal.toFixed(1)}%` : 'N/A';
+
+                tr.innerHTML = `
+                    <td title="${row.case_id}">${row.case_id.split('-').pop()}</td>
+                    <td>${row.lead_surgeon || 'Unknown'}</td>
+                    <td style="text-align: center;">${row.Total_Case_Quantity}</td>
+                    <td>$${cpcVal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td style="color: #0284c7; font-weight: 600;">${chgText}</td>
+                    <td style="color: #7c3aed; font-weight: 700; text-align: center;">${intensityText}</td>
+                    <td style="color: ${row.Cost_Volume_Outlier === 'Yes' ? 'var(--brand-red)' : '#166534'}; text-align: center;">${row.Cost_Volume_Outlier}</td>
+                    <td style="color: ${matchColor}; font-weight: bold; text-align: center;">${matchPct}</td>
+                `;
                 
                 tr.addEventListener('mouseenter', () => { 
                     if (row.case_id !== window.selectedCaseId) highlightChartPoint(row.case_id, true); 
                     renderVarianceAnalysis(row.case_id); 
                 });
                 
-                tr.addEventListener('mouseleave', () => {
+                tr.addEventListener('mouseleave', () => { 
                     if (row.case_id !== window.selectedCaseId) highlightChartPoint(row.case_id, false); 
                     if (window.selectedCaseId) renderVarianceAnalysis(window.selectedCaseId);
                 });
@@ -5654,7 +5749,6 @@
                         }
                     }
                 });
-                
                 tbody.appendChild(tr);
             }
         }
