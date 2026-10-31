@@ -5453,29 +5453,99 @@
         }
 
         function renderChart(data, procedure) {
-            const normalX = [], normalY = [], normalText = [], normalIds = [];
-            const outlierX = [], outlierY = [], outlierText = [], outlierIds = [];
-            let normalIndex = 0; let outlierIndex = 0;
-
+            // Extract valid cases
+            const validRows = [];
             data.forEach(row => {
-                const xVal = parseFloat(row.Total_Case_Quantity); const yVal = parseFloat(row.cost_per_case);
+                const xVal = parseFloat(row.Total_Case_Quantity);
+                const yVal = parseFloat(row.cost_per_case);
                 if (!isNaN(xVal) && !isNaN(yVal)) {
-                    const hoverText = `<b>Surgeon:</b> ${row.lead_surgeon || 'Unknown'}<br><b>Case:</b> ${row.case_id}<br><b>Total Qty:</b> ${xVal} | <b>Cost:</b> $${yVal.toLocaleString(undefined, {minimumFractionDigits: 2})}<br><b>Outlier:</b> ${row.Cost_Volume_Outlier}`;
-                    if (row.Cost_Volume_Outlier && row.Cost_Volume_Outlier.trim() === 'Yes') {
-                        outlierX.push(xVal); outlierY.push(yVal); outlierText.push(hoverText); outlierIds.push(row.case_id);
-                        window.pointLookup[row.case_id] = { curveNumber: 1, pointNumber: outlierIndex }; outlierIndex++;
-                    } else {
-                        normalX.push(xVal); normalY.push(yVal); normalText.push(hoverText); normalIds.push(row.case_id);
-                        window.pointLookup[row.case_id] = { curveNumber: 0, pointNumber: normalIndex }; normalIndex++;
-                    }
+                    validRows.push({ ...row, _origX: xVal, _origY: yVal });
                 }
             });
 
-            const traceNormal = { x: normalX, y: normalY, text: normalText, customdata: normalIds, mode: 'markers', type: 'scattergl', name: 'No', hoverinfo: 'text', marker: { color: '#94a3b8', size: 10, opacity: 0.6, line: {width: 1, color: '#64748b'} } };
-            const traceOutlier = { x: outlierX, y: outlierY, text: outlierText, customdata: outlierIds, mode: 'markers', type: 'scattergl', name: 'Yes', hoverinfo: 'text', marker: { color: '#e64552', size: 10, opacity: 0.85, line: {width: 1, color: '#b91c1c'} } };
+            // Calculate axis spans to compute proportional micro-dispersal
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            validRows.forEach(r => {
+                if (r._origX < minX) minX = r._origX;
+                if (r._origX > maxX) maxX = r._origX;
+                if (r._origY < minY) minY = r._origY;
+                if (r._origY > maxY) maxY = r._origY;
+            });
+            const spanX = Math.max(maxX - minX, 4);
+            const spanY = Math.max(maxY - minY, 30);
+
+            // Group points by spatial collision (same integer quantity and within $1.50 cost)
+            const collisionGroups = {};
+            validRows.forEach((r, idx) => {
+                const key = `${Math.round(r._origX)}_${Math.round(r._origY / 1.5)}`;
+                if (!collisionGroups[key]) collisionGroups[key] = [];
+                collisionGroups[key].push(idx);
+            });
+
+            const normalX = [], normalY = [], normalText = [], normalIds = [];
+            const outlierX = [], outlierY = [], outlierText = [], outlierIds = [];
+            let normalIndex = 0; let outlierIndex = 0;
+            let overlappingCaseCount = 0;
+
+            validRows.forEach((row, idx) => {
+                const key = `${Math.round(row._origX)}_${Math.round(row._origY / 1.5)}`;
+                const group = collisionGroups[key] || [idx];
+                const groupSize = group.length;
+                const posInGroup = group.indexOf(idx);
+
+                let plotX = row._origX;
+                let plotY = row._origY;
+
+                // Disperse overlapping points in concentric rings so every single case is distinctly visible
+                if (groupSize > 1) {
+                    overlappingCaseCount++;
+                    const ring = Math.floor(posInGroup / 6) + 1;
+                    const itemsInRing = ring === 1 ? Math.min(groupSize, 6) : Math.max(groupSize - 6, 1);
+                    const ringIndex = ring === 1 ? posInGroup : (posInGroup - 6);
+                    const angle = (2 * Math.PI * ringIndex) / itemsInRing + (ring * 0.4);
+
+                    const radiusX = (spanX * 0.016 * ring) || (0.15 * ring);
+                    const radiusY = (spanY * 0.020 * ring) || (1.6 * ring);
+
+                    plotX += radiusX * Math.cos(angle);
+                    plotY += radiusY * Math.sin(angle);
+                }
+
+                const overlapNote = groupSize > 1
+                    ? `<br><span style="color: #4f46e5; font-weight: 700;">● Standardized Pack Case (${posInGroup + 1} of ${groupSize} cases with identical metrics)</span>`
+                    : '';
+
+                const hoverText = `<b>Surgeon:</b> ${row.lead_surgeon || 'Unknown'}<br><b>Case:</b> ${row.case_id}<br><b>Total Qty:</b> ${row._origX} | <b>Cost:</b> $${row._origY.toLocaleString(undefined, {minimumFractionDigits: 2})}<br><b>Outlier:</b> ${row.Cost_Volume_Outlier || 'No'}${overlapNote}`;
+
+                if (row.Cost_Volume_Outlier && row.Cost_Volume_Outlier.trim() === 'Yes') {
+                    outlierX.push(plotX); outlierY.push(plotY); outlierText.push(hoverText); outlierIds.push(row.case_id);
+                    window.pointLookup[row.case_id] = { curveNumber: 1, pointNumber: outlierIndex }; outlierIndex++;
+                } else {
+                    normalX.push(plotX); normalY.push(plotY); normalText.push(hoverText); normalIds.push(row.case_id);
+                    window.pointLookup[row.case_id] = { curveNumber: 0, pointNumber: normalIndex }; normalIndex++;
+                }
+            });
+
+            const traceNormal = { 
+                x: normalX, y: normalY, text: normalText, customdata: normalIds, 
+                mode: 'markers', type: 'scatter', name: 'Standard Case', 
+                hoverinfo: 'text', 
+                marker: { color: '#94a3b8', size: 10, opacity: 0.8, line: { width: 1.5, color: '#ffffff' } } 
+            };
+            const traceOutlier = { 
+                x: outlierX, y: outlierY, text: outlierText, customdata: outlierIds, 
+                mode: 'markers', type: 'scatter', name: 'Outlier Case', 
+                hoverinfo: 'text', 
+                marker: { color: '#e64552', size: 12, opacity: 0.9, line: { width: 1.5, color: '#ffffff' } } 
+            };
+
+            const chartTitle = overlappingCaseCount > 0
+                ? `Cost vs. Volume Anomalies — ${validRows.length} Cases (Identical Pack Cases Dispersed)`
+                : `Cost vs. Volume Anomalies — ${validRows.length} Cases`;
+
             const layout = { 
                 autosize: true, 
-                title: `Cost vs. Volume Anomalies`, 
+                title: chartTitle, 
                 xaxis: { 
                     title: 'Total Case Quantity',
                     showline: true,
@@ -5498,7 +5568,7 @@
                 hovermode: 'closest', 
                 plot_bgcolor: 'white', 
                 paper_bgcolor: 'white', 
-                legend: { title: { text: 'Outlier?' } }, 
+                legend: { title: { text: 'Classification' }, orientation: 'h', y: 1.12, x: 0.3 }, 
                 margin: { t: 55, b: 80, l: 95, r: 35 },
                 clickmode: 'event+select'
             };
