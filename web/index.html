@@ -850,7 +850,7 @@
                     <span>📁</span>
                 </div>
                 <div id="kpi-dash-cases" class="executive-kpi-val">0</div>
-                <div class="executive-kpi-sub"><span id="kpi-dash-surgeons">0 Surgeons</span> &nbsp;•&nbsp; Cohort Vol</div>
+                <div class="executive-kpi-sub"><span id="kpi-dash-surgeons">0 Surgeons</span> &nbsp;•&nbsp; <span id="kpi-dash-cohort-vol">Cohort Vol</span></div>
             </div>
 
             <div class="executive-kpi-card kpi-brand">
@@ -5633,7 +5633,8 @@
             let outlierCasesCount = 0;
 
             window.filteredCases.forEach(r => {
-                if (r.surgeon) surgeonSet.add(r.surgeon);
+                const s = r.lead_surgeon || r.surgeon;
+                if (s) surgeonSet.add(s);
                 const c = parseFloat(r.cost_per_case);
                 if (!isNaN(c)) cpcList.push(c);
                 if (r.Cost_Volume_Outlier === 'Yes') outlierCasesCount++;
@@ -5651,9 +5652,15 @@
                 if (val > p25Val) savingsOpp += (val - p25Val);
             });
 
+            const totalCohortCases = window.masterData && window.masterData.cases ? window.masterData.cases.length : window.filteredCases.length;
+            const cohortVolText = window.filteredCases.length === totalCohortCases
+                ? `${totalCohortCases.toLocaleString()} Cohort Vol`
+                : `${window.filteredCases.length.toLocaleString()} of ${totalCohortCases.toLocaleString()} Cohort Vol (${Math.round((window.filteredCases.length / Math.max(1, totalCohortCases)) * 100)}%)`;
+
             // Update Executive KPI Elements
             $('#kpi-dash-cases').text(window.filteredCases.length.toLocaleString());
             $('#kpi-dash-surgeons').text(`${surgeonSet.size} Surgeon${surgeonSet.size === 1 ? '' : 's'}`);
+            $('#kpi-dash-cohort-vol').text(cohortVolText);
             $('#kpi-dash-spend').text(`$${totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
             $('#kpi-dash-avg-cpc').text(`$${avgCostVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
             $('#kpi-dash-intensity').text(`${avgIntensity}%`);
