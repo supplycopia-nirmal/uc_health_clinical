@@ -1,5 +1,43 @@
 [
   {
+    "key": "UCHCQO-20",
+    "summary": "[AUTO-EXCEPTION] NameError: name 'time' is not defined (Tab: Application Context)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 20:49:03\n*Source:* backend_fastapi_thread\n*Active Procedure:* General Cohort\n*Active Tab:* Application Context\n*User Session:* uchealth_admin\n*Exception Type:* NameError\n\n*Message:* name 'time' is not defined\n\nh4. Traceback Stack Trace:\n{code:python}\n  + Exception Group Traceback (most recent call last):\n  |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/starlette/_utils.py\", line 104, in create_collapsing_task_group\n  |     async with anyio.create_task_group() as tg:\n  |                ~~~~~~~~~~~~~~~~~~~~~~~^^\n  |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py\", line 847, in __aexit__\n  |     raise BaseExceptionGroup(\n  |         \"unhandled errors in a TaskGroup\", self._exceptions\n  |     ) from None\n  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\n  +-+----",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-20",
+    "source": "backend_fastapi_thread",
+    "stack_trace": "  + Exception Group Traceback (most recent call last):\n  |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/starlette/_utils.py\", line 104, in create_collapsing_task_group\n  |     async with anyio.create_task_group() as tg:\n  |                ~~~~~~~~~~~~~~~~~~~~~~~^^\n  |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py\", line 847, in __aexit__\n  |     raise BaseExceptionGroup(\n  |         \"unhandled errors in a TaskGroup\", self._exceptions\n  |     ) from None\n  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\n  +-+---------------- 1 ----------------\n    | Traceback (most recent call last):\n    |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 267, in crash_supervisor_middleware\n    |     response = await call_next(request)\n    |                ^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 179, in call_next\n    |     raise app_exc from app_exc.__cause__ or app_exc.__context__\n    |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 149, in coro\n    |     await self.app(scope, receive_or_disconnect, send_no_error)\n    |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/starle",
+    "context": {
+      "url": "http://localhost:8007/saml/dev-login",
+      "method": "GET",
+      "client_ip": "127.0.0.1",
+      "user": "uchealth_admin"
+    }
+  },
+  {
+    "key": "UCHCQO-19",
+    "summary": "[AUTO-EXCEPTION] NameError: name 'time' is not defined (Tab: Application Context)",
+    "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 20:48:52\n*Source:* backend_fastapi_thread\n*Active Procedure:* General Cohort\n*Active Tab:* Application Context\n*User Session:* uchealth_admin\n*Exception Type:* NameError\n\n*Message:* name 'time' is not defined\n\nh4. Traceback Stack Trace:\n{code:python}\n  + Exception Group Traceback (most recent call last):\n  |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/starlette/_utils.py\", line 104, in create_collapsing_task_group\n  |     async with anyio.create_task_group() as tg:\n  |                ~~~~~~~~~~~~~~~~~~~~~~~^^\n  |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py\", line 847, in __aexit__\n  |     raise BaseExceptionGroup(\n  |         \"unhandled errors in a TaskGroup\", self._exceptions\n  |     ) from None\n  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\n  +-+----",
+    "status": "Open",
+    "type": "Bug",
+    "priority": "High",
+    "created": "2026-10-31",
+    "assignee": "nrayan@supplycopia.com",
+    "url": "https://supplycopia.atlassian.net/browse/UCHCQO-19",
+    "source": "backend_fastapi_thread",
+    "stack_trace": "  + Exception Group Traceback (most recent call last):\n  |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/starlette/_utils.py\", line 104, in create_collapsing_task_group\n  |     async with anyio.create_task_group() as tg:\n  |                ~~~~~~~~~~~~~~~~~~~~~~~^^\n  |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py\", line 847, in __aexit__\n  |     raise BaseExceptionGroup(\n  |         \"unhandled errors in a TaskGroup\", self._exceptions\n  |     ) from None\n  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)\n  +-+---------------- 1 ----------------\n    | Traceback (most recent call last):\n    |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 267, in crash_supervisor_middleware\n    |     response = await call_next(request)\n    |                ^^^^^^^^^^^^^^^^^^^^^^^^\n    |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 179, in call_next\n    |     raise app_exc from app_exc.__cause__ or app_exc.__context__\n    |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/starlette/middleware/base.py\", line 149, in coro\n    |     await self.app(scope, receive_or_disconnect, send_no_error)\n    |   File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/.venv/lib/python3.13/site-packages/starle",
+    "context": {
+      "url": "http://localhost:8007/saml/dev-login",
+      "method": "GET",
+      "client_ip": "127.0.0.1",
+      "user": "uchealth_admin"
+    }
+  },
+  {
     "key": "UCHCQO-18",
     "summary": "[AUTO-EXCEPTION] ValueError: Test Simulated Critical Failure in CQO Calculation (Tab: CQOTab)",
     "description": "h3. Automated Exception Detected by Multi-Threaded Crash Supervisor\n\n*Timestamp:* 2026-10-31 16:40:12\n*Source:* simulated_test\n*Active Procedure:* EXCISION OF LESION OR MASS\n*Active Tab:* CQOTab\n*User Session:* uchealth_admin\n*Exception Type:* ValueError\n\n*Message:* Test Simulated Critical Failure in CQO Calculation\n\nh4. Traceback Stack Trace:\n{code:python}\nTraceback (most recent call last):\n  File \"/Users/nirmalrayan/Documents/UC_Health_Clinical/uc_health_clinical/server/main.py\", line 2446, in simulate_exception\n    raise ValueError(message)\nValueError: Test Simulated Critical Failure in CQO Calculation\n\n{code}\n\nh4. Runtime Context Telemetry:\n{code:json}\n{\n  \"procedure\": \"EXCISION OF LESION OR MASS\",\n  \"tab\": \"CQOTab\",\n  \"simulation\": true\n}\n{code}",

@@ -94,10 +94,10 @@
             <span>Sign in with SupplyCopia SSO</span>
           </a>
 
-          <!-- Local dev helper (auto-displayed on localhost or with ?dev=true) -->
-          <div id="devBypassWrapper" style="display:none; text-align:center; margin-top:10px;">
-            <a href="/saml/dev-login" class="dev-bypass-link" title="Use mock authentication for localhost testing">
-              ⚡ Local Developer Bypass (Test User)
+          <!-- Instant Local Developer Bypass -->
+          <div id="devBypassWrapper" style="text-align:center; margin-top:14px;">
+            <a href="/saml/dev-login" id="btnDevBypass" class="dev-bypass-link" onclick="handleDevBypassClick(event)" title="Direct developer authentication bypass for local testing">
+              ⚡ Local Developer Bypass (Test User: Nirmal Rayan)
             </a>
           </div>
         </div>
@@ -148,20 +148,41 @@
 
     // Preserve returnUrl
     const urlParams = new URLSearchParams(window.location.search);
-    const returnUrl = urlParams.get('returnUrl') || '/';
+    let returnUrl = urlParams.get('returnUrl') || '/';
+    if (returnUrl === '/login' || returnUrl.startsWith('/login?')) returnUrl = '/';
+
     const ssoBtn = document.getElementById('btnSsoLogin');
     if (ssoBtn) {
       ssoBtn.href = `/saml/login?returnUrl=${encodeURIComponent(returnUrl)}`;
     }
-    const devLink = document.querySelector('.dev-bypass-link');
+    const devLink = document.getElementById('btnDevBypass') || document.querySelector('.dev-bypass-link');
     if (devLink) {
       devLink.href = `/saml/dev-login?returnUrl=${encodeURIComponent(returnUrl)}`;
     }
 
-    // Check if on localhost to display dev bypass link
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '0.0.0.0' || window.location.search.includes('dev=true')) {
-      var devBypass = document.getElementById('devBypassWrapper');
-      if (devBypass) devBypass.style.display = 'block';
+    async function handleDevBypassClick(e) {
+      if (e) e.preventDefault();
+      const btn = document.getElementById('btnDevBypass');
+      if (btn) {
+        btn.innerHTML = "<span>⏳</span> Authenticating session...";
+        btn.style.opacity = "0.75";
+      }
+      try {
+        const res = await fetch(`/saml/dev-login?returnUrl=${encodeURIComponent(returnUrl)}`, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (data && data.redirect) {
+          window.location.replace(data.redirect);
+          return;
+        }
+      } catch (err) {
+        console.warn("AJAX bypass fallback", err);
+      }
+      const sep = returnUrl.includes('?') ? '&' : '?';
+      window.location.replace(`/saml/dev-login?returnUrl=${encodeURIComponent(returnUrl)}&auth=1&t=${Date.now()}`);
     }
 
     // Carousel Slider Logic

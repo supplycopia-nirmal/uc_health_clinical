@@ -3,13 +3,14 @@ import numpy as np
 import os
 import sys
 import json
+import time
 import tempfile
 import re
 from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, UploadFile, File, Form, Request, HTTPException, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, StreamingResponse, RedirectResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.middleware.gzip import GZipMiddleware
@@ -244,10 +245,12 @@ async def handle_head_and_cache(request: Request, call_next):
     response = await call_next(request)
     
     if request.method == "GET" or is_head:
-        if request.url.path.startswith("/api/"):
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        else:
+        if request.url.path.startswith("/static/"):
             response.headers["Cache-Control"] = "public, max-age=3600"
+        else:
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
 
     if is_head:
         from starlette.responses import Response
@@ -383,7 +386,18 @@ def saml_dev_login(request: Request, returnUrl: str = "/"):
     except Exception:
         pass
         
-    resp = RedirectResponse(url=returnUrl or "/", status_code=status.HTTP_302_FOUND)
+    target = "/" if (not returnUrl or returnUrl == "/login" or returnUrl.startswith("/login?")) else returnUrl
+    sep = "&" if "?" in target else "?"
+    redirect_target = f"{target}{sep}auth=success&t={int(time.time())}"
+    
+    accept = request.headers.get("accept", "")
+    is_ajax = "application/json" in accept or request.headers.get("x-requested-with") == "XMLHttpRequest"
+    
+    if is_ajax:
+        resp = JSONResponse(content={"status": "success", "user": user_info, "redirect": redirect_target})
+    else:
+        resp = RedirectResponse(url=redirect_target, status_code=status.HTTP_302_FOUND)
+        
     resp.set_cookie(
         key=COOKIE_NAME,
         value=token,
@@ -393,6 +407,9 @@ def saml_dev_login(request: Request, returnUrl: str = "/"):
         secure=False,
         path="/"
     )
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
     return resp
 
 @app.get("/saml/metadata")
