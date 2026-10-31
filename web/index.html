@@ -552,6 +552,74 @@
         .slider-val-badge { font-weight: 700; color: var(--brand-red); background: #fef2f2; padding: 1px 6px; border-radius: 4px; border: 1px solid #fee2e2; font-size: 11px; }
         .slider-control-group input[type="range"] { width: 100%; accent-color: var(--brand-red); cursor: pointer; }
 
+        /* --- Executive KPI Banner Grid (Cost & Variance Dashboard) --- */
+        .executive-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+            margin-bottom: 12px;
+        }
+        .executive-kpi-card {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .executive-kpi-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+        }
+        .executive-kpi-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 3.5px;
+        }
+        .executive-kpi-card.kpi-blue::before { background: #3b82f6; }
+        .executive-kpi-card.kpi-purple::before { background: #8b5cf6; }
+        .executive-kpi-card.kpi-slate::before { background: #64748b; }
+        .executive-kpi-card.kpi-brand::before { background: var(--brand-red); }
+        .executive-kpi-card.kpi-emerald::before { background: var(--color-success); }
+        .executive-kpi-card.kpi-amber::before { background: var(--color-warning); }
+        .executive-kpi-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .executive-kpi-val {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.4px;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.2;
+        }
+        .executive-kpi-sub {
+            font-size: 11px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         @media print {
             body { background-color: #fff; padding: 0; font-size: 12pt; }
             .tab, .controls, #loading-overlay, .insights-panel, .btn-remove, .btn-add-row, .action-col, #chat-toggle-btn, #chatbot-container, #saved-cards-section, .view-toggle { display: none !important; }
@@ -744,6 +812,63 @@
     </div>
 
     <div id="DashboardTab" class="tabcontent" style="display:block;">
+        <!-- Executive KPI Banner -->
+        <div class="executive-kpi-grid">
+            <div class="executive-kpi-card kpi-slate">
+                <div class="executive-kpi-label">
+                    <span>Procedural Cases</span>
+                    <span>📁</span>
+                </div>
+                <div id="kpi-dash-cases" class="executive-kpi-val">0</div>
+                <div class="executive-kpi-sub"><span id="kpi-dash-surgeons">0 Surgeons</span> &nbsp;•&nbsp; Cohort Vol</div>
+            </div>
+
+            <div class="executive-kpi-card kpi-brand">
+                <div class="executive-kpi-label">
+                    <span>Total Supply Spend</span>
+                    <span>💳</span>
+                </div>
+                <div id="kpi-dash-spend" class="executive-kpi-val">$0.00</div>
+                <div class="executive-kpi-sub">Aggregated Item Ext. Cost</div>
+            </div>
+
+            <div class="executive-kpi-card kpi-blue">
+                <div class="executive-kpi-label">
+                    <span>Avg Supply Cost / Case</span>
+                    <span>🔬</span>
+                </div>
+                <div id="kpi-dash-avg-cpc" class="executive-kpi-val">$0.00</div>
+                <div class="executive-kpi-sub">Supply Burden: <strong id="kpi-dash-intensity" style="color: #0f172a;">0.0%</strong></div>
+            </div>
+
+            <div class="executive-kpi-card kpi-purple">
+                <div class="executive-kpi-label">
+                    <span>Avg Total Procedure Charge</span>
+                    <span>🏥</span>
+                </div>
+                <div id="kpi-dash-avg-charges" class="executive-kpi-val">$0.00</div>
+                <div class="executive-kpi-sub">OR, Labor & Facility Overhead</div>
+            </div>
+
+            <div class="executive-kpi-card kpi-amber">
+                <div class="executive-kpi-label">
+                    <span>25th %ile Benchmark Target</span>
+                    <span>🎯</span>
+                </div>
+                <div id="kpi-dash-benchmark" class="executive-kpi-val">$0.00</div>
+                <div class="executive-kpi-sub">Standard CQO Threshold CPC</div>
+            </div>
+
+            <div class="executive-kpi-card kpi-emerald">
+                <div class="executive-kpi-label">
+                    <span>Identified Savings Opp</span>
+                    <span>💰</span>
+                </div>
+                <div id="kpi-dash-savings" class="executive-kpi-val" style="color: var(--color-success);">$0.00</div>
+                <div class="executive-kpi-sub"><strong id="kpi-dash-outliers" style="color: var(--color-alert);">0 Outliers</strong> &nbsp;above target</div>
+            </div>
+        </div>
+
         <!-- Collapsible Filter Accordion Panel -->
         <div class="filter-accordion-panel" style="background: #fff; border: 1px solid var(--card-border); border-radius: 8px; margin-top: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
             <div class="filter-accordion-header" onclick="toggleFilterAccordion()" style="padding: 12px 18px; background: #f8fafc; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
@@ -896,27 +1021,6 @@
                     <thead><tr><th>Status</th><th>Sub-Category</th><th>Case Qty</th><th>BOM Avg Qty</th><th>Ext Cost</th></tr></thead>
                     <tbody id="variance-tbody"><tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">Hover over a chart bubble to view analysis.</td></tr></tbody>
                 </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="tables-wrapper" style="height: 300px;">
-            <div class="table-panel">
-                <div class="table-header"><h4 class="header-title">Top 10 Highest Cost Items</h4></div>
-                <div class="table-scroll">
-                    <table id="top10-table">
-                        <thead><tr><th>Sub-Category</th><th>Total Procedure Spend</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="table-panel">
-                <div class="table-header"><h4 class="header-title">Bottom 10 Lowest Cost Items</h4></div>
-                <div class="table-scroll">
-                    <table id="bottom10-table">
-                        <thead><tr><th>Sub-Category</th><th>Total Procedure Spend</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
                 </div>
             </div>
         </div>
@@ -3653,6 +3757,12 @@
             } else {
                 question = btn.innerText.replace(/^💬\s*/, '');
             }
+            question = (question || "").trim();
+            // Sanitize perspective: ensure query is directed from user to the assistant
+            question = question.replace(/^(Would you like me to|Would you like to|Would you like|Do you want to|Do you want me to|Shall we|Should we)\s+/i, "Please ");
+            if (/^Please /i.test(question)) {
+                question = question.replace(/\?+$/, "");
+            }
             const input = document.getElementById('chat-input');
             if (input) {
                 input.value = question;
@@ -4925,6 +5035,41 @@
             $('#avg-charge-display').text(avgChgVal > 0 ? `$${avgChgVal.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '$0.00');
             $('#supply-intensity-display').text(`${avgIntensity}%`);
 
+            // Compute Executive Dashboard KPI values
+            const surgeonSet = new Set();
+            const cpcList = [];
+            let outlierCasesCount = 0;
+
+            window.filteredCases.forEach(r => {
+                if (r.surgeon) surgeonSet.add(r.surgeon);
+                const c = parseFloat(r.cost_per_case);
+                if (!isNaN(c)) cpcList.push(c);
+                if (r.Cost_Volume_Outlier === 'Yes') outlierCasesCount++;
+            });
+
+            cpcList.sort((a, b) => a - b);
+            let p25Val = 0;
+            if (cpcList.length > 0) {
+                const p25Index = Math.floor(cpcList.length * 0.25);
+                p25Val = cpcList[p25Index];
+            }
+
+            let savingsOpp = 0;
+            cpcList.forEach(val => {
+                if (val > p25Val) savingsOpp += (val - p25Val);
+            });
+
+            // Update Executive KPI Elements
+            $('#kpi-dash-cases').text(window.filteredCases.length.toLocaleString());
+            $('#kpi-dash-surgeons').text(`${surgeonSet.size} Surgeon${surgeonSet.size === 1 ? '' : 's'}`);
+            $('#kpi-dash-spend').text(`$${totalCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+            $('#kpi-dash-avg-cpc').text(`$${avgCostVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+            $('#kpi-dash-intensity').text(`${avgIntensity}%`);
+            $('#kpi-dash-avg-charges').text(avgChgVal > 0 ? `$${avgChgVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '$0.00');
+            $('#kpi-dash-benchmark').text(`$${p25Val.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+            $('#kpi-dash-savings').text(`$${savingsOpp.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+            $('#kpi-dash-outliers').text(`${outlierCasesCount} Outlier${outlierCasesCount === 1 ? '' : 's'}`);
+
             renderChart(window.filteredCases, window.currentProcedure);
             if (window.cpcScatterMode === 'risk') {
                 renderRiskAdjustedScatter();
@@ -4938,7 +5083,9 @@
         }
 
         function renderTopBottomTables() {
-            const topTbody = document.querySelector('#top10-table tbody'); const botTbody = document.querySelector('#bottom10-table tbody');
+            const topTbody = document.querySelector('#top10-table tbody'); 
+            const botTbody = document.querySelector('#bottom10-table tbody');
+            if (!topTbody || !botTbody) return;
             topTbody.innerHTML = ''; botTbody.innerHTML = '';
             (window.masterData.top_10 || []).forEach(item => { topTbody.innerHTML += `<tr><td>${item.contract_sub_category}</td><td><strong>$${item.ext_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong></td></tr>`; });
             (window.masterData.bottom_10 || []).forEach(item => { botTbody.innerHTML += `<tr><td>${item.contract_sub_category}</td><td>$${item.ext_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`; });
@@ -5995,8 +6142,9 @@
 
                 const caseIdDisplay = document.getElementById('variance-case-id-display')?.innerText;
                 const varTitle = caseIdDisplay ? `Variance: Case ${caseIdDisplay}` : "Variance Analysis";
-                reportHTML += buildSection("Case Summary & Selected Variance", `<table style="width: 100%; border: none;"><tr><td style="width: 50%; vertical-align: top; padding-right: 15px; border: none;"><h4 style="margin: 0 0 10px 0; font-size: 14px;">Recent Cases</h4>${getTableHtml('#data-table')}</td><td style="width: 50%; vertical-align: top; padding-left: 15px; border: none;"><h4 style="margin: 0 0 10px 0; font-size: 14px;">${varTitle}</h4>${getTableHtml('#variance-table')}</td></tr></table>`);
-                reportHTML += buildSection("Top & Bottom Spend Drivers", `<table style="width: 100%; border: none;"><tr><td style="width: 50%; vertical-align: top; padding-right: 15px; border: none;"><h4 style="margin: 0 0 10px 0; font-size: 14px;">Highest Cost Items</h4>${getTableHtml('#top10-table')}</td><td style="width: 50%; vertical-align: top; padding-left: 15px; border: none;"><h4 style="margin: 0 0 10px 0; font-size: 14px;">Lowest Cost Items</h4>${getTableHtml('#bottom10-table')}</td></tr></table>`);
+                if (document.querySelector('#top10-table') && document.querySelector('#bottom10-table')) {
+                    reportHTML += buildSection("Top & Bottom Spend Drivers", `<table style="width: 100%; border: none;"><tr><td style="width: 50%; vertical-align: top; padding-right: 15px; border: none;"><h4 style="margin: 0 0 10px 0; font-size: 14px;">Highest Cost Items</h4>${getTableHtml('#top10-table')}</td><td style="width: 50%; vertical-align: top; padding-left: 15px; border: none;"><h4 style="margin: 0 0 10px 0; font-size: 14px;">Lowest Cost Items</h4>${getTableHtml('#bottom10-table')}</td></tr></table>`);
+                }
 
                 const insightsContent = document.getElementById('insights-content').innerHTML;
                 if (!insightsContent.includes("Select a procedure") && !insightsContent.includes("AI is analyzing")) reportHTML += buildSection("Clinical & Financial Assessment", `<div style="font-size: 14px; line-height: 1.6;">${insightsContent}</div>`);
@@ -6039,7 +6187,9 @@
                 let titleSlide = pptx.addSlide(); titleSlide.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.5, h: '100%', fill: { color: 'e64552' } }); titleSlide.addText("Value Analysis Executive Summary", { x: 1.0, y: 2.0, w: 8.0, fontSize: 36, bold: true, color: '334155', fontFace: "Open Sans" }); titleSlide.addText(`Procedure: ${window.currentProcedure}`, { x: 1.0, y: 2.8, w: 8.0, fontSize: 16, color: 'e64552', fontFace: "Open Sans", bold: true }); titleSlide.addText(`Generated on: ${new Date().toLocaleDateString()}`, { x: 1.0, y: 3.5, w: 8.0, fontSize: 12, color: '64748b', fontFace: "Open Sans", italic: true });
                 let slide1 = pptx.addSlide(); addSlideHeader(slide1, "Cost vs. Volume Outlier Analysis"); const chartDiv = document.getElementById('chart-container'); const imgData = await Plotly.toImage(chartDiv, {format: 'png', width: 950, height: 430}); slide1.addImage({ data: imgData, x: 0.2, y: 1.1, w: 9.6, h: 4.2 });
                 let slide2 = pptx.addSlide(); addSlideHeader(slide2, "Case Summary & Selected Variance"); let caseRows = extractData('#data-table', 12); let varRows = extractData('#variance-table', 12); const caseIdDisplay = document.getElementById('variance-case-id-display')?.innerText; slide2.addText("Recent Cases (Top 12)", { x: 0.2, y: 0.9, fontSize: 12, bold: true, color: '334155' }); if (caseRows.length > 1) { slide2.addTable(caseRows, { x: 0.2, y: 1.2, w: 4.5, colW: [0.8, 1.5, 0.6, 0.8, 0.8] }); } slide2.addText(caseIdDisplay ? `Variance: Case ${caseIdDisplay}` : "Variance Analysis (No specific bubble selected)", { x: 5.0, y: 0.9, fontSize: 12, bold: true, color: '334155' }); if (varRows.length > 1) { slide2.addTable(varRows, { x: 5.0, y: 1.2, w: 4.8, colW: [0.8, 1.6, 0.8, 0.8, 0.8] }); } else { slide2.addText("No item variance recorded.", { x: 5.0, y: 1.2, fontSize: 10, color: '64748b' }); }
-                let slide3 = pptx.addSlide(); addSlideHeader(slide3, "Top & Bottom Spend Drivers"); let top10Rows = extractData('#top10-table', 11); let bot10Rows = extractData('#bottom10-table', 11); slide3.addText("Highest Cost Items", { x: 0.2, y: 0.9, fontSize: 12, bold: true, color: '334155' }); if (top10Rows.length > 1) slide3.addTable(top10Rows, { x: 0.2, y: 1.2, w: 4.6, colW: [3.1, 1.5] }); slide3.addText("Lowest Cost Items", { x: 5.2, y: 0.9, fontSize: 12, bold: true, color: '334155' }); if (bot10Rows.length > 1) slide3.addTable(bot10Rows, { x: 5.2, y: 1.2, w: 4.6, colW: [3.1, 1.5] });
+                if (document.querySelector('#top10-table') && document.querySelector('#bottom10-table')) {
+                    let slide3 = pptx.addSlide(); addSlideHeader(slide3, "Top & Bottom Spend Drivers"); let top10Rows = extractData('#top10-table', 11); let bot10Rows = extractData('#bottom10-table', 11); slide3.addText("Highest Cost Items", { x: 0.2, y: 0.9, fontSize: 12, bold: true, color: '334155' }); if (top10Rows.length > 1) slide3.addTable(top10Rows, { x: 0.2, y: 1.2, w: 4.6, colW: [3.1, 1.5] }); slide3.addText("Lowest Cost Items", { x: 5.2, y: 0.9, fontSize: 12, bold: true, color: '334155' }); if (bot10Rows.length > 1) slide3.addTable(bot10Rows, { x: 5.2, y: 1.2, w: 4.6, colW: [3.1, 1.5] });
+                }
                 
                 const insightsText = document.getElementById('insights-content').innerText || "";
                 if (!insightsText.includes("Select a procedure") && !insightsText.includes("AI is analyzing")) { let slide4 = pptx.addSlide(); addSlideHeader(slide4, "Clinical & Financial Assessment"); let pptxTextObjects = []; const listItems = document.querySelectorAll('#insights-content li'); if (listItems.length > 0) { listItems.forEach((li) => { let isFirstNode = true; li.childNodes.forEach(node => { let txt = (node.textContent || "").replace(/\s+/g, ' '); if (!txt.trim() && txt !== " ") return; let opts = { fontSize: 12, color: '334155', fontFace: "Open Sans" }; if (node.nodeName === 'STRONG' || node.nodeName === 'B') { opts.bold = true; opts.color = '000000'; } if (isFirstNode) { opts.bullet = { type: 'bullet' }; isFirstNode = false; } pptxTextObjects.push({ text: txt, options: opts }); }); if (pptxTextObjects.length > 0) { pptxTextObjects[pptxTextObjects.length - 1].options.breakLine = true; } }); } else { pptxTextObjects.push({ text: insightsText, options: { fontSize: 12, color: '334155' } }); } slide4.addText(pptxTextObjects, { x: 0.5, y: 1.0, w: 9.0, h: 4.2, valign: 'top', fit: { type: 'shrink' } }); }

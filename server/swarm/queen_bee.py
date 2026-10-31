@@ -517,7 +517,11 @@ class QueenBee:
         ))
 
         # Check if debate or multi-agent consultation is appropriate
-        multi_bee_needed = any(kw in user_message.lower() for kw in ["compare", "debate", "why", "difference", "saving", "substitute", "safe", "outcome", "leakage", "all bees"])
+        multi_bee_needed = any(kw in user_message.lower() for kw in [
+            "compare", "debate", "why", "difference", "saving", "substitute", "safe", "outcome",
+            "leakage", "all bees", "reduce", "cost", "supply", "variance", "spend", "benchmark",
+            "champion", "optimize", "opportunity", "action plan", "surgeon"
+        ])
 
         participating = [lead_bee]
         if multi_bee_needed and lead_bee.id == "queen_bee":
@@ -581,16 +585,8 @@ class QueenBee:
         if not chat_history or len(chat_history) == 0:
             if not active_proc or active_proc in ["", "All Procedures", "Select Procedure", "None", "Unified Procedure"]:
                 is_underspecified = True
-            else:
-                ambig_phrases = [
-                    "reduce cost", "how to reduce cost", "how do i reduce cost", "help me reduce cost",
-                    "reduce surgical supply cost", "save money", "where to start", "how to improve margin",
-                    "optimize spend", "cost reduction", "recommendation", "what can you do", "help me",
-                    "reduce spend", "cut costs", "audit everything", "find savings", "where are savings",
-                    "plan", "implementation plan", "strategy", "roadmap"
-                ]
-                if any(user_msg_clean == p or user_msg_clean.startswith(p) for p in ambig_phrases) and len(user_msg_clean.split()) <= 8:
-                    is_underspecified = True
+            elif any(user_msg_clean == p for p in ["plan", "implementation plan", "create roadmap", "setup plan", "configure swarm", "roadmap"]):
+                is_underspecified = True
 
         if is_underspecified:
             default_proc = active_proc if (active_proc and active_proc != "All Procedures") else "EXCISION OF LESION OR MASS"
@@ -872,6 +868,41 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
                 tot_cases = int(proc_df[case_col].nunique()) if case_col in proc_df.columns else len(proc_df)
                 tot_spend = float(proc_df[spend_col].sum())
                 avg_cpc = tot_spend / max(1, tot_cases)
+
+                # Compute case-level CPC and Benchmark Percentile
+                if 'cost_per_case' in proc_df.columns and case_col in proc_df.columns:
+                    case_cpc_series = proc_df.drop_duplicates(subset=[case_col])['cost_per_case'].dropna().astype(float)
+                elif case_col in proc_df.columns:
+                    case_cpc_series = proc_df.groupby(case_col)[spend_col].sum()
+                else:
+                    case_cpc_series = proc_df[spend_col].astype(float)
+
+                pct_float = max(1, min(99, int(benchmark_percentile))) / 100.0
+                target_benchmark_cpc = float(case_cpc_series.quantile(pct_float)) if not case_cpc_series.empty else (avg_cpc * 0.85)
+                median_cpc = float(case_cpc_series.median()) if not case_cpc_series.empty else avg_cpc
+                min_cpc = float(case_cpc_series.min()) if not case_cpc_series.empty else (avg_cpc * 0.70)
+                max_cpc = float(case_cpc_series.max()) if not case_cpc_series.empty else (avg_cpc * 1.50)
+
+                # Total addressable savings opportunity to benchmark
+                excess_cases = case_cpc_series[case_cpc_series > target_benchmark_cpc]
+                tot_savings_opportunity = float((excess_cases - target_benchmark_cpc).sum()) if not excess_cases.empty else 0.0
+                outliers_count = len(excess_cases)
+
+                # Compute charges and supply intensity
+                charge_col = None
+                for c in ['total_charges', 'total_procedure_charges']:
+                    if c in proc_df.columns:
+                        charge_col = c
+                        break
+
+                avg_total_charges = 0.0
+                tot_charges = 0.0
+                if charge_col and case_col in proc_df.columns:
+                    case_charge_series = proc_df.drop_duplicates(subset=[case_col])[charge_col].dropna().astype(float)
+                    avg_total_charges = float(case_charge_series.mean()) if not case_charge_series.empty else 0.0
+                    tot_charges = float(case_charge_series.sum()) if not case_charge_series.empty else 0.0
+
+                supply_intensity_pct = (avg_cpc / avg_total_charges * 100.0) if avg_total_charges > 0 else 0.0
                 
                 # Real practicing surgeons in this procedure
                 surg_lines = []
@@ -882,7 +913,7 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
                     }).reset_index().sort_values(by=spend_col, ascending=False).head(6)
                     for _, r in top_surg.iterrows():
                         s_cpc = r[spend_col] / max(1, r[case_col])
-                        surg_lines.append(f"Dr. {r['lead_surgeon']} ({r[case_col]} cases, ${s_cpc:.2f} avg CPC)")
+                        surg_lines.append(f"Dr. {r['lead_surgeon']} ({r[case_col]} cases, ${s_cpc:,.2f} avg CPC)")
 
                 # Real top variance supply items
                 item_lines = []
@@ -891,15 +922,46 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
                     for _, r in top_items.iterrows():
                         item_lines.append(f"{r['item_description']} (${r[spend_col]:,.2f})")
 
+                # Real facility / site breakdown
+                site_lines = []
+                if 'hospital_name' in proc_df.columns:
+                    top_sites = proc_df.groupby('hospital_name').agg({
+                        spend_col: 'sum',
+                        case_col: 'nunique'
+                    }).reset_index().sort_values(by=spend_col, ascending=False)
+                    for _, r in top_sites.iterrows():
+                        site_cpc = r[spend_col] / max(1, r[case_col])
+                        site_lines.append(f"{r['hospital_name']} ({r[case_col]} cases, ${site_cpc:,.2f} avg CPC)")
+
+                # Top Surgeon-by-Site CPC Cross-Tab
+                surg_site_lines = []
+                if 'hospital_name' in proc_df.columns and 'lead_surgeon' in proc_df.columns:
+                    top_ss = proc_df.groupby(['lead_surgeon', 'hospital_name']).agg({
+                        spend_col: 'sum',
+                        case_col: 'nunique'
+                    }).reset_index().sort_values(by=spend_col, ascending=False).head(8)
+                    for _, r in top_ss.iterrows():
+                        ss_cpc = r[spend_col] / max(1, r[case_col])
+                        surg_site_lines.append(f"Dr. {r['lead_surgeon']} @ {r['hospital_name']} ({r[case_col]} cases, ${ss_cpc:,.2f} CPC)")
+
+                charges_str = f"- Mean Total Procedure Charges (Labor, OR & Facility Overhead): ${avg_total_charges:,.2f} (Total Charges: ${tot_charges:,.2f})\n                - Supply Burden / Intensity: {supply_intensity_pct:.1f}% of total procedural charges" if avg_total_charges > 0 else ""
+
                 grounded_data_addon = f"""
                 LIVE UC HEALTH COHORT DATA (GROUND TRUTH - CITE THESE EXACT METRICS):
-                - Encounter Cohort: {tot_cases} Total Encounters
-                - Total Spend: ${tot_spend:,.2f} (Mean Case Cost: ${avg_cpc:.2f})
+                - Encounter Cohort: {tot_cases} Total Encounters for '{procedure_name}'
+                - Total Cohort Supply Spend: ${tot_spend:,.2f}
+                - Mean Case Cost (Supply CPC): ${avg_cpc:,.2f}
+                - Target Benchmark ({benchmark_percentile}th Percentile Supply CPC): ${target_benchmark_cpc:,.2f}
+                - Cohort Median CPC (50th Percentile): ${median_cpc:,.2f}
+                - Supply CPC Range: Min ${min_cpc:,.2f} to Max ${max_cpc:,.2f}
+                - Total Addressable Cohort Savings to {benchmark_percentile}th Percentile: ${tot_savings_opportunity:,.2f} (across {outliers_count} cases currently exceeding ${target_benchmark_cpc:,.2f})
+                {charges_str}
                 - Real Practicing Surgeons: {'; '.join(surg_lines) if surg_lines else 'All Surgeons'}
+                - Hospital Facility Sites: {'; '.join(site_lines) if site_lines else 'University of Cincinnati Medical Center (UH OR), West Chester Hospital (WCH OR)'}
+                - Surgeon-by-Facility Cross-Tab: {'; '.join(surg_site_lines) if surg_site_lines else 'Standard across facilities'}
                 - Key Supplies & Spend Drivers: {'; '.join(item_lines) if item_lines else 'Core surgical supplies'}
-                - Operating Hospital Sites: University of Cincinnati Medical Center (UH OR), West Chester Hospital (WCH OR), Outpatient Surgery Center (UH ASC)
                 
-                CRITICAL GROUNDING DIRECTIVE: You MUST explicitly cite these exact surgeon names, exact hospital units, and specific dollar figures. Vague high-level advice without numbers is strictly prohibited.
+                CRITICAL GROUNDING DIRECTIVE: You MUST explicitly cite these exact benchmark figures (${target_benchmark_cpc:,.2f} at the {benchmark_percentile}th percentile), exact addressable savings (${tot_savings_opportunity:,.2f}), surgeon names, and hospital facilities. NEVER state that benchmark percentile data is missing or unavailable, because the exact numeric values are calculated and provided directly above.
                 """
             except Exception as e:
                 print(f"Error extracting grounded data in Queen Bee: {e}")
@@ -952,10 +1014,14 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
         4. REAL DATA ONLY: Reference the real surgeons, actual CPC figures, and benchmark targets provided above.
         5. TABLES: When presenting comparative metrics or distributions, include a clean Markdown table with exact numbers.
 
-        At the very end of your response, provide exactly 2 subsequent follow-up questions that naturally continue this conversation thread.
+        CRITICAL FOLLOW-UP PERSPECTIVE DIRECTIVE:
+        At the very end of your response, provide exactly 2 recommended subsequent inquiries that the USER might ask YOU next to continue this analysis.
+        MANDATORY RULES FOR FOLLOWUPS:
+        1. USER PERSPECTIVE ONLY: Write strictly from the USER's voice requesting analysis or action from the assistant (e.g., "Break down surgeon-by-site CPC variance across facilities", "Show top off-contract spend leakage items and verified substitutes", "What is the exact dollar savings opportunity if all surgeons meet the 25th percentile target?").
+        2. STRICTLY PROHIBITED: NEVER phrase follow-ups as questions from the bot to the user (NEVER "Would you like me to...", NEVER "Do you want to...", NEVER "Shall we...", NEVER "Can I...").
         Format them on their own lines as:
-        FOLLOWUP: <question 1>
-        FOLLOWUP: <question 2>
+        FOLLOWUP: <User inquiry 1>
+        FOLLOWUP: <User inquiry 2>
         """.strip()
 
         # Build full multi-turn messages array
@@ -987,11 +1053,16 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
             )
             raw_reply = resp.choices[0].message.content or ""
             
-            # Extract follow-up questions
+            # Extract follow-up questions and sanitize perspective
             cleaned_lines = []
             for line in raw_reply.splitlines():
                 if line.strip().startswith("FOLLOWUP:"):
                     q = line.replace("FOLLOWUP:", "").strip()
+                    # Sanitize any accidental bot-to-user phrasing
+                    q = re.sub(r'^(Would you like me to|Would you like to|Would you like|Do you want to|Do you want me to|Shall we|Should we|Can you|Could you)\s+', 'Show ', q, flags=re.IGNORECASE)
+                    q = q.strip().rstrip('?')
+                    if not q.endswith('?') and any(q.lower().startswith(w) for w in ["what", "which", "how", "who", "where", "why"]):
+                        q += "?"
                     if q:
                         followup_questions.append(q)
                 else:
