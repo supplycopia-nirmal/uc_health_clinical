@@ -211,16 +211,19 @@ class LiveAlertEngine:
                 "desc": contract_desc,
                 "time": "Active Cohort Analysis",
                 "action_tab": "LeakageTab",
-                "action_label": "⚡ Open Savings Leakage",
+                "action_type": "LEAKAGE",
+                "action_label": "⚡ Reclaim Contract Savings",
                 "procedure": display_proc,
                 "unread": True,
                 "severity": "high",
-                "kpi_impact": kpi_contract
+                "savings_val": subcat_sav if sav_col and proc_df[sav_col].sum() > 0 else (cat_spend * 0.15),
+                "kpi_impact": f"+{kpi_contract} Opportunity" if "Opportunity" not in kpi_contract else kpi_contract
             })
 
             # -------------------------------------------------------------------------
             # 2. SURGEON BEE (Physician CPC Divergence & Quality Quadrant)
             # -------------------------------------------------------------------------
+            divergent_surg_name = "All Surgeons"
             if 'lead_surgeon' in proc_df.columns:
                 surg_cases = proc_df.groupby('lead_surgeon')[case_col].nunique()
                 surg_spends = proc_df.groupby('lead_surgeon')[spend_col].sum()
@@ -230,16 +233,20 @@ class LiveAlertEngine:
                 eligible = surg_cpcs[surg_cases >= 3] if (surg_cases >= 3).any() else surg_cpcs
                 p25 = float(surg_cpcs.quantile(0.25))
                 divergent_surg = eligible.idxmax()
+                divergent_surg_name = str(divergent_surg)
                 divergent_cpc = float(eligible[divergent_surg])
                 divergent_cases = int(surg_cases[divergent_surg])
                 spread = divergent_cpc - p25
+                total_divergence_savings = max(0.0, spread * divergent_cases)
                 ratio = divergent_cpc / max(1.0, p25)
 
-                surgeon_desc = f"Dr. {divergent_surg}'s average supply CPC (${divergent_cpc:,.2f}) diverges {ratio:.1f}x from the 25th percentile benchmark (${p25:,.2f}) in {display_proc} (+${spread:,.2f}/case spread across {divergent_cases} cases)."
-                kpi_surgeon = f"+${spread:,.2f} / Case Spread"
+                surgeon_desc = f"Dr. {divergent_surg}'s average supply CPC (${divergent_cpc:,.2f}) diverges {ratio:.1f}x from the P25 benchmark (${p25:,.2f}) in {display_proc}. Standardizing preference items saves ${spread:,.2f}/case (${total_divergence_savings:,.2f} opportunity across {divergent_cases} cases)."
+                kpi_surgeon = f"+${total_divergence_savings:,.2f} Savings Opp"
+                savings_surgeon = total_divergence_savings
             else:
                 surgeon_desc = f"Surgeon preference card variance tracking active for {display_proc} across {tot_cases} clinical encounters."
                 kpi_surgeon = "Variance Audited"
+                savings_surgeon = 0.0
 
             notifications.append({
                 "id": f"notif_surgeon_{abs(hash(display_proc + 'surgeon')) % 100000}",
@@ -247,14 +254,17 @@ class LiveAlertEngine:
                 "bee": "Surgeon Bee",
                 "icon": "👨‍⚕️",
                 "icon_bg": "#fef3c7",
-                "title": "Physician CPC Divergence Alert",
+                "title": "Physician Cost Variance Alert",
                 "desc": surgeon_desc,
                 "time": "Physician Benchmark",
-                "action_tab": "CompareCardsTab",
-                "action_label": "⚡ Compare Preference Cards",
+                "action_tab": "PrefCardTab",
+                "action_type": "STANDARDIZE",
+                "action_label": "⚡ Standardize Preference Card",
+                "action_params": {"surgeon": divergent_surg_name, "procedure": display_proc},
                 "procedure": display_proc,
                 "unread": True,
                 "severity": "high",
+                "savings_val": savings_surgeon,
                 "kpi_impact": kpi_surgeon
             })
 
@@ -278,16 +288,20 @@ class LiveAlertEngine:
                         clawback_est = spread_amount * max(1.0, qty_high)
 
                         parity_desc = f"{top_spread_cat} unit cost variance: ${p_low:,.2f} at {hosp_low} vs ${p_high:,.2f} at {hosp_high} in {display_proc} (${spread_amount:,.2f} spread across {int(qty_high)} units = ${clawback_est:,.2f} recovery opportunity)."
-                        kpi_parity = f"${clawback_est:,.2f} Clawback"
+                        kpi_parity = f"+${clawback_est:,.2f} Clawback Opp"
+                        savings_parity = clawback_est
                     else:
                         parity_desc = f"Cross-facility supply pricing remains within contract tolerances across {proc_df['hospital_name'].nunique()} UC Health facilities for {display_proc}."
                         kpi_parity = "Parity Compliant"
+                        savings_parity = 0.0
                 else:
                     parity_desc = f"Price parity audit engine scanning active invoice distributions in {display_proc}."
                     kpi_parity = "Catalog Audited"
+                    savings_parity = 0.0
             else:
                 parity_desc = f"Price Parity Sentinel auditing regional supplier pricing and tier clawback opportunities in {display_proc}."
                 kpi_parity = "Audit Active"
+                savings_parity = 0.0
 
             notifications.append({
                 "id": f"notif_audit_{abs(hash(display_proc + 'audit')) % 100000}",
@@ -295,14 +309,17 @@ class LiveAlertEngine:
                 "bee": "Audit Bee",
                 "icon": "🔍",
                 "icon_bg": "#e0f2fe",
-                "title": "Price Parity Arbitrage Detected",
+                "title": "Cross-Facility Price Parity Arbitrage",
                 "desc": parity_desc,
                 "time": "Price Parity Engine",
                 "action_tab": "ParityTab",
-                "action_label": "⚡ View Price Parity",
+                "action_type": "PARITY",
+                "action_label": "⚡ Reclaim Price Parity",
+                "action_params": {"procedure": display_proc},
                 "procedure": display_proc,
                 "unread": True,
                 "severity": "medium",
+                "savings_val": savings_parity,
                 "kpi_impact": kpi_parity
             })
 
@@ -314,10 +331,12 @@ class LiveAlertEngine:
                 pct_low = (low_acuity_cases / max(1, tot_cases)) * 100
                 margin_est = low_acuity_cases * 1650.0
                 mig_desc = f"{low_acuity_cases} of {tot_cases} cases ({pct_low:.1f}%) in {display_proc} are low comorbidity risk (ASA 1-2). Shifting eligible candidates to Outpatient Surgery Center yields estimated ${margin_est:,.2f} facility margin."
-                kpi_mig = f"${margin_est:,.2f} Margin Reclaimed"
+                kpi_mig = f"+${margin_est:,.2f} Margin Reclaimed"
+                savings_mig = margin_est
             else:
                 mig_desc = f"Evaluating inpatient vs outpatient site-of-care distribution for {display_proc} to optimize operating theater capacity."
                 kpi_mig = "Site Optimization"
+                savings_mig = 0.0
 
             notifications.append({
                 "id": f"notif_migration_{abs(hash(display_proc + 'migration')) % 100000}",
@@ -325,14 +344,17 @@ class LiveAlertEngine:
                 "bee": "Migration Bee",
                 "icon": "🏥",
                 "icon_bg": "#f3e8ff",
-                "title": "ASC Migration Opportunity",
+                "title": "ASC Site-of-Care Arbitrage",
                 "desc": mig_desc,
                 "time": "Care Migration Swarm",
                 "action_tab": "ProcedureTab",
-                "action_label": "⚡ Review Site-of-Care Cohort",
+                "action_type": "ASC_TRIAGE",
+                "action_label": "⚡ Flag for ASC Triage",
+                "action_params": {"procedure": display_proc},
                 "procedure": display_proc,
                 "unread": True,
                 "severity": "medium",
+                "savings_val": savings_mig,
                 "kpi_impact": kpi_mig
             })
 
@@ -348,14 +370,17 @@ class LiveAlertEngine:
                     top_hold_freq = float(hold_items[top_hold_subcat])
                     hold_spend = float(proc_df[proc_df['contract_sub_category'] == top_hold_subcat][spend_col].sum())
                     waste_lbs = len(hold_items) * 42
-                    eco_desc = f"{len(hold_items)} conditional supply categories (including {top_hold_subcat} with {top_hold_freq:.1f}% use) are pre-opened in {display_proc}. Moving to Sterile Hold Cart prevents ${hold_spend * 0.35:,.2f} unused supply discard and diverts ~{waste_lbs} lbs bio-waste."
-                    kpi_eco = f"{waste_lbs} lbs Bio-Waste Diverted"
+                    eco_savings = hold_spend * 0.35
+                    eco_desc = f"{len(hold_items)} conditional supply categories (including {top_hold_subcat} with {top_hold_freq:.1f}% use) are pre-opened in {display_proc}. Moving to Sterile Hold Cart prevents ${eco_savings:,.2f} unused supply discard and diverts ~{waste_lbs} lbs bio-waste."
+                    kpi_eco = f"+${eco_savings:,.2f} Discard Prevented"
                 else:
                     eco_desc = f"Custom pack BOM rationalization active for {display_proc}. Procedural staple utilization (>80%) maintained across core packs."
                     kpi_eco = "Green OR Verified"
+                    eco_savings = 0.0
             else:
                 eco_desc = f"Scope-3 sustainability Sentinel tracking surgical pack disposal in {display_proc}."
                 kpi_eco = "Scope-3 Target"
+                eco_savings = 0.0
 
             notifications.append({
                 "id": f"notif_eco_{abs(hash(display_proc + 'eco')) % 100000}",
@@ -363,14 +388,17 @@ class LiveAlertEngine:
                 "bee": "Eco Bee",
                 "icon": "🌱",
                 "icon_bg": "#dcfce7",
-                "title": "Green OR Bio-Waste Alert",
+                "title": "Green OR Bio-Waste & Pack Streamline",
                 "desc": eco_desc,
                 "time": "Eco Green OR",
                 "action_tab": "ProcCardTab",
-                "action_label": "⚡ Move to Sterile Hold Cart",
+                "action_type": "HOLD_CART",
+                "action_label": "⚡ Transfer to PRN Hold Cart",
+                "action_params": {"procedure": display_proc},
                 "procedure": display_proc,
                 "unread": True,
                 "severity": "low",
+                "savings_val": eco_savings,
                 "kpi_impact": kpi_eco
             })
 
@@ -391,10 +419,13 @@ class LiveAlertEngine:
                     "desc": f"Rule triggered for {rule_proc}: threshold {r['operator']} {r.get('unit', '$')}{r['threshold']:,.2f} exceeded active target.",
                     "time": f"Configured by {r.get('created_by', 'User')}",
                     "action_tab": "DashboardTab",
-                    "action_label": f"⚡ View in {rule_proc}",
+                    "action_type": "CUSTOM_FILTER",
+                    "action_label": f"⚡ Filter to {rule_proc}",
+                    "action_params": {"procedure": rule_proc},
                     "procedure": rule_proc,
                     "unread": True,
                     "severity": "medium",
+                    "savings_val": 0.0,
                     "kpi_impact": f"Target: {r['operator']} {r['threshold']}"
                 })
 

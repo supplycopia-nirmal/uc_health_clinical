@@ -3590,6 +3590,8 @@
                 if (data.insight) {
                     if (data.insight.includes("Error code:")) {
                         content.innerHTML = `<p style="color: var(--brand-red);">LLM Error: Reduce data size.</p>`;
+                    } else if (data.kpis && data.commodity_table) {
+                        renderMultiModalInsights(data, content);
                     } else {
                         const parsedHTML = typeof marked !== 'undefined' ? marked.parse(data.insight) : data.insight;
                         content.innerHTML = `<div class="rendered-markdown">${parsedHTML}</div>`;
@@ -3605,6 +3607,203 @@
                 btn.innerText = "Generate Analysis"; 
                 btn.disabled = false; 
             }
+        }
+
+        function renderMultiModalInsights(data, container) {
+            if (!data || !container) return;
+            const k = data.kpis || {};
+            const parsedHTML = typeof marked !== 'undefined' ? marked.parse(data.insight || '') : (data.insight || '');
+            
+            let html = `
+            <div class="insights-multimodal-container" style="font-family: 'Mulish', sans-serif;">
+                <!-- KPI Strip -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                        <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Cohort Total Spend</div>
+                        <div style="font-size: 19px; font-weight: 800; color: #1e293b; margin-top: 4px;">$${Number(k.total_spend || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${Number(k.total_cases || 0).toLocaleString()} Verified Cases</div>
+                    </div>
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                        <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">P25 Peer Benchmark</div>
+                        <div style="font-size: 19px; font-weight: 800; color: #2563eb; margin-top: 4px;">$${Number(k.p25_benchmark || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Avg CPC: $${Number(k.avg_cpc || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
+                    </div>
+                    <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(16,185,129,0.08);">
+                        <div style="font-size: 11px; font-weight: 800; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px;">Realizable Savings Opp</div>
+                        <div style="font-size: 19px; font-weight: 800; color: #047857; margin-top: 4px;">+$${Number(k.realizable_savings || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
+                        <div style="font-size: 11px; color: #059669; font-weight: 700; margin-top: 2px;">${Number(k.savings_pct || 0).toFixed(1)}% Cost Reduction</div>
+                    </div>
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                        <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Cost / Volume Outliers</div>
+                        <div style="font-size: 19px; font-weight: 800; color: #dc2626; margin-top: 4px;">${Number(k.outlier_cases || 0)} <span style="font-size: 13px; font-weight: 600; color: #64748b;">cases</span></div>
+                        <div style="font-size: 11px; color: #dc2626; font-weight: 600; margin-top: 2px;">${Number(k.outlier_pct || 0).toFixed(1)}% Divergence Rate</div>
+                    </div>
+                </div>
+
+                <!-- Narrative Analysis -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; line-height: 1.6;">
+                    <div class="rendered-markdown">${parsedHTML}</div>
+                </div>
+
+                <!-- Interactive Plotly Chart Container -->
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div style="font-weight: 800; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+                            <span>📊 Top Commodity Variance vs P25 Benchmark</span>
+                        </div>
+                        <span style="font-size: 11px; color: #64748b; font-weight: 600;">Supply Cost Per Case ($)</span>
+                    </div>
+                    <div id="insight-variance-chart" style="width: 100%; height: 260px;"></div>
+                </div>
+
+                <!-- Tabbed Supporting Tables -->
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+                    <div style="display: flex; border-bottom: 1px solid #e2e8f0; background: #f8fafc; padding: 4px 8px; gap: 6px;">
+                        <button id="tab-btn-comm" onclick="switchInsightTable('comm')" style="background: #ffffff; border: 1px solid #cbd5e1; border-bottom: none; border-radius: 6px 6px 0 0; padding: 8px 14px; font-weight: 700; font-size: 12px; color: var(--brand-red, #dc2626); cursor: pointer;">
+                            📦 Key Commodity Cost Drivers (${(data.commodity_table || []).length})
+                        </button>
+                        <button id="tab-btn-surg" onclick="switchInsightTable('surg')" style="background: transparent; border: none; padding: 8px 14px; font-weight: 700; font-size: 12px; color: #64748b; cursor: pointer;">
+                            👨‍⚕️ Physician Practice Variation (${(data.surgeon_table || []).length})
+                        </button>
+                    </div>
+
+                    <!-- Table 1: Commodity Breakdown -->
+                    <div id="insight-table-comm" style="padding: 12px; overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+                            <thead>
+                                <tr style="background: #f1f5f9; color: #475569; border-bottom: 2px solid #cbd5e1;">
+                                    <th style="padding: 8px 10px;">Sub-Category</th>
+                                    <th style="padding: 8px 10px; text-align: right;">Total Spend</th>
+                                    <th style="padding: 8px 10px; text-align: right;">Avg / Case</th>
+                                    <th style="padding: 8px 10px;">Standard Benchmark Brand</th>
+                                    <th style="padding: 8px 10px; text-align: right;">Benchmark Unit Price</th>
+                                    <th style="padding: 8px 10px; text-align: right;">Brand Price Spread</th>
+                                    <th style="padding: 8px 10px; text-align: right; color: #047857;">Realizable Savings</th>
+                                    <th style="padding: 8px 10px; text-align: center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${(data.commodity_table || []).map(row => `
+                                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 8px 10px; font-weight: 700; color: #1e293b;">${escapeHtml(row.sub_category)}</td>
+                                        <td style="padding: 8px 10px; text-align: right; font-weight: 600;">$${Number(row.current_spend).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                                        <td style="padding: 8px 10px; text-align: right;">$${Number(row.avg_case_spend).toFixed(2)}</td>
+                                        <td style="padding: 8px 10px; color: #2563eb; font-weight: 600;">${escapeHtml(row.lowest_brand)}</td>
+                                        <td style="padding: 8px 10px; text-align: right;">$${Number(row.lowest_unit_cost).toFixed(2)}</td>
+                                        <td style="padding: 8px 10px; text-align: right; color: #dc2626; font-weight: 600;">+$${Number(row.price_spread).toFixed(2)}</td>
+                                        <td style="padding: 8px 10px; text-align: right; font-weight: 800; color: #047857;">+$${Number(row.annual_savings_opp).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                                        <td style="padding: 8px 10px; text-align: center;">
+                                            <button onclick="openTabDirect('PrefCardTab')" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 3px 8px; font-size: 10.5px; font-weight: 700; cursor: pointer;">Standardize</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Table 2: Surgeon Practice Variation -->
+                    <div id="insight-table-surg" style="display: none; padding: 12px; overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+                            <thead>
+                                <tr style="background: #f1f5f9; color: #475569; border-bottom: 2px solid #cbd5e1;">
+                                    <th style="padding: 8px 10px;">Surgeon</th>
+                                    <th style="padding: 8px 10px; text-align: right;">Case Volume</th>
+                                    <th style="padding: 8px 10px; text-align: right;">Avg Supply CPC</th>
+                                    <th style="padding: 8px 10px; text-align: right;">P25 Benchmark</th>
+                                    <th style="padding: 8px 10px; text-align: right; color: #dc2626;">Spread / Case</th>
+                                    <th style="padding: 8px 10px; text-align: right; color: #047857;">Standardization Opp</th>
+                                    <th style="padding: 8px 10px; text-align: right;">High Acuity %</th>
+                                    <th style="padding: 8px 10px; text-align: center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${(data.surgeon_table || []).map(row => `
+                                    <tr style="border-bottom: 1px solid #f1f5f9;">
+                                        <td style="padding: 8px 10px; font-weight: 700; color: #1e293b;">${escapeHtml(row.surgeon)}</td>
+                                        <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${Number(row.cases).toLocaleString()}</td>
+                                        <td style="padding: 8px 10px; text-align: right; font-weight: 700; color: #1e293b;">$${Number(row.avg_cpc).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                                        <td style="padding: 8px 10px; text-align: right; color: #2563eb;">$${Number(row.p25_benchmark).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                                        <td style="padding: 8px 10px; text-align: right; color: #dc2626; font-weight: 700;">+$${Number(row.spread_per_case).toFixed(2)}</td>
+                                        <td style="padding: 8px 10px; text-align: right; font-weight: 800; color: #047857;">+$${Number(row.total_variance).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                                        <td style="padding: 8px 10px; text-align: right;">${Number(row.acuity_pct).toFixed(1)}%</td>
+                                        <td style="padding: 8px 10px; text-align: center;">
+                                            <button onclick="openPrefCardForSurgeon('${escapeHtml(row.raw_name || row.surgeon)}')" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 4px; padding: 3px 8px; font-size: 10.5px; font-weight: 700; cursor: pointer;">⚡ View Card</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            `;
+
+            container.innerHTML = html;
+
+            const chartData = data.variance_chart_data;
+            if (chartData && chartData.categories && chartData.categories.length > 0 && typeof Plotly !== 'undefined') {
+                const traceCurrent = {
+                    y: chartData.categories,
+                    x: chartData.current_avg_cpc,
+                    name: 'Current Spend / Case',
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { color: '#dc2626' }
+                };
+                const traceTarget = {
+                    y: chartData.categories,
+                    x: chartData.benchmark_p25_cpc,
+                    name: 'P25 Benchmark Target',
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { color: '#10b981' }
+                };
+                const layout = {
+                    barmode: 'group',
+                    margin: { l: 140, r: 25, t: 15, b: 40 },
+                    xaxis: { title: 'Avg Cost ($)', tickprefix: '$', gridcolor: '#f1f5f9' },
+                    yaxis: { autorange: 'reversed' },
+                    legend: { orientation: 'h', y: -0.25, x: 0.1 },
+                    paper_bgcolor: 'transparent',
+                    plot_bgcolor: 'transparent',
+                    font: { family: 'Mulish, sans-serif', size: 11 }
+                };
+                Plotly.newPlot('insight-variance-chart', [traceCurrent, traceTarget], layout, {responsive: true, displayModeBar: false});
+            }
+        }
+
+        function switchInsightTable(mode) {
+            const commTab = document.getElementById('insight-table-comm');
+            const surgTab = document.getElementById('insight-table-surg');
+            const btnComm = document.getElementById('tab-btn-comm');
+            const btnSurg = document.getElementById('tab-btn-surg');
+            if (mode === 'comm') {
+                if (commTab) commTab.style.display = 'block';
+                if (surgTab) surgTab.style.display = 'none';
+                if (btnComm) { btnComm.style.background = '#ffffff'; btnComm.style.border = '1px solid #cbd5e1'; btnComm.style.borderBottom = 'none'; btnComm.style.color = 'var(--brand-red, #dc2626)'; }
+                if (btnSurg) { btnSurg.style.background = 'transparent'; btnSurg.style.border = 'none'; btnSurg.style.color = '#64748b'; }
+            } else {
+                if (commTab) commTab.style.display = 'none';
+                if (surgTab) surgTab.style.display = 'block';
+                if (btnSurg) { btnSurg.style.background = '#ffffff'; btnSurg.style.border = '1px solid #cbd5e1'; btnSurg.style.borderBottom = 'none'; btnSurg.style.color = 'var(--brand-red, #dc2626)'; }
+                if (btnComm) { btnComm.style.background = 'transparent'; btnComm.style.border = 'none'; btnComm.style.color = '#64748b'; }
+            }
+        }
+
+        function openPrefCardForSurgeon(surgeonName) {
+            openTabDirect('PrefCardTab');
+            setTimeout(() => {
+                const surgSel = $('#pref-surgeon-select');
+                if (surgSel.length) {
+                    if (!surgSel.find(`option[value="${surgeonName}"]`).length) {
+                        surgSel.append(new Option(surgeonName, surgeonName, true, true));
+                    }
+                    surgSel.val(surgeonName).trigger('change.select2');
+                    if (typeof fetchPreferenceCard === 'function') {
+                        fetchPreferenceCard();
+                    }
+                }
+            }, 350);
         }
 
         async function toggleRecording() {
@@ -6864,30 +7063,39 @@
                 return;
             }
             
-            listEl.innerHTML = notifs.map(n => `
-                <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="handleNotifClick('${n.id}', '${n.action_tab}')" style="cursor: pointer; transition: all 0.15s;">
-                    <div class="notif-icon-box" style="background: ${n.icon_bg || '#f1f5f9'};">
-                        ${n.icon || '🔔'}
-                    </div>
-                    <div class="notif-content" style="flex: 1;">
-                        <div class="notif-item-title" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
-                            <div style="font-weight: 700; color: #1e293b; font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                <span>${escapeHtml(n.title)}</span>
-                                ${n.bee ? `<span style="background: #f1f5f9; color: #475569; font-size: 9.5px; padding: 1px 5px; border-radius: 4px; font-weight: 700;">${escapeHtml(n.bee)}</span>` : ''}
-                                ${n.procedure && n.procedure !== 'All Procedures' ? `<span style="background: #eff6ff; color: #1d4ed8; font-size: 9.5px; padding: 1px 6px; border-radius: 4px; font-weight: 700; border: 1px solid #bfdbfe;">${escapeHtml(n.procedure)}</span>` : ''}
-                            </div>
-                            <span class="notif-item-time" style="font-size: 10px; color: #94a3b8; flex-shrink: 0;">${escapeHtml(n.time)}</span>
+            listEl.innerHTML = notifs.map(n => {
+                const savingsBadge = n.savings_val && n.savings_val > 0
+                    ? `<span style="font-size: 11px; font-weight: 800; color: #065f46; background: #ecfdf5; border: 1px solid #10b981; padding: 2px 8px; border-radius: 9999px; box-shadow: 0 1px 2px rgba(16,185,129,0.15);">💰 +$${Number(n.savings_val).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})} Savings Opp</span>`
+                    : (n.kpi_impact ? `<span style="font-size: 10.5px; font-weight: 800; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 9999px;">${escapeHtml(n.kpi_impact)}</span>` : '');
+
+                return `
+                <div class="notif-item ${n.unread ? 'unread' : ''}" onclick="handleNotifClick('${n.id}', '${n.action_tab}')" style="cursor: pointer; transition: all 0.15s; border-bottom: 1px solid #f1f5f9; padding: 12px 14px; position: relative;">
+                    <div style="display: flex; gap: 12px; align-items: flex-start;">
+                        <div class="notif-icon-box" style="background: ${n.icon_bg || '#f1f5f9'}; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            ${n.icon || '🔔'}
                         </div>
-                        <div class="notif-item-desc" style="font-size: 11.5px; color: #475569; margin: 4px 0 6px 0; line-height: 1.4;">${escapeHtml(n.desc)}</div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-                            ${n.kpi_impact ? `<span style="font-size: 10.5px; font-weight: 800; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px;">${escapeHtml(n.kpi_impact)}</span>` : '<span></span>'}
-                            <div style="font-size: 11px; font-weight: 700; color: var(--brand-red); display: flex; align-items: center; gap: 4px;">
-                                <span>${escapeHtml(n.action_label || `Open ${n.action_tab}`)}</span> <span>&rarr;</span>
+                        <div class="notif-content" style="flex: 1; min-width: 0;">
+                            <div class="notif-item-title" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+                                <div style="font-weight: 700; color: #1e293b; font-size: 12.5px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <span>${escapeHtml(n.title)}</span>
+                                    ${n.bee ? `<span style="background: #f1f5f9; color: #475569; font-size: 9.5px; padding: 1px 6px; border-radius: 4px; font-weight: 700; border: 1px solid #e2e8f0;">${escapeHtml(n.bee)}</span>` : ''}
+                                    ${n.procedure && n.procedure !== 'All Procedures' ? `<span style="background: #eff6ff; color: #1d4ed8; font-size: 9.5px; padding: 1px 6px; border-radius: 4px; font-weight: 700; border: 1px solid #bfdbfe;">${escapeHtml(n.procedure)}</span>` : ''}
+                                </div>
+                                <span class="notif-item-time" style="font-size: 10px; color: #94a3b8; flex-shrink: 0;">${escapeHtml(n.time)}</span>
+                            </div>
+                            <div class="notif-item-desc" style="font-size: 11.5px; color: #475569; margin: 4px 0 8px 0; line-height: 1.45;">${escapeHtml(n.desc)}</div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <div>${savingsBadge}</div>
+                                <button class="btn-notif-action" onclick="event.stopPropagation(); handleNotifClick('${n.id}', '${n.action_tab}');" style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; font-size: 11px; font-weight: 700; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(220,38,38,0.25);">
+                                    <span>${escapeHtml(n.action_label || `Open ${n.action_tab}`)}</span>
+                                    <span style="font-size: 12px; font-weight: 800;">&rarr;</span>
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function toggleNotificationDrawer() {
@@ -6934,8 +7142,47 @@
                 }
             }
             
+            const actionType = notif ? notif.action_type : null;
+            const actionParams = notif ? notif.action_params : {};
+
+            if (actionType === 'ASC_TRIAGE') {
+                if (typeof openSiteOfServiceModal === 'function') {
+                    openSiteOfServiceModal();
+                    return;
+                }
+            }
+
             if (actionTab) {
                 openTabDirect(actionTab);
+
+                // Contextual sub-action execution
+                if (actionType === 'STANDARDIZE' && actionParams && actionParams.surgeon) {
+                    setTimeout(() => {
+                        const surgName = actionParams.surgeon;
+                        const surgSel = $('#pref-surgeon-select');
+                        if (surgSel.length) {
+                            if (!surgSel.find(`option[value="${surgName}"]`).length) {
+                                surgSel.append(new Option(surgName, surgName, true, true));
+                            }
+                            surgSel.val(surgName).trigger('change.select2');
+                            if (typeof fetchPreferenceCard === 'function') {
+                                fetchPreferenceCard();
+                            }
+                        }
+                    }, 350);
+                } else if (actionType === 'LEAKAGE') {
+                    setTimeout(() => {
+                        if (typeof fetchSavingsLeakage === 'function') fetchSavingsLeakage();
+                    }, 300);
+                } else if (actionType === 'PARITY') {
+                    setTimeout(() => {
+                        if (typeof fetchPriceParity === 'function') fetchPriceParity();
+                    }, 300);
+                } else if (actionType === 'HOLD_CART') {
+                    setTimeout(() => {
+                        if (typeof fetchProcedureCard === 'function') fetchProcedureCard();
+                    }, 300);
+                }
             }
         }
 
