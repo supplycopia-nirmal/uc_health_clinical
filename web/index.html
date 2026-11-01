@@ -1894,7 +1894,8 @@
                     </div>
                     <button class="btn-secondary" style="height: 30px; font-size: 12px;" onclick="sortVarianceChart()">↕️ Toggle Sort</button>
                 </div>
-                <div id="d3-chart-area"></div>
+                <div id="compare-chart-legend" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center;"></div>
+                <div id="d3-chart-area" style="width: 100%; overflow-x: auto; overflow-y: auto; max-height: 650px; border: 1px solid var(--card-border); border-radius: 6px; background: #ffffff;"></div>
             </div>
         </div>
     </div>
@@ -3177,7 +3178,10 @@
                 chartContainer.style.display = 'block';
                 btnChart.classList.add('active');
                 btnTable.classList.remove('active');
-                renderVarianceChart();
+                // Ensure browser reflow finishes before computing layout dimensions
+                requestAnimationFrame(() => {
+                    setTimeout(renderVarianceChart, 60);
+                });
             }
         }
 
@@ -3188,27 +3192,32 @@
 
         function renderVarianceChart() {
             const container = document.getElementById('d3-chart-area');
+            if (!container) return;
             container.innerHTML = '';
             d3.select(".d3-tooltip").remove();
 
-            const vizType = document.getElementById('compare-viz-type').value;
+            const vizType = document.getElementById('compare-viz-type')?.value || 'dot';
 
             if (!currentCompareData || !currentCompareData.comparison || currentCompareData.comparison.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 30px;">Select surgeons and click Compare to view the chart.</p>';
+                container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 40px; font-weight: 500;">Select surgeons and click <b>⚖️ Compare Cards</b> to view variance analysis.</p>';
+                const leg = document.getElementById('compare-chart-legend');
+                if (leg) leg.innerHTML = '';
                 return;
             }
 
-            const surgeons = Object.keys(currentCompareData.totals);
-            const compList = currentCompareData.comparison;
+            const surgeons = Object.keys(currentCompareData.totals || {});
+            const compList = currentCompareData.comparison || [];
 
-            let chartData = compList.filter(d => d.max_variance > 0.01).map(d => ({
+            let chartData = compList.filter(d => (d.max_variance || 0) > 0.01).map(d => ({
                 sub_category: d.sub_category,
                 variance: d.max_variance,
                 surgeons: d.surgeons
             }));
 
             if (chartData.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 30px;">No significant variance to chart.</p>';
+                container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 40px; font-weight: 500;">No significant cost variance spread detected across selected surgeons.</p>';
+                const leg = document.getElementById('compare-chart-legend');
+                if (leg) leg.innerHTML = '';
                 return;
             }
 
@@ -3218,24 +3227,61 @@
                 chartData.sort((a, b) => a.sub_category.localeCompare(b.sub_category));
             }
 
-            const margin = { top: vizType === 'heatmap' ? 80 : 40, right: 40, bottom: 20, left: 250 };
+            // Text colors palette for surgeons
+            const textColors = ['var(--brand-red)', '#166534', '#1d4ed8', '#a16207', '#6d28d9', '#be123c', '#0369a1', '#a21caf'];
+            const surgeonColors = {};
+            surgeons.forEach((s, i) => { surgeonColors[s] = textColors[i % textColors.length]; });
+
+            // Populate Interactive Surgeon Legend Badges
+            const legendContainer = document.getElementById('compare-chart-legend');
+            if (legendContainer) {
+                legendContainer.innerHTML = surgeons.map(s => {
+                    const totalCost = currentCompareData.totals[s] || 0;
+                    return `
+                        <div style="display: inline-flex; align-items: center; gap: 7px; background: #f8fafc; border: 1px solid var(--card-border); padding: 5px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 600; color: var(--text-dark);">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: ${surgeonColors[s]}; display: inline-block;"></span>
+                            <span>${s}:</span>
+                            <span style="color: ${surgeonColors[s]}; font-weight: 700;">$${totalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Accurate measurement with minimum fallback to prevent squishing
+            const parentWidth = container.clientWidth || container.parentElement?.clientWidth || 1050;
+            const width = Math.max(parentWidth - 30, 960);
+
+            // Dynamic margins based on subcategory label lengths
+            const maxLabelLen = d3.max(chartData, d => (d.sub_category || '').length) || 25;
+            const leftMargin = Math.min(270, Math.max(180, Math.floor(maxLabelLen * 6.5)));
+            const rightMargin = vizType === 'bar' ? 140 : 80; // 140px ensures variance labels are never clipped
+            const margin = { 
+                top: vizType === 'heatmap' ? 90 : 50, 
+                right: rightMargin, 
+                bottom: 30, 
+                left: leftMargin 
+            };
+
             const rowHeight = vizType === 'heatmap' ? 45 : 35;
             const height = (chartData.length * rowHeight) + margin.top + margin.bottom;
-            const width = container.clientWidth || 800;
 
             const tooltip = d3.select("body").append("div").attr("class", "d3-tooltip");
 
             const svg = d3.select("#d3-chart-area")
                 .append("svg")
-                .attr("width", "100%")
+                .attr("width", width)
                 .attr("height", height)
-                .attr("viewBox", `0 0 ${width} ${height}`);
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .style("display", "block")
+                .style("min-width", `${width}px`)
+                .style("background", "#ffffff");
 
             const y = d3.scaleBand()
                 .domain(chartData.map(d => d.sub_category))
                 .range([margin.top, height - margin.bottom])
-                .padding(0.2);
+                .padding(0.25);
 
+            // Left Y-Axis (Subcategory Names)
             svg.append("g")
                 .attr("transform", `translate(${margin.left},0)`)
                 .call(d3.axisLeft(y).tickSize(0))
@@ -3245,33 +3291,30 @@
                 .style("font-weight", "600")
                 .style("color", "var(--text-dark)")
                 .attr("dx", "-10")
-                .text(d => d.length > 35 ? d.substring(0, 32) + "..." : d);
-
-            const textColors = ['var(--brand-red)', '#166534', '#1d4ed8', '#a16207', '#6d28d9', '#be123c', '#0369a1', '#a21caf'];
-            const surgeonColors = {};
-            surgeons.forEach((s, i) => surgeonColors[s] = textColors[i % textColors.length]);
+                .text(d => d.length > 38 ? d.substring(0, 35) + "..." : d);
 
             // Helper for Tooltip Content
             const getTooltipHtml = (d) => {
                 let surgHtml = "";
-                let costs = [];
                 surgeons.forEach(surg => {
-                    let c = d.surgeons[surg]?.ext_cost || 0;
-                    costs.push(c);
-                    surgHtml += `<div><span style="color:${surgeonColors[surg]}; font-weight:bold;">■</span> ${surg}: $${c.toLocaleString(undefined, {minimumFractionDigits:2})}</div>`;
+                    const item = d.surgeons[surg] || {};
+                    const c = item.ext_cost || 0;
+                    const qty = item.qty !== undefined ? item.qty : 0;
+                    const brand = item.brand || "-";
+                    surgHtml += `<div style="margin-top: 3px;"><span style="color:${surgeonColors[surg]}; font-weight:bold;">■</span> <strong>${surg}:</strong> $${c.toLocaleString(undefined, {minimumFractionDigits:2})} <span style="font-size:10px; color:#94a3b8;">(${qty}x ${brand})</span></div>`;
                 });
                 return `
-                    <strong style="color: #cbd5e1;">${d.sub_category}</strong><br/>
+                    <div style="font-weight:700; color: #fff; font-size:12px;">${d.sub_category}</div>
                     <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #334155;">
-                        Max Spread: <strong style="color: #fca5a5;">$${d.variance.toLocaleString(undefined, {minimumFractionDigits:2})}</strong><br/>
-                        <div style="font-size: 11px; margin-top: 5px; color: #94a3b8; line-height:1.4;">${surgHtml}</div>
+                        Cost Variance Spread: <strong style="color: #fca5a5;">$${d.variance.toLocaleString(undefined, {minimumFractionDigits:2})}</strong>
+                        <div style="font-size: 11px; margin-top: 6px; color: #cbd5e1; line-height:1.4;">${surgHtml}</div>
                     </div>
                 `;
             };
 
             if (vizType === 'bar') {
                 const maxCost = d3.max(chartData, d => d3.max(surgeons.map(s => d.surgeons[s]?.ext_cost || 0))) || 1;
-                const x = d3.scaleLinear().domain([0, maxCost * 1.1]).range([margin.left, width - margin.right]);
+                const x = d3.scaleLinear().domain([0, maxCost * 1.05]).range([margin.left, width - margin.right]);
 
                 svg.append("g")
                     .attr("transform", `translate(0,${margin.top})`)
@@ -3287,24 +3330,24 @@
                         const costs = surgeons.map(s => d.surgeons[s]?.ext_cost || 0);
                         return x(d3.min(costs));
                     })
-                    .attr("y", d => y(d.sub_category) + y.bandwidth() * 0.25)
+                    .attr("y", d => y(d.sub_category) + y.bandwidth() * 0.2)
                     .attr("width", d => {
                         const costs = surgeons.map(s => d.surgeons[s]?.ext_cost || 0);
-                        return Math.max(x(d3.max(costs)) - x(d3.min(costs)), 4);
+                        return Math.max(x(d3.max(costs)) - x(d3.min(costs)), 6);
                     })
-                    .attr("height", y.bandwidth() * 0.5)
+                    .attr("height", y.bandwidth() * 0.6)
                     .attr("fill", "#64748b")
-                    .attr("opacity", 0.6)
+                    .attr("opacity", 0.65)
                     .attr("rx", 4)
                     .on("mouseover", function(event, d) {
-                        d3.select(this).attr("opacity", 1).attr("stroke", "#000").attr("stroke-width", 1);
+                        d3.select(this).attr("opacity", 1).attr("stroke", "var(--brand-red)").attr("stroke-width", 2);
                         tooltip.transition().duration(100).style("opacity", 1);
                         tooltip.html(getTooltipHtml(d)).style("left", (event.pageX + 15) + "px").style("top", (event.pageY - 28) + "px");
                     })
                     .on("mousemove", function(event) { tooltip.style("left", (event.pageX + 15) + "px").style("top", (event.pageY - 28) + "px"); })
                     .on("mouseout", function() {
-                        d3.select(this).attr("opacity", 0.6).attr("stroke", "none");
-                        tooltip.transition().duration(300).style("opacity", 0);
+                        d3.select(this).attr("opacity", 0.65).attr("stroke", "none");
+                        tooltip.transition().duration(250).style("opacity", 0);
                     });
                     
                 svg.selectAll(".var-label")
@@ -3312,14 +3355,15 @@
                     .enter().append("text")
                     .attr("x", d => {
                         const costs = surgeons.map(s => d.surgeons[s]?.ext_cost || 0);
-                        return x(d3.max(costs)) + 10;
+                        const calculatedX = x(d3.max(costs)) + 10;
+                        return Math.min(calculatedX, width - 120);
                     })
                     .attr("y", d => y(d.sub_category) + y.bandwidth() / 2)
                     .attr("dy", "0.35em")
                     .style("font-size", "11px")
-                    .style("font-weight", "600")
-                    .style("fill", "var(--text-dark)")
-                    .text(d => `$${Math.round(d.variance).toLocaleString()} variance`);
+                    .style("font-weight", "700")
+                    .style("fill", "var(--brand-red)")
+                    .text(d => `$${Math.round(d.variance).toLocaleString()} spread`);
 
             } else if (vizType === 'dot') {
                 const maxCost = d3.max(chartData, d => d3.max(surgeons.map(s => d.surgeons[s]?.ext_cost || 0))) || 1;
@@ -3341,14 +3385,14 @@
                     .attr("height", y.bandwidth())
                     .attr("fill", "transparent")
                     .on("mouseover", function(event, d) {
-                        d3.select(this.parentNode).select(".range-line").attr("stroke", "#334155").attr("stroke-width", 3);
+                        d3.select(this.parentNode).select(".range-line").attr("stroke", "#0f172a").attr("stroke-width", 3);
                         tooltip.transition().duration(100).style("opacity", 1);
                         tooltip.html(getTooltipHtml(d)).style("left", (event.pageX + 15) + "px").style("top", (event.pageY - 28) + "px");
                     })
                     .on("mousemove", function(event) { tooltip.style("left", (event.pageX + 15) + "px").style("top", (event.pageY - 28) + "px"); })
                     .on("mouseout", function() {
                         d3.select(this.parentNode).select(".range-line").attr("stroke", "#cbd5e1").attr("stroke-width", 2);
-                        tooltip.transition().duration(300).style("opacity", 0);
+                        tooltip.transition().duration(250).style("opacity", 0);
                     });
 
                 rowGroups.append("line")
@@ -3363,7 +3407,7 @@
                     })
                     .attr("y1", 0).attr("y2", 0)
                     .attr("stroke", "#cbd5e1")
-                    .attr("stroke-width", 2)
+                    .attr("stroke-width", 2.5)
                     .style("pointer-events", "none");
 
                 surgeons.forEach(surg => {
@@ -3373,12 +3417,22 @@
                         .attr("r", 6)
                         .attr("fill", surgeonColors[surg])
                         .attr("stroke", "#fff")
-                        .attr("stroke-width", 1.5)
+                        .attr("stroke-width", 1.8)
                         .style("pointer-events", "none");
                 });
 
+                // Clear Right-Hand Spread Badge
+                rowGroups.append("text")
+                    .attr("x", width - margin.right + 12)
+                    .attr("y", 0)
+                    .attr("dy", "0.35em")
+                    .style("font-size", "11px")
+                    .style("font-weight", "700")
+                    .style("fill", "var(--brand-red)")
+                    .text(d => `+$${Math.round(d.variance).toLocaleString()}`);
+
             } else if (vizType === 'heatmap') {
-                const x = d3.scaleBand().domain(surgeons).range([margin.left, width - margin.right]).padding(0.05);
+                const x = d3.scaleBand().domain(surgeons).range([margin.left, width - margin.right]).padding(0.08);
 
                 svg.append("g")
                     .attr("transform", `translate(0,${margin.top})`)
@@ -3388,7 +3442,7 @@
                     .style("font-size", "12px")
                     .style("font-weight", "bold")
                     .style("color", "var(--text-dark)")
-                    .attr("transform", "rotate(-20)")
+                    .attr("transform", "rotate(-18)")
                     .style("text-anchor", "start")
                     .attr("dx", "5")
                     .attr("dy", "-5");
@@ -3414,7 +3468,7 @@
                             .attr("width", x.bandwidth())
                             .attr("height", y.bandwidth())
                             .attr("fill", (maxC === minC || maxC === 0) ? "#f8fafc" : colorScale(cost))
-                            .attr("rx", 2)
+                            .attr("rx", 3)
                             .on("mouseover", function(event) {
                                 d3.select(this).attr("stroke", "#000").attr("stroke-width", 2);
                                 tooltip.transition().duration(100).style("opacity", 1);
@@ -3427,7 +3481,7 @@
                             .on("mousemove", function(event) { tooltip.style("left", (event.pageX + 15) + "px").style("top", (event.pageY - 28) + "px"); })
                             .on("mouseout", function() {
                                 d3.select(this).attr("stroke", "none");
-                                tooltip.transition().duration(300).style("opacity", 0);
+                                tooltip.transition().duration(250).style("opacity", 0);
                             });
 
                         if (x.bandwidth() > 40) {
@@ -7907,9 +7961,9 @@
                 if (typeof fetchProcedureCard === 'function') fetchProcedureCard();
             } else if (tabName === 'PredictTab') {
                 if (typeof fetchPredictiveData === 'function') fetchPredictiveData();
-            } else if (tabName === 'CompareCardsTab' && currentCompareData && currentCompareData.length > 0) {
+            } else if (tabName === 'CompareCardsTab' && currentCompareData && (currentCompareData.comparison?.length > 0 || currentCompareData.length > 0)) {
                 if (document.getElementById('compare-chart-container')?.style.display === 'block') {
-                    renderVarianceChart();
+                    requestAnimationFrame(() => setTimeout(renderVarianceChart, 50));
                 }
             }
         }
@@ -8967,8 +9021,9 @@
                 const data = await res.json();
 
                 // 1. Populate Trace Log
-                if (traceContainer && data.swarm_trace && data.swarm_trace.length > 0) {
-                    traceContainer.innerHTML = data.swarm_trace.map(t => {
+                const traces = data.agent_traces || data.swarm_trace || data.traces || [];
+                if (traceContainer && traces.length > 0) {
+                    traceContainer.innerHTML = traces.map(t => {
                         const statusClass = t.status === 'completed' ? 'trace-completed' : (t.status === 'running' ? 'trace-running' : 'trace-warning');
                         return `
                             <div class="trace-item">
@@ -8979,18 +9034,26 @@
                     }).join('');
                     traceContainer.scrollTop = traceContainer.scrollHeight;
                 }
-                if (traceStatus) traceStatus.innerText = 'Consensus Achieved (12/12 Bees)';
+                if (traceStatus) traceStatus.innerText = `Consensus Achieved (${traces.length || 12}/${traces.length || 12} Bees)`;
                 if (badge) badge.style.display = 'inline-block';
 
                 // 2. Populate Executive Synthesis
+                const rawText = data.executive_summary || data.executive_synthesis || data.synthesis || data.reply || 'Swarm audit completed.';
                 if (synthesisContent) {
-                    const rawText = data.executive_synthesis || data.synthesis || 'Swarm audit completed.';
                     synthesisContent.innerHTML = typeof marked !== 'undefined' ? marked.parse(rawText) : rawText;
                 }
 
                 // 3. Populate Multi-Agent Debate
                 if (debateSection && debateList) {
-                    const debateMsgs = data.debate_transcript || [];
+                    let debateMsgs = data.debate_transcript || [];
+                    if ((!debateMsgs || debateMsgs.length === 0) && traces.length > 0) {
+                        debateMsgs = traces.filter(t => t.thought && t.agent_name !== 'Queen Bee Orchestrator').map(t => ({
+                            agent_name: t.agent_name || 'Bee',
+                            agent_avatar: t.agent_avatar || '🐝',
+                            message: `<strong>${t.action}:</strong> ${t.thought}`,
+                            timestamp: t.timestamp || 'Just now'
+                        }));
+                    }
                     if (debateMsgs.length > 0) {
                         debateSection.style.display = 'block';
                         debateList.innerHTML = debateMsgs.map(m => `
@@ -8998,7 +9061,7 @@
                                 <div class="bee-avatar" style="width:36px; height:36px; font-size:20px;">${m.agent_avatar || '🐝'}</div>
                                 <div class="debate-bubble">
                                     <div style="font-weight:700; color:var(--text-dark); margin-bottom:2px;">${m.agent_name} <span style="font-size:11px; font-weight:500; color:var(--text-muted);">&bull; ${m.timestamp || 'Just now'}</span></div>
-                                    <div>${m.message}</div>
+                                    <div>${typeof marked !== 'undefined' ? marked.parse(m.message) : m.message}</div>
                                 </div>
                             </div>
                         `).join('');
@@ -9023,8 +9086,9 @@
                 }
 
                 // If voice orb is active, speak executive takeaway
-                if (window.VoiceNarrator && typeof VoiceNarrator.speakStream === 'function' && data.executive_synthesis) {
-                    const firstParagraph = data.executive_synthesis.split('\n\n')[0].replace(/[#*`_]/g, '');
+                const synthText = data.executive_summary || data.executive_synthesis || rawText;
+                if (window.VoiceNarrator && typeof VoiceNarrator.speakStream === 'function' && synthText) {
+                    const firstParagraph = synthText.split('\n\n')[0].replace(/[#*`_]/g, '');
                     if (firstParagraph && firstParagraph.length > 20) {
                         VoiceNarrator.speakStream(firstParagraph.substring(0, 250));
                     }

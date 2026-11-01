@@ -101,6 +101,7 @@ async def lifespan(app: FastAPI):
         
         print("Performing global data pre-cleaning...")
         df['unified_procedure'] = df['unified_procedure'].astype(str).str.strip()
+        df['unified_procedure_upper'] = df['unified_procedure'].str.upper()
         df['contract_sub_category'] = df['contract_sub_category'].astype(str).str.strip().str.upper()
         df['brand'] = df['brand'].astype(str).str.strip().str.upper()
         df['case_id'] = df['case_id'].astype(str).str.strip()
@@ -1185,7 +1186,22 @@ def audit_with_swarm(payload: SwarmAuditBody):
         benchmark_percentile=payload.benchmark_percentile,
         candidate_substitutions=candidates
     )
-    return result.model_dump()
+    res_dict = result.model_dump()
+    res_dict["executive_synthesis"] = result.executive_summary
+    res_dict["synthesis"] = result.executive_summary
+    res_dict["swarm_trace"] = res_dict.get("agent_traces", [])
+    if not res_dict.get("debate_transcript"):
+        res_dict["debate_transcript"] = [
+            {
+                "agent_name": t.get("agent_name", "Bee"),
+                "agent_avatar": t.get("agent_avatar", "🐝"),
+                "message": f"**{t.get('action', '')}**: {t.get('thought', '')}",
+                "timestamp": t.get("timestamp", "Just now")
+            }
+            for t in res_dict.get("agent_traces", [])
+            if t.get("thought") and t.get("agent_name") != "Queen Bee Orchestrator"
+        ]
+    return res_dict
 
 class SwarmChatBody(BaseModel):
     message: str
@@ -1516,8 +1532,8 @@ def get_association_rules(payload: ARMPayload):
     return {"rules": _get_association_rules_cached(payload.procedure_name)}
 
 @app.get("/api/preference-card/saved")
-def get_saved_cards(procedure_name: str):
-    if not os.path.exists(RLHF_FILE):
+def get_saved_cards(procedure_name: Optional[str] = ""):
+    if not procedure_name or not os.path.exists(RLHF_FILE):
         return {"saved_cards": []}
         
     saved_cards_map = {}
