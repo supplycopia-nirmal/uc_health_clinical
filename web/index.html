@@ -4584,6 +4584,8 @@
         // ==================== GLOWING VOICE ORB & WAKE-WORD CONTROLLER ====================
         window.wakeWordListening = true;
         let wakeWordRecognizer = null;
+        let isWakeWordRunning = false;
+        let isWakeWordStarting = false;
         let orbSpeechRecognizer = null;
         let isOrbActive = false;
         let speechSilenceTimer = null;
@@ -6673,38 +6675,64 @@
             return true;
         }
 
-        function initWakeWordRecognition() {
+        function startWakeWordRecognizer() {
+            if (!window.wakeWordListening) return;
+
+            const card = document.getElementById('orb-card-element');
+            const isOrbBusy = (isOrbActive && card && (card.classList.contains('state-listening') || card.classList.contains('state-thinking') || card.classList.contains('state-speaking'))) || window.isQueenBeeSpeaking || window.currentAudio;
+            if (isOrbBusy) return;
+
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRec) {
-                console.log("SpeechRecognition not available for continuous wake-word.");
                 const pill = document.getElementById('btn-wake-word');
                 if (pill) pill.style.display = 'none';
                 return;
             }
 
-            try {
-                if (wakeWordRecognizer) {
-                    try { wakeWordRecognizer.abort(); } catch(e) {}
-                }
+            if (isWakeWordRunning || isWakeWordStarting) return;
+            isWakeWordStarting = true;
 
+            // Cleanly abort previous instance if any
+            if (wakeWordRecognizer) {
+                wakeWordRecognizer.onresult = null;
+                wakeWordRecognizer.onerror = null;
+                wakeWordRecognizer.onend = null;
+                try { wakeWordRecognizer.abort(); } catch(e) {}
+                wakeWordRecognizer = null;
+            }
+
+            try {
                 wakeWordRecognizer = new SpeechRec();
                 wakeWordRecognizer.lang = 'en-US';
                 wakeWordRecognizer.continuous = true;
                 wakeWordRecognizer.interimResults = true;
 
+                wakeWordRecognizer.onstart = () => {
+                    isWakeWordRunning = true;
+                    isWakeWordStarting = false;
+                    const dot = document.getElementById('wake-word-dot');
+                    const label = document.getElementById('wake-word-label');
+                    const pill = document.getElementById('btn-wake-word');
+                    if (dot) dot.classList.remove('inactive');
+                    if (label) label.innerHTML = `🎙️ Hey Queen Bee`;
+                    if (pill) pill.classList.add('active');
+                };
+
                 wakeWordRecognizer.onresult = (event) => {
                     const card = document.getElementById('orb-card-element');
-                    const isOrbBusy = isOrbActive && card && (card.classList.contains('state-listening') || card.classList.contains('state-thinking') || card.classList.contains('state-speaking'));
-                    if (isOrbBusy) return; // Ignore if user is already actively speaking/listening/thinking
+                    const isBusy = (isOrbActive && card && (card.classList.contains('state-listening') || card.classList.contains('state-thinking') || card.classList.contains('state-speaking'))) || window.isQueenBeeSpeaking || window.currentAudio;
+                    if (isBusy) return;
 
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        const transcript = event.results[i][0].transcript.toLowerCase();
-                        // Robust regex covering natural variations & slight slurs/mispronunciations
-                        const WAKE_REGEX = /\b(hey\s+queen\s*bee|hey\s+quee\s*bee|hey\s+queen|hey\s+quee|queen\s*bee|quee\s*bee|queen\s*be|queen\s*b|que\s*bee|hey\s*bee|ask\s*the\s*bee|hello\s*bee)\b/i;
-                        const match = transcript.match(WAKE_REGEX);
+                        const rawTranscript = event.results[i][0].transcript.toLowerCase();
+                        const cleanTranscript = rawTranscript.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ').replace(/\s+/g, ' ').trim();
+                        
+                        // Robust regex covering natural variations, common misspellings & partial wake phrases
+                        const WAKE_REGEX = /\b(hey\s+queen\s*bee|hi\s+queen\s*bee|hello\s+queen\s*bee|ok\s+queen\s*bee|okay\s+queen\s*bee|yo\s+queen\s*bee|queen\s*bee|queenbee|queen\s*b|queen\s*be|que\s*bee|quinn\s*bee|hey\s+queen|hey\s+bee|ask\s+the\s+bee|queen|hey\s+quee\s*bee)\b/i;
+                        const match = cleanTranscript.match(WAKE_REGEX);
                         if (match) {
-                            console.log("👑 Wake-Word Activated:", transcript);
-                            const remainder = transcript.substring(transcript.indexOf(match[0]) + match[0].length).trim();
+                            console.log("👑 Wake-Word Activated:", cleanTranscript);
+                            const remainder = cleanTranscript.substring(cleanTranscript.indexOf(match[0]) + match[0].length).trim();
                             
                             pauseWakeWordRecognizer();
                             playWakeChime();
@@ -6714,13 +6742,11 @@
                             }
 
                             if (remainder && remainder.length > 2) {
-                                // User spoke the wake word and command in one breath
                                 setOrbState('thinking', "Queen Bee is analyzing & navigating...", "");
                                 setTimeout(() => {
                                     processVoiceOrbCommand(remainder);
                                 }, 300);
                             } else {
-                                // User said "Hey Queen Bee" to activate listening mode
                                 setOrbState('listening', "Listening... I'm listening, please go ahead", "");
                                 const transcriptEl = document.getElementById('orb-transcript-text');
                                 if (transcriptEl) transcriptEl.innerText = "I'm listening, please go ahead...";
@@ -6734,6 +6760,8 @@
                 };
 
                 wakeWordRecognizer.onerror = (e) => {
+                    isWakeWordRunning = false;
+                    isWakeWordStarting = false;
                     if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
                         const dot = document.getElementById('wake-word-dot');
                         const label = document.getElementById('wake-word-label');
@@ -6741,46 +6769,51 @@
                         if (dot) dot.classList.add('inactive');
                         if (label) label.innerHTML = `🎙️ Click to Allow Mic`;
                         if (pill) pill.classList.remove('active');
-                        window.wakeWordListening = false;
                     } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
                         console.log("Wake-word recognizer event:", e.error);
                     }
                 };
 
                 wakeWordRecognizer.onend = () => {
-                    // Auto-restart wake-word listener if enabled and not currently occupied with active speech
+                    isWakeWordRunning = false;
+                    isWakeWordStarting = false;
+                    // Auto-restart wake-word listener if enabled and mic is not currently in use
                     if (window.wakeWordListening) {
-                        const card = document.getElementById('orb-card-element');
-                        const isOrbBusy = isOrbActive && card && (card.classList.contains('state-listening') || card.classList.contains('state-thinking') || card.classList.contains('state-speaking'));
-                        if (!isOrbBusy && !window.currentAudio) {
-                            setTimeout(() => {
-                                try { wakeWordRecognizer.start(); } catch(e) {}
-                            }, 350);
-                        }
+                        setTimeout(() => {
+                            startWakeWordRecognizer();
+                        }, 250);
                     }
                 };
 
-                if (window.wakeWordListening) {
-                    try { wakeWordRecognizer.start(); } catch(e) {}
-                }
-            } catch (err) {
+                wakeWordRecognizer.start();
+            } catch(err) {
+                isWakeWordRunning = false;
+                isWakeWordStarting = false;
                 console.warn("Could not start continuous wake recognizer:", err);
             }
         }
 
+        function initWakeWordRecognition() {
+            startWakeWordRecognizer();
+        }
+
         function pauseWakeWordRecognizer() {
+            isWakeWordRunning = false;
+            isWakeWordStarting = false;
             if (wakeWordRecognizer) {
+                wakeWordRecognizer.onresult = null;
+                wakeWordRecognizer.onerror = null;
+                wakeWordRecognizer.onend = null;
                 try { wakeWordRecognizer.abort(); } catch(e) {}
+                wakeWordRecognizer = null;
             }
         }
 
         function resumeWakeWordRecognizer() {
-            if (window.wakeWordListening && wakeWordRecognizer) {
-                const card = document.getElementById('orb-card-element');
-                const isOrbBusy = isOrbActive && card && (card.classList.contains('state-listening') || card.classList.contains('state-thinking') || card.classList.contains('state-speaking'));
-                if (!isOrbBusy && !window.currentAudio) {
-                    try { wakeWordRecognizer.start(); } catch(e) {}
-                }
+            if (window.wakeWordListening) {
+                setTimeout(() => {
+                    startWakeWordRecognizer();
+                }, 200);
             }
         }
 
@@ -6795,8 +6828,7 @@
                 if (dot) dot.classList.remove('inactive');
                 if (label) label.innerHTML = `🎙️ Hey Queen Bee`;
                 if (pill) pill.classList.add('active');
-                initWakeWordRecognition();
-                resumeWakeWordRecognizer();
+                startWakeWordRecognizer();
                 showVoiceNavToast(`🎙️ Voice Activation Active: Say "Hey Queen Bee" anytime!`);
             } else {
                 if (dot) dot.classList.add('inactive');
@@ -6806,8 +6838,8 @@
             }
         }
 
-        // Auto-resume microphone recognizer on first user interaction
-        document.addEventListener('click', function startWakeOnFirstInteraction() {
+        // Auto-resume microphone recognizer on any user interaction
+        document.addEventListener('click', function startWakeOnInteraction() {
             try {
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
                 if (AudioCtx) {
@@ -6815,16 +6847,27 @@
                     if (dummyCtx.state === 'suspended') dummyCtx.resume();
                 }
             } catch(e) {}
-            if (window.wakeWordListening) {
-                resumeWakeWordRecognizer();
+            if (window.wakeWordListening && !isWakeWordRunning) {
+                startWakeWordRecognizer();
             }
-        }, { once: true });
+        });
+
+        // Continuous Watchdog Supervisor Loop (Checks every 2.5s)
+        setInterval(() => {
+            if (window.wakeWordListening && !isWakeWordRunning && !isWakeWordStarting) {
+                const card = document.getElementById('orb-card-element');
+                const isBusy = (isOrbActive && card && (card.classList.contains('state-listening') || card.classList.contains('state-thinking') || card.classList.contains('state-speaking'))) || window.isQueenBeeSpeaking || window.currentAudio;
+                if (!isBusy) {
+                    startWakeWordRecognizer();
+                }
+            }
+        }, 2500);
 
         // Initialize Wake-Word on DOM ready
         $(document).ready(function() {
             setTimeout(() => {
-                initWakeWordRecognition();
-            }, 1200);
+                startWakeWordRecognizer();
+            }, 800);
         });
 
         window.audioQueue = []; // Initialize queue state
