@@ -2367,12 +2367,13 @@ def record_chat_feedback(payload: ChatFeedbackPayload):
         "healed": True if payload.rating == "negative" else False
     }
 
-def generate_conversational_speech(user_query: str, reply_text: str, procedure_name: str = "", chat_history: Optional[List[Dict[str, str]]] = None) -> str:
+def generate_conversational_speech(user_query: str, reply_text: str, procedure_name: str = "", chat_history: Optional[List[Dict[str, str]]] = None, navigation_action: Optional[str] = None) -> str:
     """
     Synthesizes a friendly, natural, Siri/Alexa-style spoken voice response (1-2 sentences).
     Guarantees ZERO raw HTML, markdown syntax, tables, code, or technical parameters.
     CRITICAL: Grounds response with real numerical facts (dollars, percentages, case counts).
     Uses chat_history context for conversation memory and continuity.
+    Couples spoken response with executed navigation action to keep audio and visual display tightly aligned.
     """
     clean_no_html = re.sub(r"<[^>]+>", " ", reply_text or "")
     clean_no_html = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", clean_no_html)
@@ -2395,6 +2396,8 @@ def generate_conversational_speech(user_query: str, reply_text: str, procedure_n
         if recent_turns:
             history_context = "PRIOR CONVERSATION MEMORY:\n" + "\n".join(recent_turns) + "\n\n"
 
+    nav_context = f"\nOn-Screen Navigation Action: Navigated user to '{navigation_action}' on dashboard." if navigation_action else ""
+
     # Fast GPT-4o-mini spoken voice synthesis
     api_key = os.environ.get("OPENAI_API_KEY", MultiTenantConfig.OPENAI_API_KEY)
     if api_key and openai_client:
@@ -2402,18 +2405,19 @@ def generate_conversational_speech(user_query: str, reply_text: str, procedure_n
             prompt = f"""
 You are Queen Bee, a warm, authoritative clinical AI voice assistant for hospital supply chain executives (speaking aloud like Siri or Alexa).
 {history_context}LATEST User Question: "{user_query}"
-Active Procedure: "{procedure_name}"
+Active Procedure: "{procedure_name}"{nav_context}
 Technical Report:
 \"\"\"{clean_no_html[:2500]}\"\"\"
 
 Generate a 1 to 2 sentence conversational spoken response that speaks directly to the user.
 CRITICAL SPOKEN VOICE RULES:
-1. MUST INCLUDE REAL NUMERICAL STATISTICS: You must state the exact numbers, dollar figures (e.g. "$18,420", "$4,250 savings"), percentages (e.g. "16.8%"), case counts (e.g. "242 cases"), or top item names and spend from the Technical Report. Never speak a generic placeholder without real numbers if statistics are in the report.
-2. CONVERSATIONAL CONTINUITY & MEMORY: Use the Prior Conversation Memory to understand the conversation context. If the user refers to 'that', 'it', 'there', 'those items', or asks a follow-up about prior questions, maintain continuous conversational coherence.
-3. Speak in friendly, natural conversational English for audio output (like Alexa or Siri).
-4. NEVER speak or mention HTML tags, markdown symbols (hashtags, asterisks, brackets, backticks), code blocks, or raw JSON.
-5. Keep the spoken response between 25 and 55 words: punchy, clear, and packed with concrete facts.
-6. End with a natural follow-up prompt or question to encourage conversation.
+1. ON-SCREEN ALIGNMENT: If an On-Screen Navigation Action was executed (e.g. Price Parity, CQO Value Quadrant, Audit Logs, Procedure switch), explicitly acknowledge this action first (e.g. "I've opened the Price Parity Analysis tab for you...", "I've navigated you to the CQO Value Quadrant...") followed immediately by the relevant analytical takeaway from the Technical Report.
+2. MUST INCLUDE REAL NUMERICAL STATISTICS: You must state the exact numbers, dollar figures (e.g. "$18,420", "$4,250 savings"), percentages (e.g. "16.8%"), case counts (e.g. "242 cases"), or top item names and spend from the Technical Report. Never speak a generic placeholder without real numbers if statistics are in the report.
+3. CONVERSATIONAL CONTINUITY & MEMORY: Use the Prior Conversation Memory to understand the conversation context. If the user refers to 'that', 'it', 'there', 'those items', or asks a follow-up about prior questions, maintain continuous conversational coherence.
+4. Speak in friendly, natural conversational English for audio output (like Alexa or Siri).
+5. NEVER speak or mention HTML tags, markdown symbols (hashtags, asterisks, brackets, backticks), code blocks, or raw JSON.
+6. Keep the spoken response between 25 and 55 words: punchy, clear, and packed with concrete facts.
+7. End with a natural follow-up prompt or question to encourage conversation.
 """
             res = openai_client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -2457,6 +2461,7 @@ class AskTheBeePayload(BaseModel):
     dashboard_context: str = ""
     preferred_bee: Optional[str] = "queen"
     voice_mode: Optional[bool] = False
+    navigation_action: Optional[str] = None
 
 @app.post("/api/ask-the-bee")
 def ask_the_bee(payload: AskTheBeePayload):
@@ -2493,7 +2498,13 @@ def ask_the_bee(payload: AskTheBeePayload):
                 dashboard_context=payload.dashboard_context
             )
             raw_reply = swarm_res["reply"]
-            spoken = generate_conversational_speech(payload.query, raw_reply, payload.procedure_name, payload.chat_history)
+            spoken = generate_conversational_speech(
+                payload.query, 
+                raw_reply, 
+                payload.procedure_name, 
+                payload.chat_history,
+                navigation_action=payload.navigation_action
+            )
             return {
                 "reply": raw_reply, 
                 "spoken_response": spoken,
@@ -2548,7 +2559,13 @@ def ask_the_bee(payload: AskTheBeePayload):
         
         response = agent.invoke(prompt)
         raw_output = response["output"]
-        spoken = generate_conversational_speech(payload.query, raw_output, payload.procedure_name, payload.chat_history)
+        spoken = generate_conversational_speech(
+            payload.query, 
+            raw_output, 
+            payload.procedure_name, 
+            payload.chat_history,
+            navigation_action=payload.navigation_action
+        )
         return {"reply": raw_output, "spoken_response": spoken}
         
     except ImportError as e:
@@ -2988,6 +3005,62 @@ def self_heal_execute(payload: ExecutePlanPayload):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Remediation execution error: {str(e)}")
+
+# --- VOICE DRIVER SELF-HEALING & RLHF PERSISTENCE ---
+class VoiceFeedbackPayload(BaseModel):
+    misheard_query: str
+    intended_query: str
+    action_taken: str = "Autonomous Voice Driver Self-Healed"
+
+@app.post("/api/self-heal/voice-feedback")
+def record_voice_self_healing_feedback(payload: VoiceFeedbackPayload):
+    try:
+        data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+        os.makedirs(data_dir, exist_ok=True)
+        rlhf_file = os.path.join(data_dir, "voice_self_healing_rlhf.jsonl")
+        
+        record = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "misheard_query": payload.misheard_query.strip(),
+            "intended_query": payload.intended_query.strip(),
+            "action_taken": payload.action_taken
+        }
+        with open(rlhf_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
+        
+        # Log into SQLite audit logger
+        get_audit_logger().log(
+            action="VOICE_SELF_HEALING_RLHF",
+            detail=f"Self-healed mishearing: '{payload.misheard_query}' -> '{payload.intended_query}'",
+            user="queen_bee_voice_agent",
+            category="compliance"
+        )
+        return {"status": "success", "message": "Voice feedback captured in RLHF database"}
+    except Exception as e:
+        print(f"Error saving voice self-healing feedback: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/self-heal/voice-rules")
+def get_voice_self_healing_rules():
+    rules = {}
+    try:
+        data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+        rlhf_file = os.path.join(data_dir, "voice_self_healing_rlhf.jsonl")
+        if os.path.exists(rlhf_file):
+            with open(rlhf_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if not line.strip(): continue
+                    try:
+                        entry = json.loads(line)
+                        misheard = entry.get("misheard_query", "").lower().strip()
+                        intended = entry.get("intended_query", "").strip()
+                        if misheard and intended:
+                            rules[misheard] = intended
+                    except Exception:
+                        pass
+    except Exception as e:
+        print(f"Error reading voice self-healing rules: {e}")
+    return {"status": "success", "rules": rules}
 
 # --- ACTIVITY AUDIT LOG (SQLite WAL Mode with 90-Day Rolling TTL) ---
 class ClientAuditPayload(BaseModel):

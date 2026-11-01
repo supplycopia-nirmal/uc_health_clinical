@@ -4418,15 +4418,73 @@
             }, 3500);
         }
 
+        // Domain Phonetic & Acoustic Normalization Engine
+        function normalizeSpokenClinicalQuery(rawText) {
+            if (!rawText) return "";
+            let q = rawText.trim();
+            
+            // Apply learned voice self-healing rules from memory / localStorage
+            try {
+                const learned = window.voiceSelfHealingMemory || JSON.parse(localStorage.getItem('uch_voice_self_healing') || '{}');
+                for (const [misheard, intended] of Object.entries(learned)) {
+                    if (misheard && intended) {
+                        const re = new RegExp('\\b' + misheard.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+                        q = q.replace(re, intended);
+                    }
+                }
+            } catch(e) {}
+
+            // Common browser STT phonetic misinterpretations in healthcare & architecture
+            const phoneticRules = [
+                [/\b(?:how\s+does\s+)?your\s*self\s*feeling(?:\s+work)?\b/gi, "how does your self healing work"],
+                [/\b(?:yourself|your\s+self)\s+feeling\b/gi, "your self healing"],
+                [/\bcell\s+feeling\b/gi, "self healing"],
+                [/\bself\s+heeling\b/gi, "self healing"],
+                [/\bheal\s+yourself\b/gi, "self healing"],
+                [/\bprice\s+(?:party|parent|parrot|pairity|parody)\b/gi, "price parity"],
+                [/\b(?:seek\s+you\s+oh|c\s+q\s+o|see\s+cue\s+oh)\b/gi, "CQO"],
+                [/\b(?:12|twelve)\s+(?:piece|peace|peice|bead|beads)\b/gi, "12 bees"],
+                [/\b(?:prep|preff)\s+card\b/gi, "preference card"],
+                [/\baudit\s+look\b/gi, "audit log"],
+                [/\buser\s+activity\s+look\b/gi, "user activity log"],
+                [/\bclawed\s+back\b/gi, "clawback"],
+                [/\bleak\s+(?:age|edge)\b/gi, "leakage"],
+                [/\bout\s+(?:liar|layer)\b/gi, "outlier"],
+                [/\b(?:gira|jirah)\b/gi, "jira"]
+            ];
+
+            for (const [pattern, replacement] of phoneticRules) {
+                q = q.replace(pattern, replacement);
+            }
+
+            return q;
+        }
+
+        // Fetch and synchronize server-persisted voice self-healing rules
+        async function syncVoiceSelfHealingRules() {
+            try {
+                const res = await fetch(`${API_BASE}/self-heal/voice-rules`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.rules && typeof data.rules === 'object') {
+                        const local = JSON.parse(localStorage.getItem('uch_voice_self_healing') || '{}');
+                        window.voiceSelfHealingMemory = Object.assign({}, local, data.rules);
+                        localStorage.setItem('uch_voice_self_healing', JSON.stringify(window.voiceSelfHealingMemory));
+                    }
+                }
+            } catch(e) {}
+        }
+        setTimeout(syncVoiceSelfHealingRules, 1500);
+
         // Autonomous Voice-to-Dashboard Navigator
         const VoiceNavigator = {
             detectAndExecute(rawQuery) {
                 if (!rawQuery) return { navigated: false };
-                const q = rawQuery.toLowerCase().trim();
+                const q = normalizeSpokenClinicalQuery(rawQuery).toLowerCase().trim();
                 let actionText = "";
                 let navigated = false;
 
-                // 1. Detect Procedure Mentions
+                // 1. Detect Global Procedure Changes & Mentions
                 const allProcs = window.allProcedures || [];
                 let matchedProc = null;
                 
@@ -4463,17 +4521,38 @@
                     }
                 }
 
+                // Check actual DOM select options to guarantee exact match
+                const procSel = $('#procedure-select');
+                let targetProc = matchedProc;
+                if (procSel.length) {
+                    procSel.find('option').each(function() {
+                        const optVal = $(this).val();
+                        if (!optVal) return;
+                        if (targetProc && (optVal.toUpperCase() === targetProc.toUpperCase() || optVal.toUpperCase().includes(targetProc.toUpperCase()))) {
+                            targetProc = optVal;
+                            return false;
+                        }
+                        if (q.includes(optVal.toLowerCase())) {
+                            targetProc = optVal;
+                            return false;
+                        }
+                    });
+                }
+
                 let procedureFiltered = false;
                 let tabNavigated = false;
 
-                if (matchedProc && matchedProc !== window.currentProcedure) {
-                    window.currentProcedure = matchedProc;
-                    const procSel = $('#procedure-select');
+                // If user specifies a procedure cohort or says "change procedure to..."
+                if (targetProc && targetProc !== window.currentProcedure) {
+                    window.currentProcedure = targetProc;
                     if (procSel.length) {
-                        procSel.val(matchedProc).trigger('change');
-                        actionText += `Filtered to ${matchedProc}. `;
-                        procedureFiltered = true;
+                        procSel.val(targetProc).trigger('change');
+                        if (procSel.hasClass('select2-hidden-accessible') || procSel.data('select2')) {
+                            procSel.trigger('change.select2');
+                        }
                     }
+                    actionText += `Changed global procedure to ${targetProc}. `;
+                    procedureFiltered = true;
                 }
 
                 // 2. Detect Surgeon Mentions (Dr. Utz, Dr. Sabharwal, etc.)
@@ -4490,10 +4569,10 @@
                         actionText += "Opened Jira Issue Ticketing (Space: UCHCQO). ";
                         tabNavigated = true;
                     }
-                } else if (q.includes("audit log") || q.includes("activity log") || q.includes("audit trail") || q.includes("user activity") || q.includes("telemetry log")) {
+                } else if (q.includes("audit log") || q.includes("activity log") || q.includes("audit trail") || q.includes("user activity") || q.includes("telemetry log") || q.includes("activity audit")) {
                     if (typeof openAuditLogModal === 'function') {
                         openAuditLogModal();
-                        actionText += "Opened Activity Audit Log. ";
+                        actionText += "Opened Activity Audit Log (SQLite WAL Mode). ";
                         tabNavigated = true;
                     }
                 } else if (q.includes("notification") || q.includes("alert") || q.includes("bell") || q.includes("push notif")) {
@@ -4520,6 +4599,9 @@
                 // 4A. Cross-Facility Price Parity & Clawback Analysis
                 if (!tabNavigated && (q.includes("price parity") || q.includes("parity") || q.includes("cross facility") || q.includes("cross-facility") || q.includes("clawback") || q.includes("discrepanc") || q.includes("price spread") || q.includes("pricing parity"))) {
                     openTabDirect('ParityTab', 'group-value');
+                    if (typeof fetchPriceParity === 'function') {
+                        setTimeout(() => fetchPriceParity(), 80);
+                    }
                     actionText += "Navigated to Price Parity Analysis. ";
                     tabNavigated = true;
                 }
@@ -4532,6 +4614,9 @@
                 // 4C. Savings Leakage Engine & Compliance
                 else if (!tabNavigated && (q.includes("leakage") || q.includes("leakages") || q.includes("off contract") || q.includes("off-contract") || q.includes("compliance") || q.includes("missed savings") || q.includes("money left on the table") || q.includes("savings leakage"))) {
                     openTabDirect('LeakageTab', 'group-value');
+                    if (typeof fetchSavingsLeakage === 'function') {
+                        setTimeout(() => fetchSavingsLeakage(), 80);
+                    }
                     actionText += "Navigated to Savings Leakage Engine. ";
                     tabNavigated = true;
                 }
@@ -4590,14 +4675,14 @@
                         }, 400);
                     }
                 }
-                // 4I. Global Procedure Cards & Standardized BOM Pack
-                else if (!tabNavigated && (q.includes("global procedure") || q.includes("procedure card") || q.includes("standard pack") || q.includes("standardized bom") || q.includes("bill of materials") || q.includes("pack recipe") || q.includes("bom"))) {
+                // 4I. Global Procedure Cards & Standardized BOM Pack (Requires explicit mention of card/BOM/pack, never plain "global procedure")
+                else if (!tabNavigated && !procedureFiltered && (q.includes("procedure card") || q.includes("standard pack") || q.includes("standardized bom") || q.includes("bill of materials") || q.includes("pack recipe") || q.includes("custom pack") || (q.includes("bom") && !q.includes("bottom")))) {
                     openTabDirect('ProcCardTab', 'group-cards');
                     actionText += "Navigated to Global Procedure Cards (Standardized BOM). ";
                     tabNavigated = true;
                 }
                 // 4J. Cost & Variance Analytics Dashboard (General spend, supplies, variance)
-                else if (!tabNavigated && (q.includes("cost") || q.includes("variance") || q.includes("scatter") || q.includes("dashboard") || q.includes("spend") || q.includes("supplies") || q.includes("items"))) {
+                else if (!tabNavigated && !procedureFiltered && (q.includes("cost") || q.includes("variance") || q.includes("scatter") || q.includes("dashboard") || q.includes("spend") || q.includes("supplies") || q.includes("items"))) {
                     openTabDirect('DashboardTab', 'group-clinical');
                     actionText += "Navigated to Cost & Variance Analytics. ";
                     tabNavigated = true;
@@ -4777,8 +4862,13 @@
                 return;
             }
 
+            // Cleanly detach and reset previous recognizer instance to prevent conflicting onend triggers
             if (orbSpeechRecognizer) {
+                orbSpeechRecognizer.onresult = null;
+                orbSpeechRecognizer.onerror = null;
+                orbSpeechRecognizer.onend = null;
                 try { orbSpeechRecognizer.abort(); } catch(e) {}
+                orbSpeechRecognizer = null;
             }
             if (orbSpeechSilenceTimer) {
                 clearTimeout(orbSpeechSilenceTimer);
@@ -4786,7 +4876,13 @@
             }
             accumulatedOrbSpeech = "";
 
-            orbSpeechRecognizer = new SpeechRec();
+            try {
+                orbSpeechRecognizer = new SpeechRec();
+            } catch(initErr) {
+                console.error("Recognizer constructor error:", initErr);
+                return;
+            }
+
             orbSpeechRecognizer.lang = 'en-US';
             orbSpeechRecognizer.interimResults = true;
             orbSpeechRecognizer.continuous = true;
@@ -4804,7 +4900,8 @@
                         interim += event.results[i][0].transcript;
                     }
                 }
-                const spoken = (accumulatedOrbSpeech + " " + interim).trim();
+                let spoken = (accumulatedOrbSpeech + " " + interim).trim();
+                spoken = normalizeSpokenClinicalQuery(spoken);
                 if (transcriptEl && spoken) {
                     transcriptEl.innerText = `"${spoken}"`;
                 }
@@ -4823,9 +4920,20 @@
             };
 
             orbSpeechRecognizer.onerror = (err) => {
-                // Suppress harmless 'no-speech' or 'aborted'
                 if (err.error !== 'no-speech' && err.error !== 'aborted') {
                     console.log("Orb speech recognition error:", err);
+                }
+                // Automatic Turn Continuity: If browser times out on silence while user is thinking, auto-reconnect!
+                if (err.error === 'no-speech' && isOrbActive) {
+                    const card = document.getElementById('orb-card-element');
+                    if (card && card.classList.contains('state-listening') && !window.currentAudio) {
+                        setTimeout(() => {
+                            if (isOrbActive && !window.currentAudio) {
+                                startOrbListening();
+                            }
+                        }, 250);
+                        return;
+                    }
                 }
                 if (isOrbActive) {
                     const card = document.getElementById('orb-card-element');
@@ -4846,14 +4954,26 @@
                 }
                 const card = document.getElementById('orb-card-element');
                 if (card && card.classList.contains('state-listening')) {
-                    setOrbState('idle', "Tap Orb to Speak", "");
+                    // Automatically restart listening if still in active conversational turn
+                    if (isOrbActive && !window.currentAudio) {
+                        setTimeout(() => {
+                            if (isOrbActive && !window.currentAudio) {
+                                startOrbListening();
+                            }
+                        }, 250);
+                    } else {
+                        setOrbState('idle', "Tap Orb to Speak", "");
+                    }
                 }
             };
 
             try {
                 orbSpeechRecognizer.start();
             } catch(e) {
-                console.error("Failed to start orb speech recognizer:", e);
+                console.warn("Failed to start orb speech recognizer, retrying:", e);
+                setTimeout(() => {
+                    try { if (orbSpeechRecognizer && isOrbActive) orbSpeechRecognizer.start(); } catch(e2) {}
+                }, 300);
             }
         }
 
@@ -4863,7 +4983,10 @@
                 orbSpeechSilenceTimer = null;
             }
             if (orbSpeechRecognizer) {
-                try { orbSpeechRecognizer.stop(); } catch(e) {}
+                orbSpeechRecognizer.onresult = null;
+                orbSpeechRecognizer.onerror = null;
+                orbSpeechRecognizer.onend = null;
+                try { orbSpeechRecognizer.abort(); } catch(e) {}
                 orbSpeechRecognizer = null;
             }
             accumulatedOrbSpeech = "";
@@ -4942,6 +5065,7 @@
             // Clean wake word prefix if user said e.g. "Hey Queen Bee show me..."
             let cleanCommand = userSpeech.replace(/\b(hey\s+queen\s+bee|queen\s+bee|hey\s+bee|ask\s+the\s+bee|hello\s+bee)\b/gi, '').trim();
             if (!cleanCommand) cleanCommand = userSpeech;
+            cleanCommand = normalizeSpokenClinicalQuery(cleanCommand);
 
             const transcriptEl = document.getElementById('orb-transcript-text');
             if (transcriptEl) transcriptEl.innerText = `"${cleanCommand}"`;
@@ -4964,6 +5088,36 @@
                 return;
             }
 
+            // --- VOICE DRIVER SELF-HEALING & USER FEEDBACK ENGINE ---
+            const lowerClean = cleanCommand.toLowerCase();
+            const isSelfHealingFeedback = /\b(that'?s\s+not\s+what\s+i\s+asked|i\s+meant|i\s+said|wrong\s+tab|wrong\s+page|instead\s+of|correct\s+yourself|self\s*heal)\b/i.test(cleanCommand);
+            if (isSelfHealingFeedback) {
+                let intended = cleanCommand.replace(/^(?:no|sorry|wait|that'?s\s+not\s+what\s+i\s+asked|wrong\s+tab|wrong\s+procedure|i\s+meant|i\s+said)\s*[:,-]?\s*/i, '').trim();
+                if (intended.length > 2) {
+                    try {
+                        const learned = JSON.parse(localStorage.getItem('uch_voice_self_healing') || '{}');
+                        const lastUserTurn = window.chatMemory && window.chatMemory.length > 1 ? window.chatMemory[window.chatMemory.length - 2]?.content : "";
+                        if (lastUserTurn) {
+                            learned[lastUserTurn.toLowerCase()] = intended;
+                            localStorage.setItem('uch_voice_self_healing', JSON.stringify(learned));
+                            window.voiceSelfHealingMemory = learned;
+                        }
+                        fetch(`${API_BASE}/self-heal/voice-feedback`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                misheard_query: lastUserTurn || cleanCommand,
+                                intended_query: intended,
+                                action_taken: "Autonomous Voice Driver Self-Healed"
+                            })
+                        }).catch(e => console.warn("Self-heal telemetry failed", e));
+                    } catch(e) {}
+
+                    showVoiceNavToast(`🛡️ Queen Bee Self-Healed: Learned "${intended}"`);
+                    cleanCommand = intended;
+                }
+            }
+
             setOrbState('thinking', "Queen Bee is analyzing & navigating...", "");
 
             // 1. Autonomous Navigation Execution
@@ -4984,7 +5138,8 @@
                         preferred_bee: "queen_bee",
                         chat_history: window.chatMemory || [],
                         dashboard_context: typeof getDashboardContext === 'function' ? getDashboardContext() : "",
-                        voice_mode: true
+                        voice_mode: true,
+                        navigation_action: navResult.actionText || null
                     })
                 });
 
@@ -5025,11 +5180,6 @@
         }
 
         function speakVoiceResponse(spokenText, onComplete) {
-            if (!spokenText) {
-                if (typeof onComplete === 'function') onComplete();
-                return;
-            }
-
             // Immediately halt any previous speech cleanly
             stopQueenBeeSpeaking(true);
             window.autoSpeak = true;
@@ -5062,6 +5212,11 @@
                     }, 9000);
                 }
             };
+
+            if (!spokenText || !spokenText.trim()) {
+                handleSpeechFinished();
+                return;
+            }
 
             // Stream OpenAI TTS via backend endpoint - strictly OpenAI voice, never local browser synth
             const ttsUrl = `${API_BASE}/tts?text=${encodeURIComponent(spokenText)}`;
@@ -6535,6 +6690,9 @@
                 const grp = document.getElementById(groupId);
                 if (grp) grp.classList.add('active');
             }
+            try {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch(e) {}
         }
 
         function openTabByName(tabName) {
@@ -6892,6 +7050,7 @@
             try {
                 const res = await fetch(`${API_BASE}/procedures`);
                 const procedures = await res.json();
+                window.allProcedures = procedures;
                 const select = $('#procedure-select');
                 procedures.forEach(p => select.append(new Option(p, p)));
                 
