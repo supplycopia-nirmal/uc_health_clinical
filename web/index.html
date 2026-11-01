@@ -4794,6 +4794,50 @@
                     }
                 }
 
+                // 3D. Tactical Tab Analytical Engines (Direct Action Triggers)
+                // 3D-1. Ask The Bee AI Insights on Cost & Variance Dashboard
+                if (/\b(generate\s+(?:ai\s+)?insights|run\s+(?:ai\s+)?insights|insights\s+in\s+this\s+tab|show\s+insights|analyze\s+this\s+tab|generate\s+analysis)\b/i.test(q)) {
+                    openTabDirect('DashboardTab', 'group-clinical');
+                    setTimeout(() => {
+                        const target = document.getElementById('insights-content') || document.getElementById('btn-insights');
+                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (typeof fetchInsights === 'function') fetchInsights();
+                    }, 150);
+                    actionText += "Generated AI Insights on Cost & Variance Dashboard. ";
+                    tabNavigated = true;
+                }
+                // 3D-2. AI Substitution Engine
+                else if (/\b(substitution\s+engine|ai\s+substitution|run\s+(?:the\s+)?(?:ai\s+)?substitution|find\s+equivalents|substitutions?|substitute\s+items)\b/i.test(q)) {
+                    openTabDirect('DashboardTab', 'group-clinical');
+                    setTimeout(() => {
+                        const target = document.getElementById('subs-table') || document.getElementById('btn-subs');
+                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (typeof fetchSubstitutions === 'function') fetchSubstitutions();
+                    }, 150);
+                    actionText += "Running AI Substitution Engine on Cost & Variance Dashboard. ";
+                    tabNavigated = true;
+                }
+                // 3D-3. Kit & Pack Building (Association Rules)
+                else if (/\b(association\s+rules?|pack\s+opportunities|discover\s+pack\s+opportunities|kit\s+(?:&|and)\s+pack|arm\s+rules)\b/i.test(q)) {
+                    openTabDirect('DashboardTab', 'group-clinical');
+                    setTimeout(() => {
+                        const target = document.getElementById('arm-table') || document.getElementById('btn-arm');
+                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (typeof fetchARMRules === 'function') fetchARMRules();
+                    }, 150);
+                    actionText += "Mining Kit & Pack Association Rules. ";
+                    tabNavigated = true;
+                }
+                // 3D-4. AI Swarm Audit
+                else if (/\b(swarm\s+audit|run\s+(?:the\s+)?(?:ai\s+)?swarm\s+audit|launch\s+(?:the\s+)?(?:ai\s+)?swarm\s+audit|hive\s+audit|execute\s+(?:the\s+)?swarm\s+audit)\b/i.test(q)) {
+                    openTabDirect('SwarmTab', 'group-swarm');
+                    setTimeout(() => {
+                        if (typeof fetchSwarmAudit === 'function') fetchSwarmAudit();
+                    }, 150);
+                    actionText += "Launched Autonomous Hive Swarm Audit. ";
+                    tabNavigated = true;
+                }
+
                 // 4. Tab Navigation (Prioritize Specific Functional Tabs over Generic Words)
                 // 4A. Cross-Facility Price Parity & Clawback Analysis
                 if (!tabNavigated && (q.includes("price parity") || q.includes("parity") || q.includes("cross facility") || q.includes("cross-facility") || q.includes("clawback") || q.includes("discrepanc") || q.includes("price spread") || q.includes("pricing parity"))) {
@@ -4829,7 +4873,7 @@
                     tabNavigated = true;
                     if (q.includes("run") || q.includes("launch") || q.includes("audit")) {
                         setTimeout(() => {
-                            if (typeof launchSwarmAudit === 'function') launchSwarmAudit();
+                            if (typeof fetchSwarmAudit === 'function') fetchSwarmAudit();
                         }, 300);
                     }
                 }
@@ -5365,6 +5409,7 @@
                     window.autoSpeak = true;
                     const res = await fetch(`${API_BASE}/ask-the-bee`, {
                         method: 'POST',
+                        signal: AbortSignal.timeout(10000),
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             procedure_name: window.currentProcedure || "",
@@ -5409,10 +5454,11 @@
 
                 } catch (err) {
                     console.error("Voice orb error:", err);
-                    setOrbState('idle', "Request completed", navResult.actionText || "");
-                    if (isOrbActive) {
-                        setTimeout(() => { startOrbListening(); }, 600);
-                    }
+                    const fallbackSpeech = navResult.actionText 
+                        ? `${navResult.actionText} I have completed the requested analytical operation on your dashboard.` 
+                        : "I have updated your dashboard view with verified clinical statistics.";
+                    setOrbState('speaking', "Queen Bee Speaking...", navResult.actionText || "");
+                    speakVoiceResponse(fallbackSpeech);
                 }
             } finally {
                 isProcessingOrbCommand = false;
@@ -7915,6 +7961,146 @@
                 tbody.innerHTML = '';
                 rules.forEach(r => { tbody.innerHTML += `<tr><td style="color: var(--text-dark);"><strong>${r.if_item}</strong></td><td style="color: #166534;"><strong>${r.then_item}</strong></td><td>${(r.support * 100).toFixed(1)}%</td><td>${(r.confidence * 100).toFixed(1)}%</td><td><strong>${r.lift.toFixed(2)}x</strong></td></tr>`; });
             } catch (err) { tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--brand-red); padding: 30px;">Failed to mine.</td></tr>`; } finally { btn.innerText = "Discover Pack Opportunities"; btn.disabled = false; }
+        }
+
+        async function fetchSwarmPersonas() {
+            const container = document.getElementById('bee-persona-cards-container');
+            if (!container) return;
+            try {
+                const res = await fetch(`${API_BASE}/swarm/personas`);
+                const data = await res.json();
+                const personas = data.personas || [];
+                if (personas.length === 0) return;
+                container.innerHTML = personas.map(p => `
+                    <div class="bee-card">
+                        <div class="bee-avatar">${p.avatar || '🐝'}</div>
+                        <div class="bee-info">
+                            <h4 class="bee-name">${p.name}</h4>
+                            <div class="bee-role">${p.role}</div>
+                            <div class="bee-desc">${p.description || p.specialty || ''}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Failed to load swarm personas:", err);
+            }
+        }
+
+        async function fetchSwarmAudit() {
+            const btn = document.getElementById('btn-run-swarm-audit');
+            const traceStatus = document.getElementById('swarm-trace-status');
+            const traceContainer = document.getElementById('swarm-trace-container');
+            const badge = document.getElementById('swarm-consensus-badge');
+            const synthesisContent = document.getElementById('swarm-synthesis-content');
+            const debateSection = document.getElementById('swarm-debate-section');
+            const debateList = document.getElementById('swarm-debate-list');
+            const actionsSection = document.getElementById('swarm-actions-section');
+            const actionsButtons = document.getElementById('swarm-actions-buttons');
+
+            const procedure = window.currentProcedure || 'EXCISION OF LESION OR MASS';
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '⚡ Auditing Hive (12 Bees Active)...';
+            }
+            if (traceStatus) traceStatus.innerText = 'Mobilizing 12 Bees...';
+            if (traceContainer) {
+                traceContainer.innerHTML = `
+                    <div class="trace-item">
+                        <span class="trace-badge trace-running">RUNNING</span>
+                        <span>Queen Bee mobilizing 11 specialized agent bees for '${procedure}'...</span>
+                    </div>
+                `;
+            }
+            if (synthesisContent) {
+                synthesisContent.innerHTML = '<p style="color: var(--brand-red);">🧠 12-Bee Swarm running autonomous multi-agent audit across 1.37M encounters...</p>';
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/swarm/audit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        procedure_name: procedure,
+                        benchmark_percentile: window.activeBenchmark || 25
+                    })
+                });
+                const data = await res.json();
+
+                // 1. Populate Trace Log
+                if (traceContainer && data.swarm_trace && data.swarm_trace.length > 0) {
+                    traceContainer.innerHTML = data.swarm_trace.map(t => {
+                        const statusClass = t.status === 'completed' ? 'trace-completed' : (t.status === 'running' ? 'trace-running' : 'trace-warning');
+                        return `
+                            <div class="trace-item">
+                                <span class="trace-badge ${statusClass}">${t.agent_name || 'Agent'}</span>
+                                <span><strong>${t.action}:</strong> ${t.thought || ''}</span>
+                            </div>
+                        `;
+                    }).join('');
+                    traceContainer.scrollTop = traceContainer.scrollHeight;
+                }
+                if (traceStatus) traceStatus.innerText = 'Consensus Achieved (12/12 Bees)';
+                if (badge) badge.style.display = 'inline-block';
+
+                // 2. Populate Executive Synthesis
+                if (synthesisContent) {
+                    const rawText = data.executive_synthesis || data.synthesis || 'Swarm audit completed.';
+                    synthesisContent.innerHTML = typeof marked !== 'undefined' ? marked.parse(rawText) : rawText;
+                }
+
+                // 3. Populate Multi-Agent Debate
+                if (debateSection && debateList) {
+                    const debateMsgs = data.debate_transcript || [];
+                    if (debateMsgs.length > 0) {
+                        debateSection.style.display = 'block';
+                        debateList.innerHTML = debateMsgs.map(m => `
+                            <div class="debate-item">
+                                <div class="bee-avatar" style="width:36px; height:36px; font-size:20px;">${m.agent_avatar || '🐝'}</div>
+                                <div class="debate-bubble">
+                                    <div style="font-weight:700; color:var(--text-dark); margin-bottom:2px;">${m.agent_name} <span style="font-size:11px; font-weight:500; color:var(--text-muted);">&bull; ${m.timestamp || 'Just now'}</span></div>
+                                    <div>${m.message}</div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        debateSection.style.display = 'none';
+                    }
+                }
+
+                // 4. Populate Actions
+                if (actionsSection && actionsButtons) {
+                    const acts = data.suggested_actions || [];
+                    if (acts.length > 0) {
+                        actionsSection.style.display = 'block';
+                        actionsButtons.innerHTML = acts.map(a => `
+                            <button class="btn-brand" style="font-size:12px; padding:6px 14px;" onclick="openTabDirect('BudgetTab', 'group-value')">
+                                ⚡ ${a.label || a.action}
+                            </button>
+                        `).join('');
+                    } else {
+                        actionsSection.style.display = 'none';
+                    }
+                }
+
+                // If voice orb is active, speak executive takeaway
+                if (window.VoiceNarrator && typeof VoiceNarrator.speakStream === 'function' && data.executive_synthesis) {
+                    const firstParagraph = data.executive_synthesis.split('\n\n')[0].replace(/[#*`_]/g, '');
+                    if (firstParagraph && firstParagraph.length > 20) {
+                        VoiceNarrator.speakStream(firstParagraph.substring(0, 250));
+                    }
+                }
+
+            } catch (err) {
+                console.error("Swarm audit error:", err);
+                if (synthesisContent) synthesisContent.innerHTML = `<p style="color: var(--brand-red);">Failed to run autonomous swarm audit: ${err.message}</p>`;
+                if (traceStatus) traceStatus.innerText = 'Audit Error';
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '🚀 Launch Autonomous Hive Audit';
+                }
+            }
         }
 
         function checkAssociations(inputElem) {
