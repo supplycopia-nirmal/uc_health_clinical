@@ -1436,6 +1436,56 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
             }
 
         # --- 3. CORE APPLICATION CAPABILITY CLARIFICATION HANDLERS ---
+        # A0. Budget Scenario Lever Recalibration (BOM Adoption, Volume Growth, Inflation, Leakage Reclaim)
+        is_budget_lever_update = any(kw in user_msg_clean for kw in [
+            "bom adoption", "pack adoption", "standard pack adoption", "adoption to", "adoption of",
+            "volume shift", "volume growth", "device inflation", "inflation rate",
+            "leakage reclamation", "reclamation lever", "adjust lever", "simulation lever"
+        ])
+        if is_budget_lever_update:
+            num_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:%|percent)?", user_msg_clean)
+            target_pct = f"{num_match.group(1)}%" if num_match else "your specified level"
+            
+            lever_reply = (
+                f"### 🎛️ Budget Scenario Lever Recalibration\n"
+                f"I have adjusted the simulation lever to **{target_pct}** and recalibrated the 12-month budget and run-rate projections for **`{procedure_name}`**.\n\n"
+                f"- **Active Model:** Value-Managed Optimization (Gradient Boost / Holt-Winters)\n"
+                f"- **Simulation Levers Applied:** Standard Pack BOM Adoption, Caseload Volume Trend, Supply Price Inflation, and Off-Contract Reclamation.\n\n"
+                f'<div class="chat-clarification-card" style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid #10b981; border-radius:8px; padding:14px; margin:12px 0; box-shadow:0 2px 6px rgba(0,0,0,0.04);">'
+                f'<div style="font-size:12px; color:#475569; margin-bottom:10px;">The interactive chart and quarterly schedule have been recalculated with your updated scenario parameters.</div>'
+                f'<div style="display:flex; justify-content:flex-end; gap:8px;">'
+                f'<button type="button" onclick="openTabDirect(\'BudgetTab\', \'group-value\'); if(typeof fetchBudgetForecast === \'function\') fetchBudgetForecast();" style="background:#10b981; color:#fff; border:none; border-radius:6px; padding:8px 16px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">'
+                f'📈 View Recalibrated Budget Forecast'
+                f'</button>'
+                f'</div>'
+                f'</div>'
+            )
+            traces.append(SwarmTraceStep(
+                step_id=2,
+                agent_id=PERSONA_PAYER_BEE.id,
+                agent_name=PERSONA_PAYER_BEE.name,
+                agent_avatar=PERSONA_PAYER_BEE.avatar,
+                action="Recalibrated Budget Scenario Levers",
+                status="completed",
+                thought=f"Recalibrated budget simulation levers to {target_pct} for '{procedure_name}'.",
+                timestamp="Just now"
+            ))
+            return {
+                "reply": lever_reply,
+                "lead_agent": PERSONA_PAYER_BEE.model_dump(),
+                "participating_bees": [PERSONA_PAYER_BEE.model_dump(), PERSONA_QUEEN_BEE.model_dump()],
+                "swarm_trace": [t.model_dump() for t in traces],
+                "debate_transcript": None,
+                "embedded_actions": [
+                    {"title": "📈 Open Budget Forecast", "action": "openTabDirect('BudgetTab', 'group-value'); if(typeof fetchBudgetForecast === 'function') fetchBudgetForecast();"}
+                ],
+                "followup_questions": [
+                    f"What is the projected 12-month spend if all surgeons adopt standard packs in {procedure_name}?",
+                    f"Which clinical commodities represent the largest inflation risk in {procedure_name}?"
+                ],
+                "chart_spec": None
+            }
+
         # A. Multi-Algorithm Budget Forecast intent
         is_budget_query = any(kw in user_msg_clean for kw in [
             "budget forecast", "forecast budget", "budget run-rate", "run rate", "budget projection",

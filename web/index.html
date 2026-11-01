@@ -451,13 +451,13 @@
 
 
         /* --- Chatbot Styles --- */
-        #chat-toggle-btn { position: fixed; bottom: 30px; right: 30px; background-color: #fff; color: var(--text-dark); border: 1px solid var(--card-border); border-radius: 50px; padding: 8px 16px 8px 8px; font-size: 13px; font-weight: 600; font-family: inherit; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; z-index: 10000; transition: transform 0.2s, color 0.2s; display: flex; align-items: center; gap: 8px; }
+        #chat-toggle-btn { position: fixed; bottom: 30px; right: 30px; background-color: #fff; color: var(--text-dark); border: 1px solid var(--card-border); border-radius: 50px; padding: 8px 16px 8px 8px; font-size: 13px; font-weight: 600; font-family: inherit; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; z-index: 24999; transition: transform 0.2s, color 0.2s; display: flex; align-items: center; gap: 8px; }
         #chat-toggle-btn:hover { transform: translateY(-2px); color: var(--brand-red); }
         
-        #chatbot-container { position: fixed; bottom: 80px; right: 30px; width: 440px; max-width: calc(100vw - 40px); height: 620px; max-height: calc(100vh - 100px); background-color: #fff; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.18); display: none; flex-direction: column; z-index: 10000; overflow: hidden; border: 1px solid var(--card-border); transform-origin: bottom right; transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1), height 0.35s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.35s ease, box-shadow 0.35s ease, border-radius 0.35s ease; }
+        #chatbot-container { position: fixed; bottom: 80px; right: 30px; width: 440px; max-width: calc(100vw - 40px); height: 620px; max-height: calc(100vh - 100px); background-color: #fff; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.18); display: none; flex-direction: column; z-index: 25000; overflow: hidden; border: 1px solid var(--card-border); transform-origin: bottom right; transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1), height 0.35s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.35s ease, box-shadow 0.35s ease, border-radius 0.35s ease; }
         
         /* Enhanced Lightbox Maximized View - Natural Right-to-Left Expansion */
-        #chatbot-container.chat-maximized { width: min(1360px, calc(100vw - 60px)) !important; height: min(88vh, 880px) !important; max-width: calc(100vw - 60px) !important; max-height: calc(100vh - 60px) !important; right: 30px !important; bottom: 30px !important; top: auto !important; left: auto !important; z-index: 10005 !important; box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65), 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important; border-radius: 16px !important; }
+        #chatbot-container.chat-maximized { width: min(1360px, calc(100vw - 60px)) !important; height: min(88vh, 880px) !important; max-width: calc(100vw - 60px) !important; max-height: calc(100vh - 60px) !important; right: 30px !important; bottom: 30px !important; top: auto !important; left: auto !important; z-index: 25005 !important; box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65), 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important; border-radius: 16px !important; }
         
         #chat-header { background-color: #fff; color: var(--text-dark); border-bottom: 1px solid var(--card-border); padding: 12px 16px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
         .header-actions { display: flex; align-items: center; gap: 12px; }
@@ -4595,6 +4595,57 @@
                     }
                 }
 
+                // 3B. Budget Scenario Simulation Levers (BOM Adoption, Volume Growth, Inflation, Leakage Reclaim)
+                const isBudgetTabActive = document.getElementById('BudgetTab')?.style.display === 'block';
+                const isBudgetLeverMention = /\b(bom\s+adoption|pack\s+adoption|standard\s+pack\s+adoption|adoption|volume\s+(?:growth|shift|change)|inflation|leakage\s+reclaim|reclamation|lever|levers|simulation)\b/i.test(q);
+
+                if (isBudgetTabActive || isBudgetLeverMention) {
+                    const numMatch = q.match(/(\d+(?:\.\d+)?)\s*(?:%|percent)?/);
+                    const targetVal = numMatch ? parseFloat(numMatch[1]) : null;
+
+                    if (/\b(bom|pack|adoption)\b/i.test(q) && targetVal !== null) {
+                        const slider = document.getElementById('slider-pack-adoption');
+                        if (slider) {
+                            slider.value = targetVal;
+                            if (typeof onBudgetSliderInput === 'function') onBudgetSliderInput();
+                            if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
+                            if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                            actionText += `Updated Standard Pack BOM Adoption to ${targetVal}% and recalculated budget projections. `;
+                            tabNavigated = true;
+                        }
+                    } else if (/\b(volume|growth|shift)\b/i.test(q) && targetVal !== null) {
+                        const slider = document.getElementById('slider-volume-growth');
+                        if (slider) {
+                            slider.value = targetVal;
+                            if (typeof onBudgetSliderInput === 'function') onBudgetSliderInput();
+                            if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
+                            if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                            actionText += `Updated Surgical Volume Shift to ${targetVal}% and recalculated budget projections. `;
+                            tabNavigated = true;
+                        }
+                    } else if (/\b(inflation|device\s+inflation|price\s+trend)\b/i.test(q) && targetVal !== null) {
+                        const slider = document.getElementById('slider-inflation');
+                        if (slider) {
+                            slider.value = targetVal;
+                            if (typeof onBudgetSliderInput === 'function') onBudgetSliderInput();
+                            if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
+                            if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                            actionText += `Updated Medical Device Inflation to ${targetVal}% and recalculated budget projections. `;
+                            tabNavigated = true;
+                        }
+                    } else if (/\b(leakage|reclaim|reclamation)\b/i.test(q) && targetVal !== null) {
+                        const slider = document.getElementById('slider-leakage-reclaim');
+                        if (slider) {
+                            slider.value = targetVal;
+                            if (typeof onBudgetSliderInput === 'function') onBudgetSliderInput();
+                            if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
+                            if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                            actionText += `Updated Off-Contract Leakage Reclamation to ${targetVal}% and recalculated budget projections. `;
+                            tabNavigated = true;
+                        }
+                    }
+                }
+
                 // 4. Tab Navigation (Prioritize Specific Functional Tabs over Generic Words)
                 // 4A. Cross-Facility Price Parity & Clawback Analysis
                 if (!tabNavigated && (q.includes("price parity") || q.includes("parity") || q.includes("cross facility") || q.includes("cross-facility") || q.includes("clawback") || q.includes("discrepanc") || q.includes("price spread") || q.includes("pricing parity"))) {
@@ -4675,8 +4726,8 @@
                         }, 400);
                     }
                 }
-                // 4I. Global Procedure Cards & Standardized BOM Pack (Requires explicit mention of card/BOM/pack, never plain "global procedure")
-                else if (!tabNavigated && !procedureFiltered && (q.includes("procedure card") || q.includes("standard pack") || q.includes("standardized bom") || q.includes("bill of materials") || q.includes("pack recipe") || q.includes("custom pack") || (q.includes("bom") && !q.includes("bottom")))) {
+                // 4I. Global Procedure Cards & Standardized BOM Pack (Requires explicit mention of card, never plain "bom" or lever adjustments)
+                else if (!tabNavigated && !procedureFiltered && !isBudgetLeverMention && (q.includes("procedure card") || q.includes("procedure preference card") || q.includes("bill of materials card") || q.includes("bom card") || q.includes("pack recipe") || q.includes("custom pack recipe") || (q.includes("bom") && q.includes("card")))) {
                     openTabDirect('ProcCardTab', 'group-cards');
                     actionText += "Navigated to Global Procedure Cards (Standardized BOM). ";
                     tabNavigated = true;
@@ -4854,6 +4905,8 @@
 
         let orbSpeechSilenceTimer = null;
         let accumulatedOrbSpeech = "";
+        let currentTurnTranscript = "";
+        let isProcessingOrbCommand = false;
 
         function startOrbListening() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -4875,6 +4928,7 @@
                 orbSpeechSilenceTimer = null;
             }
             accumulatedOrbSpeech = "";
+            currentTurnTranscript = "";
 
             try {
                 orbSpeechRecognizer = new SpeechRec();
@@ -4902,20 +4956,22 @@
                 }
                 let spoken = (accumulatedOrbSpeech + " " + interim).trim();
                 spoken = normalizeSpokenClinicalQuery(spoken);
+                currentTurnTranscript = spoken;
                 if (transcriptEl && spoken) {
                     transcriptEl.innerText = `"${spoken}"`;
                 }
 
-                // Debounce speech with 1.2s silence detection buffer to capture full compound queries
+                // Debounce speech with 1.1s silence detection buffer to capture full compound queries
                 if (orbSpeechSilenceTimer) clearTimeout(orbSpeechSilenceTimer);
                 if (spoken.length > 1) {
                     orbSpeechSilenceTimer = setTimeout(() => {
-                        const finalSpoken = (accumulatedOrbSpeech + " " + interim).trim();
-                        if (finalSpoken.length > 1) {
+                        const finalSpoken = currentTurnTranscript.trim();
+                        if (finalSpoken.length > 1 && !isProcessingOrbCommand) {
+                            currentTurnTranscript = "";
                             accumulatedOrbSpeech = "";
                             processVoiceOrbCommand(finalSpoken);
                         }
-                    }, 1200);
+                    }, 1100);
                 }
             };
 
@@ -4944,12 +5000,13 @@
             };
 
             orbSpeechRecognizer.onend = () => {
-                // If user finished talking and recognizer ended with text in buffer, process it
-                if (accumulatedOrbSpeech.trim().length > 1) {
+                // If user finished talking and recognizer ended with text in buffer, process it immediately!
+                const pendingSpeech = (currentTurnTranscript || accumulatedOrbSpeech).trim();
+                if (pendingSpeech.length > 1 && !isProcessingOrbCommand) {
                     if (orbSpeechSilenceTimer) clearTimeout(orbSpeechSilenceTimer);
-                    const q = accumulatedOrbSpeech.trim();
+                    currentTurnTranscript = "";
                     accumulatedOrbSpeech = "";
-                    processVoiceOrbCommand(q);
+                    processVoiceOrbCommand(pendingSpeech);
                     return;
                 }
                 const card = document.getElementById('orb-card-element');
@@ -4990,6 +5047,7 @@
                 orbSpeechRecognizer = null;
             }
             accumulatedOrbSpeech = "";
+            currentTurnTranscript = "";
         }
 
         // Conversational Siri/Alexa-style spoken text sanitizer (Grounded in real statistics)
@@ -5060,122 +5118,134 @@
         }
 
         async function processVoiceOrbCommand(userSpeech) {
-            stopOrbListening();
-            
-            // Clean wake word prefix if user said e.g. "Hey Queen Bee show me..."
-            let cleanCommand = userSpeech.replace(/\b(hey\s+queen\s+bee|queen\s+bee|hey\s+bee|ask\s+the\s+bee|hello\s+bee)\b/gi, '').trim();
-            if (!cleanCommand) cleanCommand = userSpeech;
-            cleanCommand = normalizeSpokenClinicalQuery(cleanCommand);
-
-            const transcriptEl = document.getElementById('orb-transcript-text');
-            if (transcriptEl) transcriptEl.innerText = `"${cleanCommand}"`;
-
-            // Check for explicit stop / silence command
-            if (/\b(stop|shut up|quiet|cancel|be quiet|silence|mute)\b/i.test(cleanCommand)) {
-                stopQueenBeeSpeaking();
+            if (isProcessingOrbCommand) {
+                console.log("Already processing a voice command, ignoring duplicate trigger.");
                 return;
             }
-
-            // Check for conversational goodbye / exit
-            if (/\b(thank you|thanks|goodbye|bye|that's all|exit|close)\b/i.test(cleanCommand)) {
-                const farewell = "You're very welcome! Let me know whenever you'd like to analyze more procedures or surgeon cards.";
-                setOrbState('speaking', "Queen Bee Responding...", "");
-                speakVoiceResponse(farewell, () => {
-                    setTimeout(() => {
-                        closeVoiceOrb();
-                    }, 1400);
-                });
-                return;
-            }
-
-            // --- VOICE DRIVER SELF-HEALING & USER FEEDBACK ENGINE ---
-            const lowerClean = cleanCommand.toLowerCase();
-            const isSelfHealingFeedback = /\b(that'?s\s+not\s+what\s+i\s+asked|i\s+meant|i\s+said|wrong\s+tab|wrong\s+page|instead\s+of|correct\s+yourself|self\s*heal)\b/i.test(cleanCommand);
-            if (isSelfHealingFeedback) {
-                let intended = cleanCommand.replace(/^(?:no|sorry|wait|that'?s\s+not\s+what\s+i\s+asked|wrong\s+tab|wrong\s+procedure|i\s+meant|i\s+said)\s*[:,-]?\s*/i, '').trim();
-                if (intended.length > 2) {
-                    try {
-                        const learned = JSON.parse(localStorage.getItem('uch_voice_self_healing') || '{}');
-                        const lastUserTurn = window.chatMemory && window.chatMemory.length > 1 ? window.chatMemory[window.chatMemory.length - 2]?.content : "";
-                        if (lastUserTurn) {
-                            learned[lastUserTurn.toLowerCase()] = intended;
-                            localStorage.setItem('uch_voice_self_healing', JSON.stringify(learned));
-                            window.voiceSelfHealingMemory = learned;
-                        }
-                        fetch(`${API_BASE}/self-heal/voice-feedback`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                misheard_query: lastUserTurn || cleanCommand,
-                                intended_query: intended,
-                                action_taken: "Autonomous Voice Driver Self-Healed"
-                            })
-                        }).catch(e => console.warn("Self-heal telemetry failed", e));
-                    } catch(e) {}
-
-                    showVoiceNavToast(`🛡️ Queen Bee Self-Healed: Learned "${intended}"`);
-                    cleanCommand = intended;
-                }
-            }
-
-            setOrbState('thinking', "Queen Bee is analyzing & navigating...", "");
-
-            // 1. Autonomous Navigation Execution
-            const navResult = VoiceNavigator.detectAndExecute(cleanCommand);
-            if (navResult.navigated) {
-                setOrbState('thinking', "Executing navigation...", navResult.actionText);
-            }
-
-            // 2. Query Ask The Bee for Comprehensive Answer & Conversational Speech
+            isProcessingOrbCommand = true;
             try {
-                window.autoSpeak = true;
-                const res = await fetch(`${API_BASE}/ask-the-bee`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        procedure_name: window.currentProcedure || "",
-                        query: cleanCommand,
-                        preferred_bee: "queen_bee",
-                        chat_history: window.chatMemory || [],
-                        dashboard_context: typeof getDashboardContext === 'function' ? getDashboardContext() : "",
-                        voice_mode: true,
-                        navigation_action: navResult.actionText || null
-                    })
-                });
+                stopOrbListening();
+                
+                // Clean wake word prefix if user said e.g. "Hey Queen Bee show me..."
+                let cleanCommand = userSpeech.replace(/\b(hey\s+queen\s+bee|queen\s+bee|hey\s+bee|ask\s+the\s+bee|hello\s+bee)\b/gi, '').trim();
+                if (!cleanCommand) cleanCommand = userSpeech;
+                cleanCommand = normalizeSpokenClinicalQuery(cleanCommand);
 
-                const data = await res.json();
-                const rawReply = data.reply || "I have navigated your dashboard to the requested cohort.";
-                const spokenText = data.spoken_response || generateClientSpokenText(rawReply, navResult, cleanCommand);
+                const transcriptEl = document.getElementById('orb-transcript-text');
+                if (transcriptEl) transcriptEl.innerText = `"${cleanCommand}"`;
 
-                // Record in Chat Memory
-                if (window.chatMemory) {
-                    window.chatMemory.push({ role: "user", content: cleanCommand });
-                    window.chatMemory.push({ role: "assistant", content: rawReply });
+                // Check for explicit stop / silence command
+                if (/\b(stop|shut up|quiet|cancel|be quiet|silence|mute)\b/i.test(cleanCommand)) {
+                    stopQueenBeeSpeaking();
+                    return;
                 }
 
-                // Append rich visual markdown to chat drawer for on-screen inspection
-                const chatMessages = document.getElementById('chat-messages');
-                if (chatMessages) {
-                    const uDiv = document.createElement('div');
-                    uDiv.className = 'chat-msg msg-user';
-                    uDiv.innerText = cleanCommand;
-                    chatMessages.appendChild(uDiv);
-
-                    const bDiv = document.createElement('div');
-                    bDiv.className = 'chat-msg msg-bot';
-                    bDiv.innerHTML = `<div style="font-size: 11px; font-weight: 700; color: #ea580c; margin-bottom: 4px;">👑 QUEEN BEE (VOICE)</div>` + (typeof marked !== 'undefined' ? marked.parse(rawReply) : rawReply);
-                    chatMessages.appendChild(bDiv);
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                // Check for conversational goodbye / exit
+                if (/\b(thank you|thanks|goodbye|bye|that's all|exit|close)\b/i.test(cleanCommand)) {
+                    const farewell = "You're very welcome! Let me know whenever you'd like to analyze more procedures or surgeon cards.";
+                    setOrbState('speaking', "Queen Bee Responding...", "");
+                    speakVoiceResponse(farewell, () => {
+                        setTimeout(() => {
+                            closeVoiceOrb();
+                        }, 1400);
+                    });
+                    return;
                 }
 
-                setOrbState('speaking', "Queen Bee Speaking...", navResult.actionText || "");
+                // --- VOICE DRIVER SELF-HEALING & USER FEEDBACK ENGINE ---
+                const lowerClean = cleanCommand.toLowerCase();
+                const isSelfHealingFeedback = /\b(that'?s\s+not\s+what\s+i\s+asked|i\s+meant|i\s+said|wrong\s+tab|wrong\s+page|instead\s+of|correct\s+yourself|self\s*heal)\b/i.test(cleanCommand);
+                if (isSelfHealingFeedback) {
+                    let intended = cleanCommand.replace(/^(?:no|sorry|wait|that'?s\s+not\s+what\s+i\s+asked|wrong\s+tab|wrong\s+procedure|i\s+meant|i\s+said)\s*[:,-]?\s*/i, '').trim();
+                    if (intended.length > 2) {
+                        try {
+                            const learned = JSON.parse(localStorage.getItem('uch_voice_self_healing') || '{}');
+                            const lastUserTurn = window.chatMemory && window.chatMemory.length > 1 ? window.chatMemory[window.chatMemory.length - 2]?.content : "";
+                            if (lastUserTurn) {
+                                learned[lastUserTurn.toLowerCase()] = intended;
+                                localStorage.setItem('uch_voice_self_healing', JSON.stringify(learned));
+                                window.voiceSelfHealingMemory = learned;
+                            }
+                            fetch(`${API_BASE}/self-heal/voice-feedback`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    misheard_query: lastUserTurn || cleanCommand,
+                                    intended_query: intended,
+                                    action_taken: "Autonomous Voice Driver Self-Healed"
+                                })
+                            }).catch(e => console.warn("Self-heal telemetry failed", e));
+                        } catch(e) {}
 
-                // Speak ONLY the conversational, human-friendly spoken text (Alexa/Siri style)
-                speakVoiceResponse(spokenText);
+                        showVoiceNavToast(`🛡️ Queen Bee Self-Healed: Learned "${intended}"`);
+                        cleanCommand = intended;
+                    }
+                }
 
-            } catch (err) {
-                console.error("Voice orb error:", err);
-                setOrbState('idle', "Request completed", navResult.actionText || "");
+                setOrbState('thinking', "Queen Bee is analyzing & navigating...", "");
+
+                // 1. Autonomous Navigation Execution
+                const navResult = VoiceNavigator.detectAndExecute(cleanCommand);
+                if (navResult.navigated) {
+                    setOrbState('thinking', "Executing navigation...", navResult.actionText);
+                }
+
+                // 2. Query Ask The Bee for Comprehensive Answer & Conversational Speech
+                try {
+                    window.autoSpeak = true;
+                    const res = await fetch(`${API_BASE}/ask-the-bee`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            procedure_name: window.currentProcedure || "",
+                            query: cleanCommand,
+                            preferred_bee: "queen_bee",
+                            chat_history: window.chatMemory || [],
+                            dashboard_context: typeof getDashboardContext === 'function' ? getDashboardContext() : "",
+                            voice_mode: true,
+                            navigation_action: navResult.actionText || null
+                        })
+                    });
+
+                    const data = await res.json();
+                    const rawReply = data.reply || "I have navigated your dashboard to the requested cohort.";
+                    const spokenText = data.spoken_response || generateClientSpokenText(rawReply, navResult, cleanCommand);
+
+                    // Record in Chat Memory
+                    if (window.chatMemory) {
+                        window.chatMemory.push({ role: "user", content: cleanCommand });
+                        window.chatMemory.push({ role: "assistant", content: rawReply });
+                    }
+
+                    // Append rich visual markdown to chat drawer for on-screen inspection
+                    const chatMessages = document.getElementById('chat-messages');
+                    if (chatMessages) {
+                        const uDiv = document.createElement('div');
+                        uDiv.className = 'chat-msg msg-user';
+                        uDiv.innerText = cleanCommand;
+                        chatMessages.appendChild(uDiv);
+
+                        const bDiv = document.createElement('div');
+                        bDiv.className = 'chat-msg msg-bot';
+                        bDiv.innerHTML = `<div style="font-size: 11px; font-weight: 700; color: #ea580c; margin-bottom: 4px;">👑 QUEEN BEE (VOICE)</div>` + (typeof marked !== 'undefined' ? marked.parse(rawReply) : rawReply);
+                        chatMessages.appendChild(bDiv);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+
+                    setOrbState('speaking', "Queen Bee Speaking...", navResult.actionText || "");
+
+                    // Speak ONLY the conversational, human-friendly spoken text (Alexa/Siri style)
+                    speakVoiceResponse(spokenText);
+
+                } catch (err) {
+                    console.error("Voice orb error:", err);
+                    setOrbState('idle', "Request completed", navResult.actionText || "");
+                    if (isOrbActive) {
+                        setTimeout(() => { startOrbListening(); }, 600);
+                    }
+                }
+            } finally {
+                isProcessingOrbCommand = false;
             }
         }
 
@@ -5184,8 +5254,10 @@
             stopQueenBeeSpeaking(true);
             window.autoSpeak = true;
 
+            let finishedCalled = false;
             const handleSpeechFinished = () => {
-                if (!window.autoSpeak) return;
+                if (finishedCalled) return;
+                finishedCalled = true;
                 window.autoSpeak = false;
 
                 if (typeof onComplete === 'function') {
@@ -5197,11 +5269,12 @@
                 // Queen Bee has finished speaking. Automatically reopen the microphone so the user can reply!
                 if (isOrbActive) {
                     setOrbState('listening', "Listening... your turn to speak", "");
+                    if (window.orbReListenTimer) clearTimeout(window.orbReListenTimer);
                     window.orbReListenTimer = setTimeout(() => {
                         startOrbListening();
-                    }, 400);
+                    }, 350);
 
-                    // Silence timeout: if user doesn't speak within 9s, transition smoothly back to idle
+                    // Silence timeout: if user doesn't speak within 12s, transition smoothly back to idle
                     if (window.silenceIdleTimeout) clearTimeout(window.silenceIdleTimeout);
                     window.silenceIdleTimeout = setTimeout(() => {
                         const c = document.getElementById('orb-card-element');
@@ -5209,7 +5282,7 @@
                             stopOrbListening();
                             setOrbState('idle', "Standing by - Tap Orb or say 'Hey Queen Bee'", "");
                         }
-                    }, 9000);
+                    }, 12000);
                 }
             };
 
@@ -7078,12 +7151,12 @@
                     }
                 });
 
-                // Auto-select initial procedure so dashboard renders immediately
-                if (!window.currentProcedure && procedures.length > 0) {
-                    const defaultProc = procedures.includes("EXCISION OF LESION OR MASS") ? "EXCISION OF LESION OR MASS" : procedures[0];
-                    select.val(defaultProc).trigger('change');
-                }
-            } catch (err) { console.error("Error loading procedures", err); }
+                // Do not auto-select any procedure so dashboard starts afresh
+                hideLoading();
+            } catch (err) { 
+                console.error("Error loading procedures", err); 
+                hideLoading();
+            }
         }
 
         async function loadDashboardData(procedure) {
