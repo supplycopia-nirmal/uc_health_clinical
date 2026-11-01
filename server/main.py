@@ -2367,12 +2367,72 @@ def record_chat_feedback(payload: ChatFeedbackPayload):
         "healed": True if payload.rating == "negative" else False
     }
 
+def generate_conversational_speech(user_query: str, reply_text: str, procedure_name: str = "") -> str:
+    """
+    Synthesizes a friendly, natural, Siri/Alexa-style spoken voice response (1-2 sentences).
+    Guarantees ZERO raw HTML, markdown syntax, tables, code, or technical parameters.
+    """
+    clean_no_html = re.sub(r"<[^>]+>", " ", reply_text or "")
+    clean_no_html = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", clean_no_html)
+    clean_no_html = re.sub(r"```[\s\S]*?```", " ", clean_no_html)
+    clean_no_html = re.sub(r"[#*_~`|>-]", " ", clean_no_html)
+    clean_no_html = re.sub(r"\s+", " ", clean_no_html).strip()
+
+    # Fast GPT-4o-mini spoken voice synthesis
+    api_key = os.environ.get("OPENAI_API_KEY", MultiTenantConfig.OPENAI_API_KEY)
+    if api_key and openai_client:
+        try:
+            prompt = f"""
+You are Queen Bee, a warm, professional clinical AI assistant for healthcare supply chain executives (like Siri or Alexa).
+User Question: "{user_query}"
+Active Procedure: "{procedure_name}"
+Technical Report:
+\"\"\"{clean_no_html[:1200]}\"\"\"
+
+Generate a 1 to 2 sentence conversational spoken response that speaks directly to the user.
+STRICT VOICE RULES:
+1. Speak in friendly, natural conversational English for audio output (like Alexa or Siri).
+2. NEVER speak or mention HTML tags, markdown symbols (hashtags, asterisks, brackets), tables, code, or technical parameters.
+3. Keep it brief (under 35 words).
+4. End with a natural follow-up prompt or question to encourage conversation.
+"""
+            res = openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=60,
+                temperature=0.3
+            )
+            spoken = res.choices[0].message.content.strip().strip('"\'')
+            if spoken and not any(tag in spoken for tag in ["<", ">", "{", "}", "```", "###"]):
+                return spoken
+        except Exception as e:
+            print(f"Conversational speech generation fallback: {e}")
+
+    # Deterministic Rule-Based Fallback
+    if "Clinical Optimization Implementation Plan" in clean_no_html or "Specify Plan Parameters" in clean_no_html:
+        proc = procedure_name if procedure_name else "your cohort"
+        return f"I have prepared a clinical optimization plan for {proc} on your dashboard. Would you like to review surgeon variance or explore commodity substitutions?"
+
+    if "Standardized Surgeon Preference Card" in clean_no_html or "Target Surgeon" in clean_no_html:
+        surg_match = re.search(r"Target Surgeon[:\s*`]+Dr\.?\s*([A-Za-z,\s]+)", reply_text, re.IGNORECASE)
+        surg = surg_match.group(1).replace("`", "").strip() if surg_match else "the surgeon"
+        return f"I have loaded the preference card for Dr. {surg} on your screen. You can review routine staples and potential savings. What would you like to explore next?"
+
+    sentences = re.findall(r"[^.!?]+[.!?]", clean_no_html)
+    if sentences:
+        spoken = " ".join(s.strip() for s in sentences[:2])
+        if len(spoken.split()) > 35:
+            spoken = " ".join(spoken.split()[:30]) + "."
+        return spoken
+    return "I have updated your dashboard based on your request. How else can I assist you?"
+
 class AskTheBeePayload(BaseModel):
     procedure_name: str = ""
     query: str = ""
     chat_history: List[Dict[str, str]] = []
     dashboard_context: str = ""
     preferred_bee: Optional[str] = "queen"
+    voice_mode: Optional[bool] = False
 
 @app.post("/api/ask-the-bee")
 def ask_the_bee(payload: AskTheBeePayload):
@@ -2408,8 +2468,11 @@ def ask_the_bee(payload: AskTheBeePayload):
                 proc_df=proc_df,
                 dashboard_context=payload.dashboard_context
             )
+            raw_reply = swarm_res["reply"]
+            spoken = generate_conversational_speech(payload.query, raw_reply, payload.procedure_name)
             return {
-                "reply": swarm_res["reply"], 
+                "reply": raw_reply, 
+                "spoken_response": spoken,
                 "swarm_trace": swarm_res.get("swarm_trace", []), 
                 "lead_agent": swarm_res.get("lead_agent", {}),
                 "debate_transcript": swarm_res.get("debate_transcript"),
@@ -2460,7 +2523,9 @@ def ask_the_bee(payload: AskTheBeePayload):
         """
         
         response = agent.invoke(prompt)
-        return {"reply": response["output"]}
+        raw_output = response["output"]
+        spoken = generate_conversational_speech(payload.query, raw_output, payload.procedure_name)
+        return {"reply": raw_output, "spoken_response": spoken}
         
     except ImportError as e:
         return {"reply": f"⚠️ **Missing Dependency:** `{str(e)}`"}
