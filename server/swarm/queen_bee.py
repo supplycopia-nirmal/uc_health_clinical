@@ -613,7 +613,8 @@ class QueenBee:
         preferred_bee: str = "queen",
         chat_history: Optional[List[Dict[str, str]]] = None,
         proc_df: Optional[Any] = None,
-        dashboard_context: Optional[str] = None
+        dashboard_context: Optional[str] = None,
+        working_memory: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         Executes interactive multi-agent chat debate or persona-specific inquiry.
@@ -2681,6 +2682,17 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
             You are tightly integrated with the user's dashboard. Ground your answers directly in the active screen/tab, selected facility, chosen metric mode, and active scatter plot case ID that the user is currently viewing!
             """
 
+        # Working Memory Addon for Voice Slot-Filling and Anaphora Resolution
+        working_memory_addon = ""
+        if working_memory and isinstance(working_memory, dict):
+            wm_items = []
+            if working_memory.get("activeTab"): wm_items.append(f"- Active Dashboard Tab: {working_memory['activeTab']}")
+            if working_memory.get("activeProcedure"): wm_items.append(f"- Cohort: {working_memory['activeProcedure']}")
+            if working_memory.get("lastModifiedLever"): wm_items.append(f"- Last Adjusted Simulation Lever: {working_memory['lastModifiedLever']} (Current Value: {working_memory.get('lastLeverValue', '')})")
+            if working_memory.get("lastTargetSurgeon"): wm_items.append(f"- Last Referenced Surgeon: {working_memory['lastTargetSurgeon']}")
+            if wm_items:
+                working_memory_addon = "ACTIVE USER WORKSPACE & SIMULATION MEMORY:\n" + "\n".join(wm_items) + "\nCRITICAL: Resolve anaphoric references ('that', 'it', 'increase it', 'change lever') against these active parameters.\n"
+
         # Construct System Instruction
         system_prompt = f"""
         You are '{lead_bee.name}' ({lead_bee.role}), an autonomous clinical AI agent in the UC Health Bee Swarm.
@@ -2692,6 +2704,8 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
         {f'Participating Bees in Swarm: {[b.name for b in participating]}' if len(participating) > 1 else ''}
         
         {dashboard_addon}
+
+        {working_memory_addon}
 
         {grounded_data_addon}
 

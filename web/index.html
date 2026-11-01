@@ -317,6 +317,45 @@
             font-feature-settings: "tnum";
         }
 
+        /* --- Voice Spotlight & Dynamic Bounding-Box Pulse --- */
+        @keyframes voiceSpotlightPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.7), 0 0 15px rgba(234, 88, 12, 0.45);
+                outline: 2px solid #ea580c;
+            }
+            50% {
+                box-shadow: 0 0 0 7px rgba(234, 88, 12, 0.25), 0 0 25px rgba(234, 88, 12, 0.35);
+                outline: 2px solid #f97316;
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(234, 88, 12, 0), 0 0 0 rgba(234, 88, 12, 0);
+                outline: 2px solid transparent;
+            }
+        }
+        .voice-spotlight-active {
+            animation: voiceSpotlightPulse 1.8s ease-in-out infinite !important;
+            position: relative;
+            z-index: 95;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+        .voice-spotlight-tag {
+            position: absolute;
+            top: -12px;
+            right: 12px;
+            background: linear-gradient(135deg, #ea580c, #c2410c);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
+            pointer-events: none;
+            z-index: 101;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+
         /* --- Cards & Panels --- */
         #chart-container { width: 100%; height: 400px; background: #fff; padding: 15px; box-sizing: border-box; border-radius: 8px; border: 1px solid var(--card-border); margin-top: 15px; }
         #chart-container .legendtitletext,
@@ -4407,6 +4446,133 @@
             }
         }
 
+        // Sub-50ms instant audio feedback for voice driver actions
+        function playActionSuccessChime() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                if (ctx.state === 'suspended') ctx.resume();
+
+                // Crisp 2-tone upward confirmation (D5 -> A5)
+                const now = ctx.currentTime;
+                const notes = [
+                    { freq: 587.33, start: 0, dur: 0.12, gain: 0.09 },
+                    { freq: 880.00, start: 0.07, dur: 0.22, gain: 0.11 }
+                ];
+                notes.forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(n.freq, now + n.start);
+                    gain.gain.setValueAtTime(0.001, now + n.start);
+                    gain.gain.exponentialRampToValueAtTime(n.gain, now + n.start + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + n.start + n.dur);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + n.start);
+                    osc.stop(now + n.start + n.dur + 0.02);
+                });
+            } catch(e) {}
+        }
+
+        function playBargeInChime() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                if (ctx.state === 'suspended') ctx.resume();
+
+                // Soft descending click (G5 -> C5) signaling speech interruption
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(783.99, now);
+                osc.frequency.exponentialRampToValueAtTime(523.25, now + 0.09);
+                gain.gain.setValueAtTime(0.06, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            } catch(e) {}
+        }
+
+        // Dynamic Spotlight Pulse / Bounding-Box Glow Visual Feedback
+        function highlightVoiceTarget(target, labelText = "👑 Focused by Queen Bee") {
+            if (!target) return;
+            let el = typeof target === 'string' ? document.querySelector(target) : target;
+            if (!el) return;
+
+            document.querySelectorAll('.voice-spotlight-active').forEach(e => e.classList.remove('voice-spotlight-active'));
+            document.querySelectorAll('.voice-spotlight-tag').forEach(e => e.remove());
+
+            el.classList.add('voice-spotlight-active');
+
+            try {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < 70 || rect.bottom > window.innerHeight) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } catch(e) {}
+
+            try {
+                const tag = document.createElement('div');
+                tag.className = 'voice-spotlight-tag';
+                tag.innerText = labelText;
+                if (getComputedStyle(el).position === 'static') {
+                    el.style.position = 'relative';
+                }
+                el.appendChild(tag);
+                setTimeout(() => {
+                    tag.style.transition = 'opacity 0.4s ease';
+                    tag.style.opacity = '0';
+                    setTimeout(() => tag.remove(), 400);
+                }, 2600);
+            } catch(e) {}
+
+            setTimeout(() => {
+                if (el) el.classList.remove('voice-spotlight-active');
+            }, 3200);
+        }
+
+        // Multi-Turn Slot-Filling & Working Memory
+        const VoiceWorkingMemory = {
+            activeTab: 'DashboardTab',
+            activeProcedure: '',
+            lastModifiedLever: null, // 'bom_adoption' | 'volume_growth' | 'inflation' | 'leakage_reclaim' | 'cost_band' | 'outlier'
+            lastLeverValue: null,
+            lastTargetSurgeon: null,
+            lastDiscussedMetric: null,
+            turnHistory: [],
+
+            updateContext(patch) {
+                if (patch.activeTab) this.activeTab = patch.activeTab;
+                if (patch.activeProcedure) this.activeProcedure = patch.activeProcedure;
+                if (patch.lastModifiedLever) this.lastModifiedLever = patch.lastModifiedLever;
+                if (patch.lastLeverValue !== undefined) this.lastLeverValue = patch.lastLeverValue;
+                if (patch.lastTargetSurgeon) this.lastTargetSurgeon = patch.lastTargetSurgeon;
+                if (patch.lastDiscussedMetric) this.lastDiscussedMetric = patch.lastDiscussedMetric;
+            },
+
+            recordTurn(role, text) {
+                this.turnHistory.push({ role, text, timestamp: new Date().toISOString() });
+                if (this.turnHistory.length > 8) this.turnHistory.shift();
+            },
+
+            getSnapshot() {
+                return {
+                    activeTab: this.activeTab || window.activeTabName || 'DashboardTab',
+                    activeProcedure: this.activeProcedure || window.currentProcedure || '',
+                    lastModifiedLever: this.lastModifiedLever,
+                    lastLeverValue: this.lastLeverValue,
+                    lastTargetSurgeon: this.lastTargetSurgeon,
+                    lastDiscussedMetric: this.lastDiscussedMetric
+                };
+            }
+        };
+
         function showVoiceNavToast(text) {
             const toast = document.getElementById('voice-nav-toast');
             const toastText = document.getElementById('voice-nav-toast-text');
@@ -4603,48 +4769,64 @@
                 // 3B. Budget Scenario Simulation Levers (BOM Adoption, Volume Growth, Inflation, Leakage Reclaim)
                 const isBudgetTabActive = document.getElementById('BudgetTab')?.style.display === 'block';
                 const isBudgetLeverMention = /\b(bom\s+adoption|pack\s+adoption|standard\s+pack\s+adoption|adoption|volume\s+(?:growth|shift|change)|inflation|leakage\s+reclaim|reclamation|lever|levers|simulation)\b/i.test(q);
+                const isAnaphoricFollowUp = /\b(?:set|change|update|increase|decrease|make|adjust)\s+(?:it|that|this|the\s+lever)\s+(?:to\s+)?(\d+(?:\.\d+)?)\s*%?/i.test(q)
+                    || /\b(?:what\s+if\s+(?:we\s+)?(?:set|make|change)\s+(?:it|that|this)\s+(?:to\s+)?)(\d+(?:\.\d+)?)\s*%?/i.test(q)
+                    || (/^(?:now\s+)?(?:set|make|change)?\s*(?:to\s+)?(\d+(?:\.\d+)?)\s*%\s*$/i.test(q) && (VoiceWorkingMemory.lastModifiedLever || isBudgetTabActive));
 
-                if (isBudgetTabActive || isBudgetLeverMention) {
+                if (isBudgetTabActive || isBudgetLeverMention || isAnaphoricFollowUp) {
                     const numMatch = q.match(/(\d+(?:\.\d+)?)\s*(?:%|percent)?/);
                     const targetVal = numMatch ? parseFloat(numMatch[1]) : null;
+                    const resolvedLever = isAnaphoricFollowUp && !isBudgetLeverMention ? (VoiceWorkingMemory.lastModifiedLever || 'bom_adoption') : null;
 
-                    if (/\b(bom|pack|adoption)\b/i.test(q) && targetVal !== null) {
+                    if ((resolvedLever === 'bom_adoption' || /\b(bom|pack|adoption)\b/i.test(q)) && targetVal !== null) {
                         const slider = document.getElementById('slider-pack-adoption');
                         if (slider) {
                             slider.value = targetVal;
                             if (typeof onBudgetSliderInput === 'function') onBudgetSliderInput();
                             if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
                             if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                            highlightVoiceTarget('#slider-pack-adoption', `BOM Adoption: ${targetVal}%`);
+                            playActionSuccessChime();
+                            VoiceWorkingMemory.updateContext({ activeTab: 'BudgetTab', lastModifiedLever: 'bom_adoption', lastLeverValue: targetVal });
                             actionText += `Updated Standard Pack BOM Adoption to ${targetVal}% and recalculated budget projections. `;
                             tabNavigated = true;
                         }
-                    } else if (/\b(volume|growth|shift)\b/i.test(q) && targetVal !== null) {
+                    } else if ((resolvedLever === 'volume_growth' || /\b(volume|growth|shift)\b/i.test(q)) && targetVal !== null) {
                         const slider = document.getElementById('slider-volume-growth');
                         if (slider) {
                             slider.value = targetVal;
                             if (typeof onBudgetSliderInput === 'function') onBudgetSliderInput();
                             if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
                             if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                            highlightVoiceTarget('#slider-volume-growth', `Volume Shift: ${targetVal}%`);
+                            playActionSuccessChime();
+                            VoiceWorkingMemory.updateContext({ activeTab: 'BudgetTab', lastModifiedLever: 'volume_growth', lastLeverValue: targetVal });
                             actionText += `Updated Surgical Volume Shift to ${targetVal}% and recalculated budget projections. `;
                             tabNavigated = true;
                         }
-                    } else if (/\b(inflation|device\s+inflation|price\s+trend)\b/i.test(q) && targetVal !== null) {
+                    } else if ((resolvedLever === 'inflation' || /\b(inflation|device\s+inflation|price\s+trend)\b/i.test(q)) && targetVal !== null) {
                         const slider = document.getElementById('slider-inflation');
                         if (slider) {
                             slider.value = targetVal;
                             if (typeof onBudgetSliderInput === 'function') onBudgetSliderInput();
                             if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
                             if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                            highlightVoiceTarget('#slider-inflation', `Inflation: ${targetVal}%`);
+                            playActionSuccessChime();
+                            VoiceWorkingMemory.updateContext({ activeTab: 'BudgetTab', lastModifiedLever: 'inflation', lastLeverValue: targetVal });
                             actionText += `Updated Medical Device Inflation to ${targetVal}% and recalculated budget projections. `;
                             tabNavigated = true;
                         }
-                    } else if (/\b(leakage|reclaim|reclamation)\b/i.test(q) && targetVal !== null) {
+                    } else if ((resolvedLever === 'leakage_reclaim' || /\b(leakage|reclaim|reclamation)\b/i.test(q)) && targetVal !== null) {
                         const slider = document.getElementById('slider-leakage-reclaim');
                         if (slider) {
                             slider.value = targetVal;
                             if (typeof onBudgetSliderInput === 'function') onBudgetSliderInput();
                             if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
                             if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                            highlightVoiceTarget('#slider-leakage-reclaim', `Leakage Reclaim: ${targetVal}%`);
+                            playActionSuccessChime();
+                            VoiceWorkingMemory.updateContext({ activeTab: 'BudgetTab', lastModifiedLever: 'leakage_reclaim', lastLeverValue: targetVal });
                             actionText += `Updated Off-Contract Leakage Reclamation to ${targetVal}% and recalculated budget projections. `;
                             tabNavigated = true;
                         }
@@ -4659,6 +4841,8 @@
                         chk.checked = true;
                         if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
                         if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
+                        highlightVoiceTarget('#budget-exclude-last-month', 'Billing Buffer: Enabled');
+                        playActionSuccessChime();
                         actionText += "Excluded most recent month (billing lag buffer enabled) and recalculated budget projections. ";
                         tabNavigated = true;
                     }
@@ -4668,6 +4852,8 @@
                         chk.checked = false;
                         if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
                         if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
+                        highlightVoiceTarget('#budget-exclude-last-month', 'Billing Buffer: Disabled');
+                        playActionSuccessChime();
                         actionText += "Included most recent month in budget forecast. ";
                         tabNavigated = true;
                     }
@@ -4677,24 +4863,34 @@
                 if (/\b(table\s+view|tabular\s+view|switch\s+(?:from\s+line\s*graph\s+)?to\s+table|show\s+table|monthly\s+schedule|view\s+table|table\s+format)\b/i.test(q)) {
                     if (document.getElementById('CompareCardsTab')?.style.display === 'block' || q.includes("compare card")) {
                         if (typeof switchCompareView === 'function') switchCompareView('table');
+                        highlightVoiceTarget('#compare-table-container', 'Preference Cards Table');
+                        playActionSuccessChime();
                         actionText += "Switched Compare Preference Cards to Table View. ";
                         tabNavigated = true;
                     } else {
                         // Open Budget Forecast tab and switch to table view
                         openTabDirect('BudgetTab', 'group-value');
                         if (typeof switchBudgetView === 'function') switchBudgetView('table');
+                        highlightVoiceTarget('#budget-table-view-wrapper', 'Monthly Schedule Table');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ activeTab: 'BudgetTab', lastModifiedLever: 'view_mode' });
                         actionText += "Switched Budget Forecast to Monthly Schedule Table View. ";
                         tabNavigated = true;
                     }
                 } else if (/\b(line\s*graph|chart\s+view|graph\s+view|switch\s+(?:from\s+table\s+)?to\s+(?:graph|chart|line)|show\s+(?:graph|chart)|visual\s+view|line\s+view)\b/i.test(q)) {
                     if (document.getElementById('CompareCardsTab')?.style.display === 'block' || q.includes("compare card")) {
                         if (typeof switchCompareView === 'function') switchCompareView('chart');
+                        highlightVoiceTarget('#compare-chart-container', 'Preference Cards Chart');
+                        playActionSuccessChime();
                         actionText += "Switched Compare Preference Cards to Chart View. ";
                         tabNavigated = true;
                     } else {
                         // Open Budget Forecast tab and switch to line graph view
                         openTabDirect('BudgetTab', 'group-value');
                         if (typeof switchBudgetView === 'function') switchBudgetView('chart');
+                        highlightVoiceTarget('#budget-chart-view-wrapper', 'Budget Line Graph');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ activeTab: 'BudgetTab', lastModifiedLever: 'view_mode' });
                         actionText += "Switched Budget Forecast to Line Graph View. ";
                         tabNavigated = true;
                     }
@@ -4706,6 +4902,9 @@
                     if (sel.length) {
                         sel.val(['Yes']).trigger('change.select2');
                         if (typeof applyFilters === 'function') applyFilters();
+                        highlightVoiceTarget('#outlier-select', 'Outliers Isolated');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ lastModifiedLever: 'outlier' });
                         actionText += "Filtered cohort to Outlier Cases only. ";
                         tabNavigated = true;
                     }
@@ -4714,6 +4913,9 @@
                     if (sel.length) {
                         sel.val(['No']).trigger('change.select2');
                         if (typeof applyFilters === 'function') applyFilters();
+                        highlightVoiceTarget('#outlier-select', 'Outliers Excluded');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ lastModifiedLever: 'outlier' });
                         actionText += "Filtered cohort to Normal Cases only (excluding outliers). ";
                         tabNavigated = true;
                     }
@@ -4725,6 +4927,9 @@
                     if (band) {
                         band.value = 'under_500';
                         if (typeof applyFilters === 'function') applyFilters();
+                        highlightVoiceTarget('#cost-range-select', 'Tier 1 (<$500)');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ lastModifiedLever: 'cost_band' });
                         actionText += "Filtered Cost Per Case Band to Tier 1 (Under $500). ";
                         tabNavigated = true;
                     }
@@ -4733,6 +4938,9 @@
                     if (band) {
                         band.value = '500_1000';
                         if (typeof applyFilters === 'function') applyFilters();
+                        highlightVoiceTarget('#cost-range-select', 'Tier 2 ($500-$1,000)');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ lastModifiedLever: 'cost_band' });
                         actionText += "Filtered Cost Per Case Band to Tier 2 ($500 - $1,000). ";
                         tabNavigated = true;
                     }
@@ -4741,6 +4949,9 @@
                     if (band) {
                         band.value = '1000_2000';
                         if (typeof applyFilters === 'function') applyFilters();
+                        highlightVoiceTarget('#cost-range-select', 'Tier 3 ($1,000-$2,000)');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ lastModifiedLever: 'cost_band' });
                         actionText += "Filtered Cost Per Case Band to Tier 3 ($1,000 - $2,000). ";
                         tabNavigated = true;
                     }
@@ -4749,6 +4960,9 @@
                     if (band) {
                         band.value = 'over_2000';
                         if (typeof applyFilters === 'function') applyFilters();
+                        highlightVoiceTarget('#cost-range-select', 'Tier 4 (>$2,000)');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ lastModifiedLever: 'cost_band' });
                         actionText += "Filtered Cost Per Case Band to Tier 4 (Over $2,000 High-Cost Band). ";
                         tabNavigated = true;
                     }
@@ -4758,6 +4972,8 @@
                 if (/\b(reset\s+filters|clear\s+filters|reset\s+all|restore\s+filters|show\s+all\s+cases)\b/i.test(q)) {
                     if (typeof resetDashboardFilters === 'function') {
                         resetDashboardFilters();
+                        highlightVoiceTarget('.filter-bar', 'Filters Reset');
+                        playActionSuccessChime();
                         actionText += "Reset all dashboard cohort filters to baseline. ";
                         tabNavigated = true;
                     }
@@ -4767,12 +4983,16 @@
                 if (/\b(risk\s+adjusted\s+scatter|risk-adjusted\s+cpc|stratification|acuity\s+adjusted)\b/i.test(q)) {
                     if (typeof switchCPCScatterMode === 'function') {
                         switchCPCScatterMode('risk_adj');
+                        highlightVoiceTarget('#scatter-plot', 'Risk-Adjusted CPC');
+                        playActionSuccessChime();
                         actionText += "Switched CPC Scatter to Risk-Adjusted Acuity Mode. ";
                         tabNavigated = true;
                     }
                 } else if (/\b(raw\s+cpc|unadjusted\s+cpc|raw\s+scatter)\b/i.test(q)) {
                     if (typeof switchCPCScatterMode === 'function') {
                         switchCPCScatterMode('raw');
+                        highlightVoiceTarget('#scatter-plot', 'Raw CPC');
+                        playActionSuccessChime();
                         actionText += "Switched CPC Scatter to Raw Unadjusted Mode. ";
                         tabNavigated = true;
                     }
@@ -4782,12 +5002,16 @@
                 if (/\b(sunburst|radial\s+sunburst)\b/i.test(q)) {
                     if (typeof switchSpendHierarchyView === 'function') {
                         switchSpendHierarchyView('sunburst');
+                        highlightVoiceTarget('#spend-sunburst-container', 'Radial Sunburst');
+                        playActionSuccessChime();
                         actionText += "Switched spend hierarchy to Radial Sunburst view. ";
                         tabNavigated = true;
                     }
                 } else if (/\b(treemap|nested\s+treemap)\b/i.test(q)) {
                     if (typeof switchSpendHierarchyView === 'function') {
                         switchSpendHierarchyView('treemap');
+                        highlightVoiceTarget('#spend-treemap-container', 'Nested Treemap');
+                        playActionSuccessChime();
                         actionText += "Switched spend hierarchy to Nested Treemap view. ";
                         tabNavigated = true;
                     }
@@ -4799,48 +5023,69 @@
                     openTabDirect('DashboardTab', 'group-clinical');
                     setTimeout(() => {
                         const target = document.getElementById('insights-content') || document.getElementById('btn-insights');
-                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            highlightVoiceTarget(target, '🧠 AI Insights');
+                        }
+                        playActionSuccessChime();
                         if (typeof fetchInsights === 'function') fetchInsights();
                     }, 150);
                     actionText += "Generated AI Insights on Cost & Variance Dashboard. ";
                     tabNavigated = true;
+                    VoiceWorkingMemory.updateContext({ activeTab: 'DashboardTab' });
                 }
                 // 3D-2. AI Substitution Engine
                 else if (/\b(substitution\s+engine|ai\s+substitution|run\s+(?:the\s+)?(?:ai\s+)?substitution|find\s+equivalents|substitutions?|substitute\s+items)\b/i.test(q)) {
                     openTabDirect('DashboardTab', 'group-clinical');
                     setTimeout(() => {
                         const target = document.getElementById('subs-table') || document.getElementById('btn-subs');
-                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            highlightVoiceTarget(target, '🔄 AI Substitutions');
+                        }
+                        playActionSuccessChime();
                         if (typeof fetchSubstitutions === 'function') fetchSubstitutions();
                     }, 150);
                     actionText += "Running AI Substitution Engine on Cost & Variance Dashboard. ";
                     tabNavigated = true;
+                    VoiceWorkingMemory.updateContext({ activeTab: 'DashboardTab' });
                 }
                 // 3D-3. Kit & Pack Building (Association Rules)
                 else if (/\b(association\s+rules?|pack\s+opportunities|discover\s+pack\s+opportunities|kit\s+(?:&|and)\s+pack|arm\s+rules)\b/i.test(q)) {
                     openTabDirect('DashboardTab', 'group-clinical');
                     setTimeout(() => {
                         const target = document.getElementById('arm-table') || document.getElementById('btn-arm');
-                        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            highlightVoiceTarget(target, '📦 Kit & Pack Rules');
+                        }
+                        playActionSuccessChime();
                         if (typeof fetchARMRules === 'function') fetchARMRules();
                     }, 150);
                     actionText += "Mining Kit & Pack Association Rules. ";
                     tabNavigated = true;
+                    VoiceWorkingMemory.updateContext({ activeTab: 'DashboardTab' });
                 }
                 // 3D-4. AI Swarm Audit
                 else if (/\b(swarm\s+audit|run\s+(?:the\s+)?(?:ai\s+)?swarm\s+audit|launch\s+(?:the\s+)?(?:ai\s+)?swarm\s+audit|hive\s+audit|execute\s+(?:the\s+)?swarm\s+audit)\b/i.test(q)) {
                     openTabDirect('SwarmTab', 'group-swarm');
                     setTimeout(() => {
+                        highlightVoiceTarget('#SwarmTab', '🐝 Autonomous Swarm Audit');
+                        playActionSuccessChime();
                         if (typeof fetchSwarmAudit === 'function') fetchSwarmAudit();
                     }, 150);
                     actionText += "Launched Autonomous Hive Swarm Audit. ";
                     tabNavigated = true;
+                    VoiceWorkingMemory.updateContext({ activeTab: 'SwarmTab' });
                 }
 
                 // 4. Tab Navigation (Prioritize Specific Functional Tabs over Generic Words)
                 // 4A. Cross-Facility Price Parity & Clawback Analysis
                 if (!tabNavigated && (q.includes("price parity") || q.includes("parity") || q.includes("cross facility") || q.includes("cross-facility") || q.includes("clawback") || q.includes("discrepanc") || q.includes("price spread") || q.includes("pricing parity") || q.includes("parity analysis") || q.includes("vendor overcharge") || /\b(?:price|pricing)\s+parity\b/i.test(q))) {
                     openTabDirect('ParityTab', 'group-value');
+                    highlightVoiceTarget('#ParityTab', '🏷️ Price Parity Analysis');
+                    playActionSuccessChime();
+                    VoiceWorkingMemory.updateContext({ activeTab: 'ParityTab' });
                     if (typeof fetchPriceParity === 'function') {
                         setTimeout(() => fetchPriceParity(), 80);
                     }
@@ -4850,6 +5095,9 @@
                 // 4B. CQO & Value Quadrant
                 else if (!tabNavigated && (q.includes("quadrant") || q.includes("quadrant analysis") || q.includes("cqo") || q.includes("value quadrant") || q.includes("quality quadrant") || q.includes("clinical quality") || q.includes("outcomes") || q.includes("infection") || q.includes("champion") || q.includes("clinical champion") || q.includes("pareto"))) {
                     openTabDirect('CQOTab', 'group-clinical');
+                    highlightVoiceTarget('#cqo-quadrant-plot', '🏆 CQO Value Quadrant');
+                    playActionSuccessChime();
+                    VoiceWorkingMemory.updateContext({ activeTab: 'CQOTab' });
                     if (typeof fetchCQOSummary === 'function') {
                         setTimeout(() => fetchCQOSummary(), 80);
                     }
@@ -4859,6 +5107,9 @@
                 // 4C. Savings Leakage Engine & Compliance
                 else if (!tabNavigated && (q.includes("leakage") || q.includes("leakages") || q.includes("off contract") || q.includes("off-contract") || q.includes("compliance") || q.includes("missed savings") || q.includes("money left on the table") || q.includes("savings leakage"))) {
                     openTabDirect('LeakageTab', 'group-value');
+                    highlightVoiceTarget('#LeakageTab', '💸 Savings Leakage');
+                    playActionSuccessChime();
+                    VoiceWorkingMemory.updateContext({ activeTab: 'LeakageTab' });
                     if (typeof fetchSavingsLeakage === 'function') {
                         setTimeout(() => fetchSavingsLeakage(), 80);
                     }
@@ -4868,6 +5119,9 @@
                 // 4D. AI & Swarm Intelligence (Queen Bee Hive Briefing)
                 else if (!tabNavigated && (q.includes("swarm") || q.includes("queen bee") || q.includes("hive audit") || q.includes("swarm intelligence") || q.includes("executive briefing") || q.includes("swarm telemetry") || q.includes("12 bees") || q.includes("agents"))) {
                     openTabDirect('SwarmTab', 'group-swarm');
+                    highlightVoiceTarget('#SwarmTab', '🐝 Bee Swarm Console');
+                    playActionSuccessChime();
+                    VoiceWorkingMemory.updateContext({ activeTab: 'SwarmTab' });
                     actionText += "Navigated to Bee Hive Swarm Console. ";
                     tabNavigated = true;
                     if (q.includes("run") || q.includes("launch") || q.includes("audit")) {
@@ -4879,24 +5133,36 @@
                 // 4E. Multi-Algorithm Budget Forecasting
                 else if (!tabNavigated && (q.includes("budget") || q.includes("spend forecast") || q.includes("spending forecast") || q.includes("budget forecast") || q.includes("run rate") || q.includes("run-rate") || q.includes("12-month") || q.includes("twelve month") || (q.includes("forecast") && !q.includes("patient") && !q.includes("risk")))) {
                     openTabDirect('BudgetTab', 'group-value');
+                    highlightVoiceTarget('#BudgetTab', '📊 Budget Forecast');
+                    playActionSuccessChime();
+                    VoiceWorkingMemory.updateContext({ activeTab: 'BudgetTab' });
                     actionText += "Navigated to Multi-Algorithm Budget Forecasting. ";
                     tabNavigated = true;
                 }
                 // 4F. AI Predictive Modeling & Risk-Adjusted Cost Predictor
                 else if (!tabNavigated && (q.includes("predict") || q.includes("predictive model") || q.includes("risk adjusted") || q.includes("risk-adjusted") || q.includes("patient cost") || q.includes("machine learning") || q.includes("ml model") || q.includes("los prediction"))) {
                     openTabDirect('PredictTab', 'group-swarm');
+                    highlightVoiceTarget('#PredictTab', '🧠 Predictive Cost Model');
+                    playActionSuccessChime();
+                    VoiceWorkingMemory.updateContext({ activeTab: 'PredictTab' });
                     actionText += "Navigated to AI Predictive Modeling. ";
                     tabNavigated = true;
                 }
                 // 4G. Surgical Preference Card Comparison
                 else if (!tabNavigated && (q.includes("compare card") || q.includes("compare preference") || q.includes("compare surgeons") || q.includes("compare cards") || q.includes("card comparison") || (q.includes("compare") && q.includes("card")))) {
                     openTabDirect('CompareCardsTab', 'group-cards');
+                    highlightVoiceTarget('#CompareCardsTab', '⚖️ Compare Preference Cards');
+                    playActionSuccessChime();
+                    VoiceWorkingMemory.updateContext({ activeTab: 'CompareCardsTab' });
                     actionText += "Navigated to Compare Preference Cards. ";
                     tabNavigated = true;
                 }
                 // 4H. Surgeon Preference Cards & Specific Surgeon Lookup
                 else if (!tabNavigated && (q.includes("preference card") || q.includes("pref card") || q.includes("surgeon card") || targetSurgeon)) {
                     openTabDirect('PrefCardTab', 'group-cards');
+                    highlightVoiceTarget('#PrefCardTab', '📋 Surgeon Preference Cards');
+                    playActionSuccessChime();
+                    VoiceWorkingMemory.updateContext({ activeTab: 'PrefCardTab', lastTargetSurgeon: targetSurgeon });
                     actionText += "Navigated to Surgeon Preference Cards. ";
                     tabNavigated = true;
 
@@ -5001,6 +5267,8 @@
         // Master Speech Cancellation / Interruption Function
         function stopQueenBeeSpeaking(silent = false) {
             window.autoSpeak = false;
+            window.isQueenBeeSpeaking = false;
+            if (typeof stopBargeInListener === 'function') stopBargeInListener();
 
             // 1. Cancel browser-native SpeechSynthesis immediately
             if ('speechSynthesis' in window) {
@@ -5106,7 +5374,7 @@
         let currentTurnTranscript = "";
         let isProcessingOrbCommand = false;
 
-        function startOrbListening() {
+        function startOrbListening(initialSpeech = "") {
             // Pause background wake word recognizer to guarantee exclusive mic access
             pauseWakeWordRecognizer();
 
@@ -5128,8 +5396,8 @@
                 clearTimeout(orbSpeechSilenceTimer);
                 orbSpeechSilenceTimer = null;
             }
-            accumulatedOrbSpeech = "";
-            currentTurnTranscript = "";
+            accumulatedOrbSpeech = initialSpeech || "";
+            currentTurnTranscript = initialSpeech || "";
 
             try {
                 orbSpeechRecognizer = new SpeechRec();
@@ -5144,7 +5412,7 @@
 
             setOrbState('listening', "Listening... (Queen Bee is listening to your full sentence)", "");
             const transcriptEl = document.getElementById('orb-transcript-text');
-            if (transcriptEl) transcriptEl.innerText = "Listening...";
+            if (transcriptEl) transcriptEl.innerText = initialSpeech ? `"${initialSpeech}..."` : "Listening...";
 
             orbSpeechRecognizer.onresult = (event) => {
                 let interim = "";
@@ -5417,7 +5685,8 @@
                             chat_history: window.chatMemory || [],
                             dashboard_context: typeof getDashboardContext === 'function' ? getDashboardContext() : "",
                             voice_mode: true,
-                            navigation_action: navResult.actionText || null
+                            navigation_action: navResult.actionText || null,
+                            working_memory: typeof VoiceWorkingMemory !== 'undefined' ? VoiceWorkingMemory.getSnapshot() : null
                         })
                     });
 
@@ -5492,6 +5761,10 @@
                         window.chatMemory.push({ role: "user", content: cleanCommand });
                         window.chatMemory.push({ role: "assistant", content: rawReply });
                     }
+                    if (typeof VoiceWorkingMemory !== 'undefined') {
+                        VoiceWorkingMemory.recordTurn("user", cleanCommand);
+                        VoiceWorkingMemory.recordTurn("assistant", rawReply);
+                    }
 
                     // Append rich visual markdown to chat drawer for on-screen inspection
                     const chatMessages = document.getElementById('chat-messages');
@@ -5526,15 +5799,123 @@
             }
         }
 
+        let bargeInRecognizer = null;
+        let isBargeInActive = false;
+
+        function stopBargeInListener() {
+            isBargeInActive = false;
+            if (bargeInRecognizer) {
+                bargeInRecognizer.onresult = null;
+                bargeInRecognizer.onerror = null;
+                bargeInRecognizer.onend = null;
+                try { bargeInRecognizer.abort(); } catch(e) {}
+                bargeInRecognizer = null;
+            }
+        }
+
+        function startBargeInListener(currentSpokenText = "") {
+            if (isBargeInActive) return;
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) return;
+
+            pauseWakeWordRecognizer();
+            stopBargeInListener();
+            isBargeInActive = true;
+
+            try {
+                bargeInRecognizer = new SpeechRec();
+            } catch(e) {
+                console.warn("Could not create barge-in recognizer:", e);
+                isBargeInActive = false;
+                return;
+            }
+
+            bargeInRecognizer.lang = 'en-US';
+            bargeInRecognizer.interimResults = true;
+            bargeInRecognizer.continuous = true;
+
+            const normalizedTTS = (currentSpokenText || window.currentSpokenText || "")
+                .toLowerCase()
+                .replace(/[^a-z0-9\s]/g, '')
+                .trim();
+
+            bargeInRecognizer.onresult = (event) => {
+                if (!window.isQueenBeeSpeaking && !isBargeInActive) return;
+
+                let interim = "";
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    interim += " " + event.results[i][0].transcript;
+                }
+                const spoken = interim.toLowerCase().trim();
+                if (!spoken || spoken.length < 2) return;
+
+                // Interruption check: explicit keywords or novel speech not in current TTS output
+                const isExplicitInterruption = /\b(stop|wait|hold on|pause|quiet|shut up|hey|queen bee|change|set|no|switch|cancel|actually|what about|instead|show me|navigate)\b/i.test(spoken);
+
+                let isNovelSpeech = false;
+                if (!isExplicitInterruption && spoken.length > 5) {
+                    const words = spoken.split(/\s+/).filter(w => w.length > 2);
+                    let novelWords = 0;
+                    for (const w of words) {
+                        if (!normalizedTTS.includes(w)) {
+                            novelWords++;
+                        }
+                    }
+                    if (novelWords >= 2) {
+                        isNovelSpeech = true;
+                    }
+                }
+
+                if (isExplicitInterruption || isNovelSpeech) {
+                    console.log("⚡ Full-duplex Barge-In triggered! User spoke:", spoken);
+                    stopBargeInListener();
+                    stopQueenBeeSpeaking(true);
+                    playBargeInChime();
+                    setOrbState('listening', "Listening to your interruption...", "");
+                    startOrbListening(spoken);
+                }
+            };
+
+            bargeInRecognizer.onerror = (e) => {
+                if (e.error !== 'aborted' && isBargeInActive && window.isQueenBeeSpeaking) {
+                    setTimeout(() => {
+                        if (isBargeInActive && window.isQueenBeeSpeaking) {
+                            try { bargeInRecognizer && bargeInRecognizer.start(); } catch(err) {}
+                        }
+                    }, 300);
+                }
+            };
+
+            bargeInRecognizer.onend = () => {
+                if (isBargeInActive && window.isQueenBeeSpeaking) {
+                    setTimeout(() => {
+                        if (isBargeInActive && window.isQueenBeeSpeaking) {
+                            try { bargeInRecognizer && bargeInRecognizer.start(); } catch(err) {}
+                        }
+                    }, 150);
+                }
+            };
+
+            try {
+                bargeInRecognizer.start();
+            } catch(err) {
+                console.warn("Barge-in start error:", err);
+            }
+        }
+
         function speakVoiceResponse(spokenText, onComplete) {
             // Immediately halt any previous speech cleanly
             stopQueenBeeSpeaking(true);
             window.autoSpeak = true;
+            window.isQueenBeeSpeaking = true;
+            window.currentSpokenText = spokenText || "";
 
             let finishedCalled = false;
             const handleSpeechFinished = () => {
                 if (finishedCalled) return;
                 finishedCalled = true;
+                stopBargeInListener();
+                window.isQueenBeeSpeaking = false;
                 window.autoSpeak = false;
 
                 if (typeof onComplete === 'function') {
@@ -5574,13 +5955,22 @@
             audio.preload = "auto";
             window.currentAudio = audio;
 
+            audio.onplay = () => {
+                // Enable full-duplex microphone monitoring for immediate barge-in during speech playback
+                startBargeInListener(spokenText);
+            };
+
             audio.onended = () => {
+                stopBargeInListener();
+                window.isQueenBeeSpeaking = false;
                 window.currentAudio = null;
                 handleSpeechFinished();
             };
 
             audio.onerror = (e) => {
                 console.warn("OpenAI TTS audio error:", e);
+                stopBargeInListener();
+                window.isQueenBeeSpeaking = false;
                 window.currentAudio = null;
                 handleSpeechFinished();
             };
@@ -5589,6 +5979,8 @@
             if (playPromise !== undefined) {
                 playPromise.catch((err) => {
                     console.log("Audio play prevented or interrupted:", err);
+                    stopBargeInListener();
+                    window.isQueenBeeSpeaking = false;
                     handleSpeechFinished();
                 });
             }
@@ -6996,6 +7388,9 @@
             if (tabAliasMap[tabName]) tabName = tabAliasMap[tabName];
 
             window.activeTabName = tabName;
+            if (typeof VoiceWorkingMemory !== 'undefined') {
+                VoiceWorkingMemory.updateContext({ activeTab: tabName });
+            }
             let targetEl = document.getElementById(tabName);
             if (!targetEl) {
                 console.warn(`Tab '${tabName}' not found in DOM, falling back to DashboardTab`);

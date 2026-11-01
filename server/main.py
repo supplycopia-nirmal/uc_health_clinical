@@ -2367,12 +2367,19 @@ def record_chat_feedback(payload: ChatFeedbackPayload):
         "healed": True if payload.rating == "negative" else False
     }
 
-def generate_conversational_speech(user_query: str, reply_text: str, procedure_name: str = "", chat_history: Optional[List[Dict[str, str]]] = None, navigation_action: Optional[str] = None) -> str:
+def generate_conversational_speech(
+    user_query: str, 
+    reply_text: str, 
+    procedure_name: str = "", 
+    chat_history: Optional[List[Dict[str, str]]] = None, 
+    navigation_action: Optional[str] = None,
+    working_memory: Optional[Dict[str, Any]] = None
+) -> str:
     """
     Synthesizes a friendly, natural, Siri/Alexa-style spoken voice response (1-2 sentences).
     Guarantees ZERO raw HTML, markdown syntax, tables, code, or technical parameters.
     CRITICAL: Grounds response with real numerical facts (dollars, percentages, case counts).
-    Uses chat_history context for conversation memory and continuity.
+    Uses chat_history context and working_memory for continuous multi-turn memory and anaphora resolution.
     Couples spoken response with executed navigation action to keep audio and visual display tightly aligned.
     """
     clean_no_html = re.sub(r"<[^>]+>", " ", reply_text or "")
@@ -2396,6 +2403,16 @@ def generate_conversational_speech(user_query: str, reply_text: str, procedure_n
         if recent_turns:
             history_context = "PRIOR CONVERSATION MEMORY:\n" + "\n".join(recent_turns) + "\n\n"
 
+    memory_context = ""
+    if working_memory and isinstance(working_memory, dict):
+        mem_parts = []
+        if working_memory.get("activeTab"): mem_parts.append(f"Current Tab: {working_memory['activeTab']}")
+        if working_memory.get("activeProcedure"): mem_parts.append(f"Cohort: {working_memory['activeProcedure']}")
+        if working_memory.get("lastModifiedLever"): mem_parts.append(f"Last Modified Lever: {working_memory['lastModifiedLever']} ({working_memory.get('lastLeverValue', '')})")
+        if working_memory.get("lastTargetSurgeon"): mem_parts.append(f"Last Surgeon: {working_memory['lastTargetSurgeon']}")
+        if mem_parts:
+            memory_context = "ACTIVE DASHBOARD STATE & WORKING MEMORY:\n" + ", ".join(mem_parts) + "\n\n"
+
     nav_context = f"\nOn-Screen Navigation Action: Navigated user to '{navigation_action}' on dashboard." if navigation_action else ""
 
     # Fast GPT-4o-mini spoken voice synthesis
@@ -2404,7 +2421,7 @@ def generate_conversational_speech(user_query: str, reply_text: str, procedure_n
         try:
             prompt = f"""
 You are Queen Bee, a warm, authoritative clinical AI voice assistant for hospital supply chain executives (speaking aloud like Siri or Alexa).
-{history_context}LATEST User Question: "{user_query}"
+{history_context}{memory_context}LATEST User Question: "{user_query}"
 Active Procedure: "{procedure_name}"{nav_context}
 Technical Report:
 \"\"\"{clean_no_html[:2500]}\"\"\"
@@ -2413,7 +2430,7 @@ Generate a 1 to 2 sentence conversational spoken response that speaks directly t
 CRITICAL SPOKEN VOICE RULES:
 1. ON-SCREEN ALIGNMENT: Only acknowledge navigation if an On-Screen Navigation Action is explicitly provided in the prompt context above (e.g. Price Parity, CQO Value Quadrant, Audit Logs, Procedure switch). If navigation action is provided, explicitly acknowledge it first (e.g. "I've opened the Price Parity Analysis tab for you...", "I've navigated you to the CQO Value Quadrant..."). Do NOT claim to have navigated if no navigation action occurred.
 2. MUST INCLUDE REAL NUMERICAL STATISTICS: You must state the exact numbers, dollar figures (e.g. "$18,420", "$4,250 savings"), percentages (e.g. "16.8%"), case counts (e.g. "242 cases"), or top item names and spend from the Technical Report. Never speak a generic placeholder without real numbers if statistics are in the report.
-3. CONVERSATIONAL CONTINUITY & MEMORY: Use the Prior Conversation Memory to understand the conversation context. If the user refers to 'that', 'it', 'there', 'those items', or asks a follow-up about prior questions, maintain continuous conversational coherence.
+3. CONVERSATIONAL CONTINUITY & MEMORY: Use the Prior Conversation Memory and Active Working Memory to understand the conversation context. If the user refers to 'that', 'it', 'there', 'those items', or asks a follow-up about prior questions, maintain continuous conversational coherence.
 4. Speak in friendly, natural conversational English for audio output (like Alexa or Siri).
 5. NEVER speak or mention HTML tags, markdown symbols (hashtags, asterisks, brackets, backticks), code blocks, or raw JSON.
 6. Keep the spoken response between 25 and 55 words: punchy, clear, and packed with concrete facts.
@@ -2462,6 +2479,7 @@ class AskTheBeePayload(BaseModel):
     preferred_bee: Optional[str] = "queen"
     voice_mode: Optional[bool] = False
     navigation_action: Optional[str] = None
+    working_memory: Optional[Dict[str, Any]] = None
 
 @app.post("/api/ask-the-bee")
 def ask_the_bee(payload: AskTheBeePayload):
@@ -2495,7 +2513,8 @@ def ask_the_bee(payload: AskTheBeePayload):
                 preferred_bee=payload.preferred_bee or "queen",
                 chat_history=payload.chat_history,
                 proc_df=proc_df,
-                dashboard_context=payload.dashboard_context
+                dashboard_context=payload.dashboard_context,
+                working_memory=payload.working_memory
             )
             raw_reply = swarm_res["reply"]
             effective_nav = payload.navigation_action
@@ -2510,7 +2529,8 @@ def ask_the_bee(payload: AskTheBeePayload):
                 raw_reply, 
                 payload.procedure_name, 
                 payload.chat_history,
-                navigation_action=effective_nav
+                navigation_action=effective_nav,
+                working_memory=payload.working_memory
             )
             return {
                 "reply": raw_reply, 
