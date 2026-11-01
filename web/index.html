@@ -532,7 +532,7 @@
         .btn-notif-bell { background: #fff; border: 1px solid var(--card-border); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; color: #475569; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); outline: none; }
         .btn-notif-bell:hover { background: #f8fafc; border-color: #cbd5e1; color: var(--brand-red); transform: translateY(-1px); }
         .notif-badge { position: absolute; top: -3px; right: -3px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 10px; padding: 1px 5px; min-width: 14px; text-align: center; border: 2px solid #fff; line-height: 1.2; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-        .notif-dropdown { position: absolute; top: 48px; right: 0; width: 380px; max-width: 90vw; background: #fff; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15); z-index: 10001; display: none; flex-direction: column; overflow: hidden; animation: fadeInDown 0.2s ease-out; }
+        .notif-dropdown { position: absolute; top: 48px; right: 0; width: 380px; max-width: 90vw; background: #fff; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15); z-index: 10005; display: none; flex-direction: column; overflow: hidden; animation: fadeInDown 0.2s ease-out; }
         .notif-header { padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; }
         .notif-header-title { font-weight: 700; font-size: 13px; color: var(--text-dark); display: flex; align-items: center; gap: 6px; }
         .notif-header-btn { background: none; border: none; color: #2563eb; font-size: 11px; font-weight: 600; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background 0.15s; }
@@ -555,7 +555,7 @@
         .user-meta { display: flex; flex-direction: column; text-align: left; line-height: 1.2; }
         .user-name { font-size: 12px; font-weight: 700; color: #1e293b; }
         .user-role-badge { font-size: 10px; color: #64748b; font-weight: 500; }
-        .user-dropdown-menu { position: absolute; top: 46px; right: 0; width: 270px; background: #fff; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15); z-index: 10001; display: none; flex-direction: column; overflow: hidden; padding: 6px 0; animation: fadeInDown 0.2s ease-out; }
+        .user-dropdown-menu { position: absolute; top: 46px; right: 0; width: 270px; background: #fff; border-radius: 12px; border: 1px solid var(--card-border); box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15); z-index: 10005; display: none; flex-direction: column; overflow: hidden; padding: 6px 0; animation: fadeInDown 0.2s ease-out; }
         .user-menu-header { padding: 10px 16px 12px 16px; border-bottom: 1px solid #f1f5f9; }
         .user-menu-item { padding: 9px 16px; font-size: 12px; color: #334155; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s; border: none; background: none; width: 100%; text-align: left; font-family: inherit; }
         .user-menu-item:hover { background: #f8fafc; color: var(--brand-red); }
@@ -1078,7 +1078,7 @@
     <datalist id="catalog-subcats"></datalist>
     <datalist id="catalog-brands"></datalist>
 
-    <div class="controls" style="display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; padding: 8px 16px; gap: 12px; overflow-x: auto;">
+    <div class="controls" style="display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; padding: 8px 16px; gap: 12px; overflow: visible !important; position: relative; z-index: 10002;">
         <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0; white-space: nowrap;">
             <img src="SC_Logo.png" alt="SupplyCopia Logo" style="height: 32px; object-fit: contain;">
             <button class="btn-swarm-pill" onclick="toggleSwarmDrawer()" title="12 Autonomous Bee Swarm Agents Active">
@@ -4480,21 +4480,68 @@
                     targetSurgeon = surgMatch[1].trim();
                 }
 
-                // 3. Detect Tab Navigation
-                if (q.includes("compare card") || q.includes("compare preference") || q.includes("compare") || q.includes("comparison")) {
-                    openTabDirect('CompareCardsTab');
-                    actionText += "Navigated to Multi-Surgeon Card Comparison. ";
+                // 3. Modal & Specialized Workflow Triggers (Evaluate FIRST to intercept specific commands)
+                if (q.includes("jira") || q.includes("ticket") || q.includes("raise issue") || q.includes("report issue") || q.includes("file ticket") || q.includes("report bug") || q.includes("bug report") || q.includes("create ticket") || q.includes("open issue") || q.includes("log issue") || q.includes("issue tracking")) {
+                    if (typeof openJiraIssueModal === 'function') {
+                        openJiraIssueModal();
+                        actionText += "Opened Jira Issue Ticketing (Space: UCHCQO). ";
+                        navigated = true;
+                    }
+                } else if (q.includes("audit log") || q.includes("activity log") || q.includes("audit trail") || q.includes("user activity") || q.includes("telemetry log")) {
+                    if (typeof openAuditLogModal === 'function') {
+                        openAuditLogModal();
+                        actionText += "Opened Activity Audit Log. ";
+                        navigated = true;
+                    }
+                } else if (q.includes("notification") || q.includes("alert") || q.includes("bell") || q.includes("push notif")) {
+                    if (typeof toggleNotificationDrawer === 'function') {
+                        toggleNotificationDrawer();
+                        actionText += "Opened Notification Center. ";
+                        navigated = true;
+                    }
+                } else if (q.includes("site of service") || q.includes("asc") || q.includes("migration") || q.includes("ambulatory")) {
+                    if (typeof openSiteOfServiceModal === 'function') {
+                        openSiteOfServiceModal();
+                        actionText += "Opened ASC Site-of-Service Triage. ";
+                        navigated = true;
+                    }
+                } else if (q.includes("self healing") || q.includes("self-healing") || q.includes("rca") || q.includes("root cause")) {
+                    if (typeof simulateSelfHealingTest === 'function') {
+                        simulateSelfHealingTest();
+                        actionText += "Opened Self-Healing RCA Diagnostics. ";
+                        navigated = true;
+                    }
+                }
+
+                // 4. Tab Navigation (Prioritize Specific Compound Concepts over Generic Words)
+                // 4A. Budget Forecasting (Evaluated BEFORE general 'spend' to prevent misrouting to Dashboard)
+                if (!navigated && (q.includes("budget") || q.includes("spend forecast") || q.includes("spending forecast") || q.includes("budget forecast") || q.includes("run rate") || q.includes("run-rate") || q.includes("12-month") || q.includes("twelve month") || (q.includes("forecast") && !q.includes("patient") && !q.includes("risk")))) {
+                    openTabDirect('BudgetTab', 'group-value');
+                    actionText += "Navigated to Multi-Algorithm Budget Forecasting. ";
                     navigated = true;
-                } else if (q.includes("preference card") || q.includes("pref card") || q.includes("surgeon card") || targetSurgeon) {
-                    openTabDirect('PrefCardTab');
-                    actionText += "Navigated to Preference Card Optimizer. ";
+                }
+                // 4B. AI Predictive Modeling & Risk-Adjusted Cost Predictor
+                else if (!navigated && (q.includes("predict") || q.includes("predictive model") || q.includes("risk adjusted") || q.includes("risk-adjusted") || q.includes("patient cost") || q.includes("machine learning") || q.includes("ml model") || q.includes("los prediction"))) {
+                    openTabDirect('PredictTab', 'group-swarm');
+                    actionText += "Navigated to AI Predictive Modeling. ";
+                    navigated = true;
+                }
+                // 4C. Surgical Preference Card Comparison
+                else if (!navigated && (q.includes("compare card") || q.includes("compare preference") || q.includes("compare surgeons") || q.includes("compare cards") || q.includes("card comparison") || (q.includes("compare") && q.includes("card")))) {
+                    openTabDirect('CompareCardsTab', 'group-cards');
+                    actionText += "Navigated to Compare Preference Cards. ";
+                    navigated = true;
+                }
+                // 4D. Surgeon Preference Cards & Specific Surgeon Lookup
+                else if (!navigated && (q.includes("preference card") || q.includes("pref card") || q.includes("surgeon card") || targetSurgeon)) {
+                    openTabDirect('PrefCardTab', 'group-cards');
+                    actionText += "Navigated to Surgeon Preference Cards. ";
                     navigated = true;
 
                     if (targetSurgeon) {
                         setTimeout(() => {
                             const surgSel = $('#pref-surgeon-select');
                             if (surgSel.length) {
-                                // Find best match among options
                                 let foundOption = null;
                                 surgSel.find('option').each(function() {
                                     if ($(this).text().toLowerCase().includes(targetSurgeon.toLowerCase())) {
@@ -4510,57 +4557,51 @@
                             }
                         }, 400);
                     }
-                } else if (q.includes("global procedure") || q.includes("procedure card") || q.includes("standard pack") || q.includes("bom")) {
-                    openTabDirect('ProcCardTab');
-                    actionText += "Navigated to Global Procedure Cards (BOM). ";
+                }
+                // 4E. Global Procedure Cards & Standardized BOM Pack
+                else if (!navigated && (q.includes("global procedure") || q.includes("procedure card") || q.includes("standard pack") || q.includes("standardized bom") || q.includes("bill of materials") || q.includes("pack recipe") || q.includes("bom"))) {
+                    openTabDirect('ProcCardTab', 'group-cards');
+                    actionText += "Navigated to Global Procedure Cards (Standardized BOM). ";
                     navigated = true;
-                } else if (q.includes("cost") || q.includes("variance") || q.includes("scatter") || q.includes("dashboard") || q.includes("spend")) {
-                    openTabDirect('DashboardTab');
-                    actionText += "Navigated to Cost & Variance Analytics. ";
+                }
+                // 4F. Cross-Facility Price Parity & Clawback Analysis
+                else if (!navigated && (q.includes("price parity") || q.includes("parity") || q.includes("discrepanc") || q.includes("clawback") || q.includes("price spread") || q.includes("facility pricing"))) {
+                    openTabDirect('ParityTab', 'group-value');
+                    actionText += "Navigated to Price Parity Analysis. ";
                     navigated = true;
-                } else if (q.includes("price parity") || q.includes("parity") || q.includes("discrepanc") || q.includes("clawback")) {
-                    openTabDirect('ParityTab');
-                    actionText += "Navigated to Cross-Facility Price Parity. ";
-                    navigated = true;
-                } else if (q.includes("leakage") || q.includes("off contract") || q.includes("off-contract")) {
-                    openTabDirect('LeakageTab');
+                }
+                // 4G. Savings Leakage Engine & Off-Contract Spend
+                else if (!navigated && (q.includes("leakage") || q.includes("off contract") || q.includes("off-contract") || q.includes("compliance") || q.includes("contract adherence"))) {
+                    openTabDirect('LeakageTab', 'group-value');
                     actionText += "Navigated to Savings Leakage Engine. ";
                     navigated = true;
-                } else if (q.includes("swarm") || q.includes("queen bee") || q.includes("hive audit") || q.includes("executive briefing")) {
-                    openTabDirect('SwarmTab');
-                    actionText += "Navigated to Queen Bee Swarm Briefing. ";
+                }
+                // 4H. AI & Swarm Intelligence (Queen Bee Executive Briefing)
+                else if (!navigated && (q.includes("swarm") || q.includes("queen bee") || q.includes("hive audit") || q.includes("executive briefing") || q.includes("swarm telemetry"))) {
+                    openTabDirect('SwarmTab', 'group-swarm');
+                    actionText += "Navigated to Bee Hive Swarm Console. ";
                     navigated = true;
                     if (q.includes("run") || q.includes("launch") || q.includes("audit")) {
                         setTimeout(() => {
                             if (typeof launchSwarmAudit === 'function') launchSwarmAudit();
                         }, 300);
                     }
-                } else if (q.includes("predict") || q.includes("forecast") || q.includes("run rate") || q.includes("budget")) {
-                    openTabDirect('PredictTab');
-                    actionText += "Navigated to Predictive Budget Forecasting. ";
-                    navigated = true;
-                } else if (q.includes("cqo") || q.includes("clinical quality") || q.includes("outcomes")) {
-                    openTabDirect('CQOTab');
-                    actionText += "Navigated to CQO Quality & Finance Portal. ";
+                }
+                // 4I. Clinical Quality & CQO Value Quadrant
+                else if (!navigated && (q.includes("cqo") || q.includes("clinical quality") || q.includes("value quadrant") || q.includes("quality quadrant") || q.includes("outcomes") || q.includes("infection") || q.includes("champions"))) {
+                    openTabDirect('CQOTab', 'group-clinical');
+                    actionText += "Navigated to CQO Quality & Value Quadrant. ";
                     navigated = true;
                 }
-
-                // 4. Modal Triggers
-                if (q.includes("notification") || q.includes("alert")) {
-                    toggleNotificationDrawer();
-                    actionText += "Opened Notification Center. ";
+                // 4J. Cost & Variance Analytics Dashboard (General spend, supplies, variance)
+                else if (!navigated && (q.includes("cost") || q.includes("variance") || q.includes("scatter") || q.includes("dashboard") || q.includes("spend") || q.includes("supplies") || q.includes("items"))) {
+                    openTabDirect('DashboardTab', 'group-clinical');
+                    actionText += "Navigated to Cost & Variance Analytics. ";
                     navigated = true;
-                } else if (q.includes("site of service") || q.includes("asc") || q.includes("migration")) {
-                    if (typeof openSiteOfServiceModal === 'function') {
-                        openSiteOfServiceModal();
-                        actionText += "Opened ASC Site-of-Service Triage. ";
-                        navigated = true;
-                    }
-                } else if (q.includes("generate insights") || q.includes("run insights") || q.includes("ai insights")) {
-                    if (typeof fetchInsights === 'function') {
-                        fetchInsights();
-                        actionText += "Generated Multi-Modal AI Insights. ";
-                        navigated = true;
+                    if (q.includes("insights") || q.includes("ai insights")) {
+                        setTimeout(() => {
+                            if (typeof fetchInsights === 'function') fetchInsights();
+                        }, 300);
                     }
                 }
 
@@ -4722,6 +4763,9 @@
             }
         }
 
+        let orbSpeechSilenceTimer = null;
+        let accumulatedOrbSpeech = "";
+
         function startOrbListening() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRec) {
@@ -4732,33 +4776,45 @@
             if (orbSpeechRecognizer) {
                 try { orbSpeechRecognizer.abort(); } catch(e) {}
             }
+            if (orbSpeechSilenceTimer) {
+                clearTimeout(orbSpeechSilenceTimer);
+                orbSpeechSilenceTimer = null;
+            }
+            accumulatedOrbSpeech = "";
 
             orbSpeechRecognizer = new SpeechRec();
             orbSpeechRecognizer.lang = 'en-US';
             orbSpeechRecognizer.interimResults = true;
-            orbSpeechRecognizer.continuous = false;
+            orbSpeechRecognizer.continuous = true;
 
-            setOrbState('listening', "Listening... (Say command or question)", "");
+            setOrbState('listening', "Listening... (Queen Bee is listening to your full sentence)", "");
             const transcriptEl = document.getElementById('orb-transcript-text');
             if (transcriptEl) transcriptEl.innerText = "Listening...";
 
             orbSpeechRecognizer.onresult = (event) => {
                 let interim = "";
-                let finalTranscript = "";
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
+                        accumulatedOrbSpeech += " " + event.results[i][0].transcript;
                     } else {
                         interim += event.results[i][0].transcript;
                     }
                 }
-                const spoken = finalTranscript || interim;
+                const spoken = (accumulatedOrbSpeech + " " + interim).trim();
                 if (transcriptEl && spoken) {
                     transcriptEl.innerText = `"${spoken}"`;
                 }
 
-                if (finalTranscript && finalTranscript.trim().length > 1) {
-                    processVoiceOrbCommand(finalTranscript.trim());
+                // Debounce speech with 1.2s silence detection buffer to capture full compound queries
+                if (orbSpeechSilenceTimer) clearTimeout(orbSpeechSilenceTimer);
+                if (spoken.length > 1) {
+                    orbSpeechSilenceTimer = setTimeout(() => {
+                        const finalSpoken = (accumulatedOrbSpeech + " " + interim).trim();
+                        if (finalSpoken.length > 1) {
+                            accumulatedOrbSpeech = "";
+                            processVoiceOrbCommand(finalSpoken);
+                        }
+                    }, 1200);
                 }
             };
 
@@ -4769,13 +4825,21 @@
                 }
                 if (isOrbActive) {
                     const card = document.getElementById('orb-card-element');
-                    if (card && !card.classList.contains('state-speaking')) {
+                    if (card && !card.classList.contains('state-speaking') && !card.classList.contains('state-thinking')) {
                         setOrbState('idle', "Tap Orb to speak again", "");
                     }
                 }
             };
 
             orbSpeechRecognizer.onend = () => {
+                // If user finished talking and recognizer ended with text in buffer, process it
+                if (accumulatedOrbSpeech.trim().length > 1) {
+                    if (orbSpeechSilenceTimer) clearTimeout(orbSpeechSilenceTimer);
+                    const q = accumulatedOrbSpeech.trim();
+                    accumulatedOrbSpeech = "";
+                    processVoiceOrbCommand(q);
+                    return;
+                }
                 const card = document.getElementById('orb-card-element');
                 if (card && card.classList.contains('state-listening')) {
                     setOrbState('idle', "Tap Orb to Speak", "");
@@ -4790,29 +4854,36 @@
         }
 
         function stopOrbListening() {
+            if (orbSpeechSilenceTimer) {
+                clearTimeout(orbSpeechSilenceTimer);
+                orbSpeechSilenceTimer = null;
+            }
             if (orbSpeechRecognizer) {
                 try { orbSpeechRecognizer.stop(); } catch(e) {}
                 orbSpeechRecognizer = null;
             }
+            accumulatedOrbSpeech = "";
         }
 
-        // Conversational Siri/Alexa-style spoken text sanitizer
+        // Conversational Siri/Alexa-style spoken text sanitizer (Grounded in real statistics)
         function generateClientSpokenText(rawHtml, navResult, query) {
             if (!rawHtml) return "I have updated the dashboard for you. What else would you like to explore?";
             
-            // 1. Strip all HTML tags completely
+            // 1. Strip HTML tags completely
             let text = rawHtml.replace(/<[^>]*>/g, ' ');
             // 2. Strip markdown links
             text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-            // 3. Strip code blocks and tables
+            // 3. Strip code blocks
             text = text.replace(/```[\s\S]*?```/g, ' ');
-            text = text.replace(/\|.*?\|/g, ' ');
-            // 4. Strip markdown formatting
+            // 4. Preserve tables as readable text lines (replace divider lines, convert pipes to commas)
+            text = text.replace(/\|[-:\s|]+\|/g, ' ');
+            text = text.replace(/\|/g, ', ');
+            // 5. Strip markdown headers, bold, bullets
             text = text.replace(/[*#_~`>]/g, ' ');
             text = text.replace(/[-]{2,}/g, ' ');
-            // 5. Strip all emojis to avoid synthesizer reading emoji descriptions
+            // 6. Strip all emojis to avoid synthesizer reading emoji unicode names
             text = text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '');
-            // 6. Expand abbreviations & phonetic cleaning
+            // 7. Expand abbreviations & phonetic cleaning
             text = text.replace(/\bDr\.?\s+/gi, 'Doctor ')
                        .replace(/\bvs\.?\b/gi, 'versus')
                        .replace(/\bASC\b/g, 'A-S-C')
@@ -4824,34 +4895,41 @@
                        .replace(/\s+/g, ' ')
                        .trim();
 
-            // 7. Handle implementation plan or form boilerplates
+            // 8. Handle implementation plan or form boilerplates
             if (text.includes("Clinical Optimization Implementation Plan") || text.includes("Specify Plan Parameters")) {
                 const procName = window.currentProcedure || "your procedure cohort";
                 return `I have prepared a clinical optimization plan for ${procName} on your screen. Would you like to review surgeon variance or evaluate supply substitutions?`;
             }
 
-            // 8. Handle standardized preference card
+            // 9. Handle standardized preference card
             if (text.includes("Standardized Surgeon Preference Card") || text.includes("Target Surgeon")) {
                 const surgMatch = rawHtml.match(/Target Surgeon[:\s*`]+Dr\.?\s*([A-Za-z,\s]+)/i);
                 const surg = surgMatch ? surgMatch[1].replace(/`/g, '').trim() : 'the surgeon';
-                return `I have loaded the preference card for Dr. ${surg} on your screen. Would you like to review his routine items or compare with another physician?`;
+                return `I have loaded the preference card for Dr. ${surg} on your screen. You can review routine staples and potential savings. What would you like to explore next?`;
             }
 
-            // 9. Extract first 1-2 clean sentences (max 35 words)
-            const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-            let concise = sentences.slice(0, 2).join(' ').trim();
-            if (concise.split(/\s+/).length > 35) {
-                concise = concise.split(/\s+/).slice(0, 30).join(' ') + '.';
+            // 10. Extract data-rich sentences containing real statistics (dollars, counts, percentages)
+            const sentences = (text.match(/[^.!?]+[.!?]+/g) || [text])
+                .map(s => s.trim())
+                .filter(s => s.length > 15 && !s.includes("function") && !s.includes("style="));
+            
+            // Prioritize sentences with real statistics ($ or numbers or %)
+            const statSentences = sentences.filter(s => /\b\d+(?:,\d{3})*(?:\.\d+)?|\$|percent\b/i.test(s));
+            let selected = (statSentences.length > 0 ? statSentences.slice(0, 2) : sentences.slice(0, 2)).join(' ').trim();
+            if (!selected) selected = sentences[0] || "I have prepared the requested clinical analytics on your screen.";
+            
+            if (selected.split(/\s+/).length > 45) {
+                selected = selected.split(/\s+/).slice(0, 42).join(' ') + '.';
             }
 
-            if (navResult && navResult.navigated && !concise.toLowerCase().includes('navigat') && !concise.toLowerCase().includes('load')) {
-                concise = `I've navigated to the requested view. ${concise}`;
+            if (navResult && navResult.navigated && !selected.toLowerCase().includes('navigat') && !selected.toLowerCase().includes('loaded')) {
+                selected = `I've navigated to the view. ${selected}`;
             }
 
-            if (!concise.endsWith('?')) {
-                concise += " What would you like to explore next?";
+            if (!selected.endsWith('?')) {
+                selected += " What would you like to explore next?";
             }
-            return concise;
+            return selected;
         }
 
         async function processVoiceOrbCommand(userSpeech) {

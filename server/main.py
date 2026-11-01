@@ -2371,11 +2371,14 @@ def generate_conversational_speech(user_query: str, reply_text: str, procedure_n
     """
     Synthesizes a friendly, natural, Siri/Alexa-style spoken voice response (1-2 sentences).
     Guarantees ZERO raw HTML, markdown syntax, tables, code, or technical parameters.
+    CRITICAL: Grounds response with real numerical facts (dollars, percentages, case counts).
     """
     clean_no_html = re.sub(r"<[^>]+>", " ", reply_text or "")
     clean_no_html = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", clean_no_html)
     clean_no_html = re.sub(r"```[\s\S]*?```", " ", clean_no_html)
-    clean_no_html = re.sub(r"[#*_~`|>-]", " ", clean_no_html)
+    clean_no_html = re.sub(r"\|[-:\s|]+\|", " ", clean_no_html)
+    clean_no_html = re.sub(r"\|", ", ", clean_no_html)
+    clean_no_html = re.sub(r"[#*_~`>]", " ", clean_no_html)
     clean_no_html = re.sub(r"\s+", " ", clean_no_html).strip()
 
     # Fast GPT-4o-mini spoken voice synthesis
@@ -2383,23 +2386,24 @@ def generate_conversational_speech(user_query: str, reply_text: str, procedure_n
     if api_key and openai_client:
         try:
             prompt = f"""
-You are Queen Bee, a warm, professional clinical AI assistant for healthcare supply chain executives (like Siri or Alexa).
+You are Queen Bee, a warm, authoritative clinical AI voice assistant for hospital supply chain executives (speaking aloud like Siri or Alexa).
 User Question: "{user_query}"
 Active Procedure: "{procedure_name}"
 Technical Report:
-\"\"\"{clean_no_html[:1200]}\"\"\"
+\"\"\"{clean_no_html[:2500]}\"\"\"
 
 Generate a 1 to 2 sentence conversational spoken response that speaks directly to the user.
-STRICT VOICE RULES:
-1. Speak in friendly, natural conversational English for audio output (like Alexa or Siri).
-2. NEVER speak or mention HTML tags, markdown symbols (hashtags, asterisks, brackets), tables, code, or technical parameters.
-3. Keep it brief (under 35 words).
-4. End with a natural follow-up prompt or question to encourage conversation.
+CRITICAL SPOKEN VOICE RULES:
+1. MUST INCLUDE REAL NUMERICAL STATISTICS: You must state the exact numbers, dollar figures (e.g. "$18,420", "$4,250 savings"), percentages (e.g. "16.8%"), case counts (e.g. "242 cases"), or top item names and spend from the Technical Report. Never speak a generic placeholder without real numbers if statistics are in the report.
+2. Speak in friendly, natural conversational English for audio output (like Alexa or Siri).
+3. NEVER speak or mention HTML tags, markdown symbols (hashtags, asterisks, brackets, backticks), code blocks, or raw JSON.
+4. Keep the spoken response between 25 and 55 words: punchy, clear, and packed with concrete facts.
+5. End with a natural follow-up prompt or question to encourage conversation.
 """
             res = openai_client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=60,
+                max_tokens=90,
                 temperature=0.3
             )
             spoken = res.choices[0].message.content.strip().strip('"\'')
@@ -2418,13 +2422,18 @@ STRICT VOICE RULES:
         surg = surg_match.group(1).replace("`", "").strip() if surg_match else "the surgeon"
         return f"I have loaded the preference card for Dr. {surg} on your screen. You can review routine staples and potential savings. What would you like to explore next?"
 
+    # Extract sentences containing actual statistics
     sentences = re.findall(r"[^.!?]+[.!?]", clean_no_html)
-    if sentences:
-        spoken = " ".join(s.strip() for s in sentences[:2])
-        if len(spoken.split()) > 35:
-            spoken = " ".join(spoken.split()[:30]) + "."
+    stat_sentences = [s.strip() for s in sentences if re.search(r"\$|\d+%", s)]
+    chosen = stat_sentences[:2] if stat_sentences else sentences[:2]
+    if chosen:
+        spoken = " ".join(chosen)
+        if len(spoken.split()) > 45:
+            spoken = " ".join(spoken.split()[:42]) + "."
+        if not spoken.endswith("?"):
+            spoken += " What else would you like to explore?"
         return spoken
-    return "I have updated your dashboard based on your request. How else can I assist you?"
+    return "I have updated your dashboard with verified clinical analytics. How else can I assist you?"
 
 class AskTheBeePayload(BaseModel):
     procedure_name: str = ""
