@@ -495,14 +495,53 @@ def _get_procedure_data_cached(procedure_name: str):
     filtered_df = filtered_df.replace({np.nan: None})
 
     bom_items = {}
-    if not bom_df.empty and 'procedure' in bom_df.columns and 'standard_item' in bom_df.columns:
+    if not bom_df.empty and 'procedure' in bom_df.columns:
         proc_bom = bom_df[bom_df['procedure'].astype(str).str.strip().str.upper() == proc_clean]
-        for _, r in proc_bom.iterrows():
-            item_name = str(r['standard_item']).strip().upper()
-            bom_items[item_name] = {
-                'avg_qty': float(r.get('average_quantity_used', 0) or 0),
-                'avg_cost': float(r.get('average_unit_cost', 0) or 0)
-            }
+        if not proc_bom.empty:
+            if 'standard_item' in proc_bom.columns:
+                for _, r in proc_bom.iterrows():
+                    item_name = str(r['standard_item']).strip().upper()
+                    bom_items[item_name] = {
+                        'avg_qty': float(r.get('average_quantity_used', 1.0) or 1.0),
+                        'avg_cost': float(r.get('average_unit_cost', 0) or 0)
+                    }
+            elif 'contract_sub_category' in proc_bom.columns:
+                core_items = proc_bom[proc_bom.get('pack_status', '').isin(['CORE_PACK', 'HOLD_CART']) | (proc_bom.get('utilization_frequency_pct', 0) >= 15.0)]
+                if core_items.empty and not proc_bom.empty:
+                    core_items = proc_bom.head(25)
+                for subcat, grp in core_items.groupby('contract_sub_category'):
+                    subcat_clean = str(subcat).strip().upper()
+                    if subcat_clean and subcat_clean not in ('NAN', 'UNKNOWN'):
+                        avg_cost = float(grp['average_unit_cost'].mean()) if 'average_unit_cost' in grp.columns else 0.0
+                        bom_items[subcat_clean] = {
+                            'avg_qty': 1.0,
+                            'avg_cost': round(avg_cost, 2)
+                        }
+
+    # Statistically derive standard items directly from filtered_df if bom_items has fewer than 3 items
+    if len(bom_items) < 3 and not filtered_df.empty and 'contract_sub_category' in filtered_df.columns:
+        tot_proc_cases = max(1, filtered_df['case_id'].nunique())
+        cat_case_counts = filtered_df.groupby('contract_sub_category')['case_id'].nunique()
+        common_subcats = cat_case_counts[cat_case_counts / tot_proc_cases >= 0.15].index.tolist()
+        if len(common_subcats) < 3:
+            common_subcats = cat_case_counts.sort_values(ascending=False).head(10).index.tolist()
+        for sc in common_subcats:
+            sc_clean = str(sc).strip().upper()
+            if sc_clean and sc_clean not in ('NAN', 'UNKNOWN') and sc_clean not in bom_items:
+                bom_items[sc_clean] = {'avg_qty': 1.0, 'avg_cost': 0.0}
+
+    # Populate actual average quantities and costs from filtered_df for precision
+    if bom_items and not filtered_df.empty and 'quantity_num' in filtered_df.columns and 'contract_sub_category' in filtered_df.columns:
+        try:
+            qty_means = filtered_df.groupby(['case_id', 'contract_sub_category'])['quantity_num'].sum().groupby('contract_sub_category').mean().to_dict()
+            cost_means = filtered_df.groupby('contract_sub_category')['unit_cost_num'].mean().to_dict() if 'unit_cost_num' in filtered_df.columns else {}
+            for sc in bom_items:
+                if sc in qty_means:
+                    bom_items[sc]['avg_qty'] = round(float(qty_means[sc]), 1)
+                if sc in cost_means and bom_items[sc]['avg_cost'] == 0.0:
+                    bom_items[sc]['avg_cost'] = round(float(cost_means[sc]), 2)
+        except Exception:
+            pass
 
     valid_construct_subcats = set()
     

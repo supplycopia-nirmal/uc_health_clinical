@@ -364,7 +364,7 @@
             dominant-baseline: central !important;
             alignment-baseline: central !important;
         }
-        .tables-wrapper { display: flex; gap: 20px; width: 100%; height: 400px; margin-top: 20px; }
+        .tables-wrapper { display: flex; gap: 20px; width: 100%; height: 500px; margin-top: 20px; }
         .table-panel { flex: 1; background: #fff; border-radius: 8px; border: 1px solid var(--card-border); display: flex; flex-direction: column; overflow: hidden; padding-bottom: 0;}
         
         .table-header { padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
@@ -382,6 +382,7 @@
         .badge { padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; display: inline-block; text-align: center; min-width: 50px; }
         .badge-standard { background-color: #dcfce7; color: #166534; }
         .badge-non-standard { background-color: #fee2e2; color: #991b1b; }
+        .badge-clinical-variance { background-color: #ffedd5; color: #c2410c; }
         .badge-omitted { background-color: #f1f5f9; color: #475569; }
 
         .variance-top-section { display: flex; height: 140px; border-bottom: 1px solid var(--card-border); }
@@ -2953,23 +2954,65 @@
                 <span style="background: #dcfce7; color: #15803d; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 11px;">Target: University Hospital ASC (UH ASC)</span>
             </div>
 
-            <!-- Surgeon Opportunity Table -->
+            <!-- View Mode Switcher & Filter Toolbar -->
+            <div style="padding: 10px 22px; background: #f8fafc; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div class="view-toggle-pills" style="display: inline-flex; background: #e2e8f0; padding: 3px; border-radius: 8px;">
+                    <button id="btn-sos-surgeons" onclick="switchSosView('surgeons')" style="border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; background: #fff; color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        👨‍⚕️ Surgeon Breakdown (<span id="sos-surgeons-count">0</span>)
+                    </button>
+                    <button id="btn-sos-cases" onclick="switchSosView('cases')" style="border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; background: transparent; color: #64748b;">
+                        📋 All ASA-Safe Cases Drilldown (<span id="sos-cases-count">0</span>)
+                    </button>
+                </div>
+                <div id="sos-cases-filter-bar" style="display: none; align-items: center; gap: 10px;">
+                    <input type="text" id="sos-search-input" oninput="filterSosCases()" placeholder="Search Case ID or Surgeon..." style="padding: 5px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; width: 220px;">
+                    <select id="sos-surgeon-filter" onchange="filterSosCases()" style="padding: 5px 10px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        <option value="ALL">All Surgeons</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Content Area: Surgeon Breakdown vs Candidate Cases -->
             <div style="padding: 16px 22px; overflow-y: auto; flex: 1;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid var(--card-border); text-align: left; background: #f8fafc; color: var(--text-dark);">
-                            <th style="padding: 8px 10px;">Lead Surgeon</th>
-                            <th style="padding: 8px 10px; text-align: center;">Safe ASC Cases</th>
-                            <th style="padding: 8px 10px; text-align: center;">Average ASA</th>
-                            <th style="padding: 8px 10px; text-align: right;">Current Hospital Spend</th>
-                            <th style="padding: 8px 10px; text-align: right;">Projected ASC Savings</th>
-                            <th style="padding: 8px 10px; text-align: center;">Clinical Triage Policy</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sos-table-body">
-                        <tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">Analyzing clinical encounter records for ASC eligibility...</td></tr>
-                    </tbody>
-                </table>
+                <!-- Surgeon View -->
+                <div id="sos-surgeons-view">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--card-border); text-align: left; background: #f8fafc; color: var(--text-dark);">
+                                <th style="padding: 8px 10px;">Lead Surgeon</th>
+                                <th style="padding: 8px 10px; text-align: center;">Safe ASC Cases</th>
+                                <th style="padding: 8px 10px; text-align: center;">Average ASA</th>
+                                <th style="padding: 8px 10px; text-align: right;">Current Hospital Spend</th>
+                                <th style="padding: 8px 10px; text-align: right;">Projected ASC Savings</th>
+                                <th style="padding: 8px 10px; text-align: center;">Clinical Triage Policy</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sos-table-body">
+                            <tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">Analyzing clinical encounter records for ASC eligibility...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Cases Drilldown View -->
+                <div id="sos-cases-view" style="display: none;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--card-border); text-align: left; background: #f8fafc; color: var(--text-dark);">
+                                <th style="padding: 8px 10px;">Case ID</th>
+                                <th style="padding: 8px 10px;">Lead Surgeon</th>
+                                <th style="padding: 8px 10px;">Hospital OR Facility</th>
+                                <th style="padding: 8px 10px; text-align: center;">ASA Rating</th>
+                                <th style="padding: 8px 10px; text-align: center;">Age Group</th>
+                                <th style="padding: 8px 10px; text-align: right;">Hospital Spend</th>
+                                <th style="padding: 8px 10px; text-align: right;">Projected Savings</th>
+                                <th style="padding: 8px 10px; text-align: center;">Triage Pathway</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sos-cases-table-body">
+                            <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">Loading ASA-safe cases...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Modal Footer -->
@@ -3743,6 +3786,75 @@
             }
         }
 
+        window.sosData = null;
+        window.currentSosView = 'surgeons';
+
+        function switchSosView(view) {
+            window.currentSosView = view;
+            const btnSurgeons = document.getElementById('btn-sos-surgeons');
+            const btnCases = document.getElementById('btn-sos-cases');
+            const viewSurgeons = document.getElementById('sos-surgeons-view');
+            const viewCases = document.getElementById('sos-cases-view');
+            const filterBar = document.getElementById('sos-cases-filter-bar');
+
+            if (view === 'surgeons') {
+                if (btnSurgeons) { btnSurgeons.style.background = '#fff'; btnSurgeons.style.color = '#1e293b'; btnSurgeons.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'; }
+                if (btnCases) { btnCases.style.background = 'transparent'; btnCases.style.color = '#64748b'; btnCases.style.boxShadow = 'none'; }
+                if (viewSurgeons) viewSurgeons.style.display = 'block';
+                if (viewCases) viewCases.style.display = 'none';
+                if (filterBar) filterBar.style.display = 'none';
+            } else {
+                if (btnCases) { btnCases.style.background = '#fff'; btnCases.style.color = '#1e293b'; btnCases.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)'; }
+                if (btnSurgeons) { btnSurgeons.style.background = 'transparent'; btnSurgeons.style.color = '#64748b'; btnSurgeons.style.boxShadow = 'none'; }
+                if (viewSurgeons) viewSurgeons.style.display = 'none';
+                if (viewCases) viewCases.style.display = 'block';
+                if (filterBar) filterBar.style.display = 'flex';
+                filterSosCases();
+            }
+        }
+
+        function viewSurgeonCandidateCases(surgeonName) {
+            const filterSel = document.getElementById('sos-surgeon-filter');
+            if (filterSel) filterSel.value = surgeonName;
+            switchSosView('cases');
+        }
+
+        function filterSosCases() {
+            if (!window.sosData || !window.sosData.candidate_cases) return;
+            const q = (document.getElementById('sos-search-input')?.value || '').toLowerCase().trim();
+            const surg = document.getElementById('sos-surgeon-filter')?.value || 'ALL';
+            const tbody = document.getElementById('sos-cases-table-body');
+            if (!tbody) return;
+
+            const filtered = window.sosData.candidate_cases.filter(c => {
+                if (surg !== 'ALL' && c.surgeon !== surg) return false;
+                if (q && !c.case_id.toLowerCase().includes(q) && !c.surgeon.toLowerCase().includes(q) && !c.hospital.toLowerCase().includes(q)) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 25px; color: var(--text-muted);">No cases matching current search/filter criteria.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((c, idx) => `
+                <tr style="border-bottom: 1px solid #f1f5f9; ${idx % 2 === 1 ? 'background: #fbfcfe;' : ''}">
+                    <td style="padding: 8px 10px; font-weight: 700; color: #2563eb;">#${escapeHtml(c.case_id)}</td>
+                    <td style="padding: 8px 10px; font-weight: 600; color: var(--text-dark);">${escapeHtml(c.surgeon)}</td>
+                    <td style="padding: 8px 10px; color: #475569;">${escapeHtml(c.hospital)}</td>
+                    <td style="padding: 8px 10px; text-align: center;"><span style="background: #ecfdf5; color: #065f46; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 11px;">${escapeHtml(c.asa_rating)}</span></td>
+                    <td style="padding: 8px 10px; text-align: center; color: #64748b;">${escapeHtml(c.patient_age)}</td>
+                    <td style="padding: 8px 10px; text-align: right; font-weight: 600;">$${c.spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 8px 10px; text-align: right; font-weight: 800; color: #059669;">+$${c.projected_savings.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td style="padding: 8px 10px; text-align: center;">
+                        <button onclick="alert('Case #${c.case_id} (${escapeHtml(c.surgeon)}) flagged for transfer to University Hospital Outpatient Surgery Center (UH ASC).')" style="border: 1px solid #bbf7d0; background: #f0fdf4; color: #15803d; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;">
+                            ✓ Flag for ASC
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
         async function openSiteOfServiceModal() {
             const modal = document.getElementById('site-of-service-modal');
             if (!modal) return;
@@ -3755,34 +3867,54 @@
                 const res = await fetch(`${API_BASE}/site-of-service/migration?procedure=${encodeURIComponent(proc)}`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
+                window.sosData = data;
 
                 document.getElementById('sos-kpi-total').innerText = `${data.hospital_or_cases.toLocaleString()} Cases`;
                 document.getElementById('sos-kpi-candidates').innerText = `${data.migration_eligible_cases.toLocaleString()} Cases`;
                 document.getElementById('sos-kpi-rate').innerText = `${data.migration_rate_pct.toFixed(1)}%`;
                 document.getElementById('sos-kpi-savings').innerText = `+$${data.projected_facility_savings.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
 
+                const sCount = (data.surgeon_breakdown || []).length;
+                const cCount = (data.candidate_cases || []).length;
+                const elSurgCount = document.getElementById('sos-surgeons-count');
+                const elCaseCount = document.getElementById('sos-cases-count');
+                if (elSurgCount) elSurgCount.innerText = sCount;
+                if (elCaseCount) elCaseCount.innerText = cCount;
+
+                // Populate surgeon filter dropdown
+                const filterSel = document.getElementById('sos-surgeon-filter');
+                if (filterSel && data.surgeon_breakdown) {
+                    filterSel.innerHTML = `<option value="ALL">All Surgeons (${sCount})</option>` + 
+                        data.surgeon_breakdown.map(s => `<option value="${escapeHtml(s.surgeon)}">${escapeHtml(s.surgeon)} (${s.eligible_cases})</option>`).join('');
+                }
+
                 const tbody = document.getElementById('sos-table-body');
                 if (!data.surgeon_breakdown || data.surgeon_breakdown.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 25px; color: var(--text-muted);">No inpatient migration candidates found for this cohort.</td></tr>`;
-                    return;
+                } else {
+                    tbody.innerHTML = data.surgeon_breakdown.map((s, idx) => `
+                        <tr style="border-bottom: 1px solid #f1f5f9; ${idx % 2 === 1 ? 'background: #fbfcfe;' : ''}">
+                            <td style="padding: 10px 10px; font-weight: 700; color: var(--text-dark);">${escapeHtml(s.surgeon)}</td>
+                            <td style="padding: 10px 10px; text-align: center;">
+                                <button onclick="viewSurgeonCandidateCases('${s.surgeon.replace(/'/g, "\\'")}')" title="Click to view all safe cases for this surgeon" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-weight: 800; padding: 3px 8px; border-radius: 4px; cursor: pointer;">
+                                    ${s.eligible_cases} Cases ↗
+                                </button>
+                            </td>
+                            <td style="padding: 10px 10px; text-align: center;">
+                                <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 11px;">ASA ${s.avg_asa}</span>
+                            </td>
+                            <td style="padding: 10px 10px; text-align: right; font-weight: 600;">$${s.current_hospital_spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="padding: 10px 10px; text-align: right; font-weight: 800; color: #059669;">+$${s.projected_asc_savings.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                            <td style="padding: 10px 10px; text-align: center;">
+                                <button onclick="alert('ASC Triage Pathway flagged for Dr. ${s.surgeon.replace(/'/g, "\\'")}: Scheduled for UH ASC migration evaluation.')" style="border: 1px solid #93c5fd; background: #eff6ff; color: #1d4ed8; padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer;">
+                                    🏥 Flag for ASC Triage
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
                 }
-
-                tbody.innerHTML = data.surgeon_breakdown.map((s, idx) => `
-                    <tr style="border-bottom: 1px solid #f1f5f9; ${idx % 2 === 1 ? 'background: #fbfcfe;' : ''}">
-                        <td style="padding: 10px 10px; font-weight: 700; color: var(--text-dark);">${escapeHtml(s.surgeon)}</td>
-                        <td style="padding: 10px 10px; text-align: center; font-weight: 700; color: #2563eb;">${s.eligible_cases}</td>
-                        <td style="padding: 10px 10px; text-align: center;">
-                            <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 11px;">ASA ${s.avg_asa}</span>
-                        </td>
-                        <td style="padding: 10px 10px; text-align: right; font-weight: 600;">$${s.current_hospital_spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                        <td style="padding: 10px 10px; text-align: right; font-weight: 800; color: #059669;">+$${s.projected_asc_savings.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                        <td style="padding: 10px 10px; text-align: center;">
-                            <button onclick="alert('ASC Triage Pathway flagged for Dr. ${s.surgeon.replace(/'/g, "\\'")}: Scheduled for UH ASC migration evaluation.')" style="border: 1px solid #93c5fd; background: #eff6ff; color: #1d4ed8; padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 700; cursor: pointer;">
-                                🏥 Flag for ASC Triage
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
+                switchSosView('surgeons');
+                filterSosCases();
             } catch (err) {
                 console.error("Error loading site of service data:", err);
                 document.getElementById('sos-table-body').innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: #dc2626;">Error: ${err.message}</td></tr>`;
@@ -9897,10 +10029,16 @@
             if (caseIdContainer) { caseIdContainer.style.display = 'block'; caseIdDisplay.innerText = caseRecord.case_id; }
 
             topSection.style.display = 'flex'; tbody.innerHTML = '';
+            const scrollContainer = tbody.closest('.table-scroll');
+            if (scrollContainer) scrollContainer.scrollTop = 0;
+
             (vData.items_list || []).forEach(item => {
                 const tr = document.createElement('tr');
-                let badgeClass = (item.status === 'Non-Standard' || item.status === 'Clinical Variance') ? 'badge-non-standard' : (item.status === 'Omitted' ? 'badge-omitted' : 'badge-standard');
-                tr.innerHTML = `<td><span class="badge ${badgeClass}">${item.status}</span></td><td title="${item.sub_category}">${item.sub_category.substring(0, 30)}...</td><td style="${(item.status === 'Non-Standard' || item.status === 'Clinical Variance') ? 'color: var(--brand-red); font-weight: bold;' : ''}">${item.qty}</td><td style="color: var(--text-muted);">${item.std_avg_qty > 0 ? item.std_avg_qty.toFixed(1) : '-'}</td><td>$${item.total_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`;
+                let badgeClass = item.status === 'Standard' ? 'badge-standard' : 
+                                 (item.status === 'Clinical Variance' ? 'badge-clinical-variance' : 
+                                 (item.status === 'Omitted' ? 'badge-omitted' : 'badge-non-standard'));
+                const subCatDisplay = item.sub_category.length > 34 ? item.sub_category.substring(0, 32) + '...' : item.sub_category;
+                tr.innerHTML = `<td><span class="badge ${badgeClass}">${item.status}</span></td><td title="${escapeHtml(item.sub_category)}">${escapeHtml(subCatDisplay)}</td><td style="${(item.status === 'Non-Standard' || item.status === 'Clinical Variance') ? 'color: var(--brand-red); font-weight: bold;' : ''}">${item.qty}</td><td style="color: var(--text-muted);">${item.std_avg_qty > 0 ? item.std_avg_qty.toFixed(1) : '-'}</td><td>$${item.total_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`;
                 tbody.appendChild(tr);
             });
 
@@ -9909,7 +10047,8 @@
             const matchPct = vData.construct_match_pct !== undefined ? vData.construct_match_pct + '%' : 'N/A';
             document.getElementById('variance-stats').innerHTML = `<div class="stat-row"><span><strong>Total Item Spend:</strong></span> <span>$${totalSpend.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><div class="stat-row" style="color: #166534;"><span>Standard Spend:</span> <span>$${vData.standard_spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><div class="stat-row" style="color: #991b1b;"><span>Non-Standard/Variance Spend:</span> <span>$${vData.non_standard_spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><div class="stat-row" style="margin-top: 5px; color: ${nonStandardPct > 10 ? 'var(--brand-red)' : 'var(--text-muted)'};"><span><strong>% Non-Standard:</strong></span> <span><strong>${nonStandardPct}%</strong></span></div><div class="stat-row" style="color: ${vData.construct_match_pct < 80 ? 'var(--brand-red)' : '#166534'};"><span><strong>Construct Match %:</strong></span> <span><strong>${matchPct}</strong></span></div>`;
 
-            const donutData = [{ values: [vData.standard_spend, vData.non_standard_spend], labels: ['Standard', 'Non-Standard'], type: 'pie', hole: .6, marker: { colors: ['#16a34a', '#e64552'] }, textinfo: 'none', hoverinfo: 'label+percent' }];
+            const donutValues = [vData.standard_spend, vData.non_standard_spend];
+            const donutData = [{ values: donutValues.some(v => v > 0) ? donutValues : [1], labels: ['Standard', 'Non-Standard'], type: 'pie', hole: .6, marker: { colors: ['#16a34a', '#e64552'] }, textinfo: 'none', hoverinfo: 'label+percent' }];
             const donutLayout = { showlegend: false, margin: { t: 10, b: 10, l: 10, r: 10 }, annotations: [{ font: { size: 14, color: '#334155' }, showarrow: false, text: 'Spend' }] };
             Plotly.newPlot('donut-container', donutData, donutLayout, {displayModeBar: false, responsive: true});
         }

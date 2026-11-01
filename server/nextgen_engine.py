@@ -120,6 +120,21 @@ class SiteOfServiceEngine:
                 })
             surgeon_breakdown.sort(key=lambda x: x["eligible_cases"], reverse=True)
 
+        candidate_cases = []
+        if cand_count > 0:
+            for _, r in candidates.iterrows():
+                spend_val = float(r.get(spend_col, 0.0))
+                candidate_cases.append({
+                    "case_id": str(r.get(case_col, '')),
+                    "surgeon": str(r.get('lead_surgeon', 'Unknown')),
+                    "hospital": str(r.get('hospital_name', 'University Hospital OR')),
+                    "asa_rating": str(r.get('asa_rating', 'ASA 2')),
+                    "patient_age": str(r.get('patient_age_bucket', '45-64')),
+                    "spend": round(spend_val, 2),
+                    "projected_savings": round(spend_val * self.facility_overhead_diff_pct, 2)
+                })
+            candidate_cases.sort(key=lambda x: x["spend"], reverse=True)
+
         return {
             "status": "success",
             "procedure_name": procedure_name,
@@ -137,7 +152,8 @@ class SiteOfServiceEngine:
                 "Standard procedural composition (Zero composition or ICU outlier flags)",
                 "Anticipated operative duration <= 120 minutes with same-day recovery"
             ],
-            "surgeon_breakdown": surgeon_breakdown[:8]
+            "surgeon_breakdown": surgeon_breakdown,
+            "candidate_cases": candidate_cases
         }
 
 
