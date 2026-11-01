@@ -2009,8 +2009,8 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
                 "swarm_trace": [t.model_dump() for t in traces],
                 "debate_transcript": None,
                 "embedded_actions": [
-                    {"title": "🏷️ Clawback Audit", "action": "openPriceDiscrepancyModal()"},
-                    {"title": "📊 Price Parity Matrix", "action": "openTabDirect('ParityTab', 'group-value')"}
+                    {"title": "📊 Price Parity Matrix", "action": "openTabDirect('ParityTab', 'group-value'); if(typeof fetchPriceParity === 'function') fetchPriceParity();"},
+                    {"title": "🏷️ Clawback Audit", "action": "openPriceDiscrepancyModal()"}
                 ],
                 "followup_questions": [
                     f"Which vendors have the largest price discrepancies in {procedure_name}?",
@@ -2511,7 +2511,7 @@ To effectively address **"{user_message}"**, the Bee Swarm has established a 4-p
                 "swarm_trace": [t.model_dump() for t in traces],
                 "debate_transcript": None,
                 "embedded_actions": [
-                    {"title": "🏷️ Price Parity Analysis", "action": "openTabDirect('ParityTab', 'group-costs')"},
+                    {"title": "🏷️ Price Parity Analysis", "action": "openTabDirect('ParityTab', 'group-value'); if(typeof fetchPriceParity === 'function') fetchPriceParity();"},
                     {"title": "🏆 CQO Value Quadrant", "action": "openTabDirect('CQOTab', 'group-clinical')"}
                 ],
                 "followup_questions": [

@@ -2411,7 +2411,7 @@ Technical Report:
 
 Generate a 1 to 2 sentence conversational spoken response that speaks directly to the user.
 CRITICAL SPOKEN VOICE RULES:
-1. ON-SCREEN ALIGNMENT: If an On-Screen Navigation Action was executed (e.g. Price Parity, CQO Value Quadrant, Audit Logs, Procedure switch), explicitly acknowledge this action first (e.g. "I've opened the Price Parity Analysis tab for you...", "I've navigated you to the CQO Value Quadrant...") followed immediately by the relevant analytical takeaway from the Technical Report.
+1. ON-SCREEN ALIGNMENT: Only acknowledge navigation if an On-Screen Navigation Action is explicitly provided in the prompt context above (e.g. Price Parity, CQO Value Quadrant, Audit Logs, Procedure switch). If navigation action is provided, explicitly acknowledge it first (e.g. "I've opened the Price Parity Analysis tab for you...", "I've navigated you to the CQO Value Quadrant..."). Do NOT claim to have navigated if no navigation action occurred.
 2. MUST INCLUDE REAL NUMERICAL STATISTICS: You must state the exact numbers, dollar figures (e.g. "$18,420", "$4,250 savings"), percentages (e.g. "16.8%"), case counts (e.g. "242 cases"), or top item names and spend from the Technical Report. Never speak a generic placeholder without real numbers if statistics are in the report.
 3. CONVERSATIONAL CONTINUITY & MEMORY: Use the Prior Conversation Memory to understand the conversation context. If the user refers to 'that', 'it', 'there', 'those items', or asks a follow-up about prior questions, maintain continuous conversational coherence.
 4. Speak in friendly, natural conversational English for audio output (like Alexa or Siri).
@@ -2498,12 +2498,19 @@ def ask_the_bee(payload: AskTheBeePayload):
                 dashboard_context=payload.dashboard_context
             )
             raw_reply = swarm_res["reply"]
+            effective_nav = payload.navigation_action
+            if not effective_nav and swarm_res.get("embedded_actions"):
+                for act in swarm_res["embedded_actions"]:
+                    if isinstance(act, dict) and any(kw in act.get("action", "") for kw in ["openTab", "switch"]):
+                        effective_nav = act.get("title", "")
+                        break
+
             spoken = generate_conversational_speech(
                 payload.query, 
                 raw_reply, 
                 payload.procedure_name, 
                 payload.chat_history,
-                navigation_action=payload.navigation_action
+                navigation_action=effective_nav
             )
             return {
                 "reply": raw_reply, 

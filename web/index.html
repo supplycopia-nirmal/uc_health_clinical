@@ -4441,7 +4441,10 @@
                 [/\bcell\s+feeling\b/gi, "self healing"],
                 [/\bself\s+heeling\b/gi, "self healing"],
                 [/\bheal\s+yourself\b/gi, "self healing"],
-                [/\bprice\s+(?:party|parent|parrot|pairity|parody)\b/gi, "price parity"],
+                [/\b(?:price|prize|prise)\s+(?:party|parent|parrot|pairity|parody|priority)\b/gi, "price parity"],
+                [/\b(?:prize|prise)\s+parity\b/gi, "price parity"],
+                [/\bpricing\s+parity\b/gi, "price parity"],
+                [/\bparity\s+(?:analysis|tab|page|matrix)\b/gi, "price parity analysis"],
                 [/\b(?:seek\s+you\s+oh|c\s+q\s+o|see\s+cue\s+oh)\b/gi, "CQO"],
                 [/\b(?:12|twelve)\s+(?:piece|peace|peice|bead|beads)\b/gi, "12 bees"],
                 [/\b(?:prep|preff)\s+card\b/gi, "preference card"],
@@ -4450,7 +4453,9 @@
                 [/\bclawed\s+back\b/gi, "clawback"],
                 [/\bleak\s+(?:age|edge)\b/gi, "leakage"],
                 [/\bout\s+(?:liar|layer)\b/gi, "outlier"],
-                [/\b(?:gira|jirah)\b/gi, "jira"]
+                [/\b(?:gira|jirah)\b/gi, "jira"],
+                [/\bline\s*craft\b/gi, "line graph"],
+                [/\btable\s+few\b/gi, "table view"]
             ];
 
             for (const [pattern, replacement] of phoneticRules) {
@@ -4669,34 +4674,28 @@
                 }
 
                 // 3C-2. Tabular Schedule vs Line Graph / Chart View Switching
-                if (/\b(table\s+view|tabular\s+view|switch\s+to\s+table|show\s+table|monthly\s+schedule)\b/i.test(q)) {
-                    if (isBudgetTabActive || q.includes("budget") || q.includes("forecast") || q.includes("spend")) {
-                        if (typeof switchBudgetView === 'function') switchBudgetView('table');
-                        if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
-                        actionText += "Switched Budget Forecast to Monthly Schedule Table View. ";
-                        tabNavigated = true;
-                    } else if (document.getElementById('CompareCardsTab')?.style.display === 'block' || q.includes("card") || q.includes("compare")) {
+                if (/\b(table\s+view|tabular\s+view|switch\s+(?:from\s+line\s*graph\s+)?to\s+table|show\s+table|monthly\s+schedule|view\s+table|table\s+format)\b/i.test(q)) {
+                    if (document.getElementById('CompareCardsTab')?.style.display === 'block' || q.includes("compare card")) {
                         if (typeof switchCompareView === 'function') switchCompareView('table');
                         actionText += "Switched Compare Preference Cards to Table View. ";
                         tabNavigated = true;
                     } else {
+                        // Open Budget Forecast tab and switch to table view
+                        openTabDirect('BudgetTab', 'group-value');
                         if (typeof switchBudgetView === 'function') switchBudgetView('table');
-                        actionText += "Switched view to table format. ";
+                        actionText += "Switched Budget Forecast to Monthly Schedule Table View. ";
                         tabNavigated = true;
                     }
-                } else if (/\b(line\s*graph|chart\s+view|graph\s+view|switch\s+to\s+graph|switch\s+to\s+chart|visual\s+view)\b/i.test(q)) {
-                    if (isBudgetTabActive || q.includes("budget") || q.includes("forecast") || q.includes("spend")) {
-                        if (typeof switchBudgetView === 'function') switchBudgetView('chart');
-                        if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
-                        actionText += "Switched Budget Forecast to Line Graph View. ";
-                        tabNavigated = true;
-                    } else if (document.getElementById('CompareCardsTab')?.style.display === 'block' || q.includes("card") || q.includes("compare")) {
+                } else if (/\b(line\s*graph|chart\s+view|graph\s+view|switch\s+(?:from\s+table\s+)?to\s+(?:graph|chart|line)|show\s+(?:graph|chart)|visual\s+view|line\s+view)\b/i.test(q)) {
+                    if (document.getElementById('CompareCardsTab')?.style.display === 'block' || q.includes("compare card")) {
                         if (typeof switchCompareView === 'function') switchCompareView('chart');
                         actionText += "Switched Compare Preference Cards to Chart View. ";
                         tabNavigated = true;
                     } else {
+                        // Open Budget Forecast tab and switch to line graph view
+                        openTabDirect('BudgetTab', 'group-value');
                         if (typeof switchBudgetView === 'function') switchBudgetView('chart');
-                        actionText += "Switched view to line graph format. ";
+                        actionText += "Switched Budget Forecast to Line Graph View. ";
                         tabNavigated = true;
                     }
                 }
@@ -4840,7 +4839,7 @@
 
                 // 4. Tab Navigation (Prioritize Specific Functional Tabs over Generic Words)
                 // 4A. Cross-Facility Price Parity & Clawback Analysis
-                if (!tabNavigated && (q.includes("price parity") || q.includes("parity") || q.includes("cross facility") || q.includes("cross-facility") || q.includes("clawback") || q.includes("discrepanc") || q.includes("price spread") || q.includes("pricing parity"))) {
+                if (!tabNavigated && (q.includes("price parity") || q.includes("parity") || q.includes("cross facility") || q.includes("cross-facility") || q.includes("clawback") || q.includes("discrepanc") || q.includes("price spread") || q.includes("pricing parity") || q.includes("parity analysis") || q.includes("vendor overcharge") || /\b(?:price|pricing)\s+parity\b/i.test(q))) {
                     openTabDirect('ParityTab', 'group-value');
                     if (typeof fetchPriceParity === 'function') {
                         setTimeout(() => fetchPriceParity(), 80);
@@ -5425,6 +5424,68 @@
                     const data = await res.json();
                     const rawReply = data.reply || "I have navigated your dashboard to the requested cohort.";
                     const spokenText = data.spoken_response || generateClientSpokenText(rawReply, navResult, cleanCommand);
+
+                    // CLOSED-LOOP ACTION RECONCILIATION:
+                    // If client-side navigator did not catch the command, but the backend returned an actionable instruction
+                    // or verbal statement, execute it immediately so Queen Bee never speaks an action that did not happen on screen!
+                    let backendActionExecuted = false;
+                    let executedActionText = "";
+                    if (!navResult.navigated) {
+                        if (data.embedded_actions && Array.isArray(data.embedded_actions) && data.embedded_actions.length > 0) {
+                            for (const actObj of data.embedded_actions) {
+                                const actStr = typeof actObj === 'object' ? (actObj.action || "") : String(actObj);
+                                if (actStr && (actStr.includes('openTab') || actStr.includes('switch') || actStr.includes('fetch') || actStr.includes('Modal') || actStr.includes('simulate'))) {
+                                    try {
+                                        const actFn = new Function(actStr);
+                                        actFn();
+                                        backendActionExecuted = true;
+                                        executedActionText = typeof actObj === 'object' && actObj.title ? actObj.title : "Executed dashboard action";
+                                        console.log("Closed-loop executed backend action:", actStr);
+                                        break;
+                                    } catch(e) {
+                                        console.warn("Could not execute embedded action:", actStr, e);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Verbal fallback verification: if spoken response or reply explicitly mentions navigating, guarantee the navigation
+                        if (!backendActionExecuted) {
+                            const fullResponse = ((data.reply || "") + " " + (data.spoken_response || "")).toLowerCase();
+                            if (fullResponse.includes("price parity") || fullResponse.includes("parity tab") || fullResponse.includes("parity matrix")) {
+                                openTabDirect('ParityTab', 'group-value');
+                                if (typeof fetchPriceParity === 'function') fetchPriceParity();
+                                backendActionExecuted = true;
+                                executedActionText = "Navigated to Price Parity Analysis";
+                            } else if (fullResponse.includes("cqo") || fullResponse.includes("value quadrant") || fullResponse.includes("quality quadrant")) {
+                                openTabDirect('CQOTab', 'group-clinical');
+                                if (typeof fetchCQOSummary === 'function') fetchCQOSummary();
+                                backendActionExecuted = true;
+                                executedActionText = "Navigated to CQO Value Quadrant";
+                            } else if (fullResponse.includes("savings leakage") || fullResponse.includes("off-contract leakage")) {
+                                openTabDirect('LeakageTab', 'group-value');
+                                if (typeof fetchSavingsLeakage === 'function') fetchSavingsLeakage();
+                                backendActionExecuted = true;
+                                executedActionText = "Navigated to Savings Leakage";
+                            } else if (fullResponse.includes("budget forecast") || fullResponse.includes("table view") || fullResponse.includes("monthly schedule")) {
+                                openTabDirect('BudgetTab', 'group-value');
+                                if (fullResponse.includes("table view") || fullResponse.includes("monthly schedule")) {
+                                    if (typeof switchBudgetView === 'function') switchBudgetView('table');
+                                }
+                                backendActionExecuted = true;
+                                executedActionText = "Navigated to Budget Forecast";
+                            } else if (fullResponse.includes("swarm audit") || fullResponse.includes("swarm console")) {
+                                openTabDirect('SwarmTab', 'group-swarm');
+                                if (fullResponse.includes("audit") && typeof fetchSwarmAudit === 'function') fetchSwarmAudit();
+                                backendActionExecuted = true;
+                                executedActionText = "Launched Swarm Audit";
+                            }
+                        }
+
+                        if (backendActionExecuted && executedActionText) {
+                            showVoiceNavToast(`🧭 Queen Bee Auto-Aligned: ${executedActionText}`);
+                        }
+                    }
 
                     // Record in Chat Memory
                     if (window.chatMemory) {
@@ -6924,7 +6985,13 @@
                 'CostTab': 'DashboardTab',
                 'VarianceTab': 'DashboardTab',
                 'SpendTab': 'DashboardTab',
-                'AnalyticsTab': 'DashboardTab'
+                'AnalyticsTab': 'DashboardTab',
+                'PriceParityTab': 'ParityTab',
+                'PriceParity': 'ParityTab',
+                'ParityAnalysisTab': 'ParityTab',
+                'BudgetForecastTab': 'BudgetTab',
+                'ForecastTab': 'BudgetTab',
+                'SpendForecastTab': 'BudgetTab'
             };
             if (tabAliasMap[tabName]) tabName = tabAliasMap[tabName];
 
@@ -6990,9 +7057,20 @@
         }
 
         function openTabDirect(tabName, groupId) {
-            if (tabName === 'CostVarianceTab' || tabName === 'SpendTab' || tabName === 'VarianceTab') {
-                tabName = 'DashboardTab';
-            }
+            const aliasMap = {
+                'CostVarianceTab': 'DashboardTab',
+                'CostTab': 'DashboardTab',
+                'VarianceTab': 'DashboardTab',
+                'SpendTab': 'DashboardTab',
+                'AnalyticsTab': 'DashboardTab',
+                'PriceParityTab': 'ParityTab',
+                'PriceParity': 'ParityTab',
+                'ParityAnalysisTab': 'ParityTab',
+                'BudgetForecastTab': 'BudgetTab',
+                'ForecastTab': 'BudgetTab',
+                'SpendForecastTab': 'BudgetTab'
+            };
+            if (aliasMap[tabName]) tabName = aliasMap[tabName];
             openTab(null, tabName);
             if (!groupId) {
                 if (tabName === 'DashboardTab' || tabName === 'CQOTab') groupId = 'group-clinical';
@@ -7865,11 +7943,14 @@
         }
 
         async function fetchPriceParity() {
-            if(!window.currentProcedure) { alert("Please select a procedure."); return; }
-            const btn = document.getElementById('btn-generate-parity');
             const tbody = document.getElementById('parity-tbody');
-            btn.innerText = "⏳ AI is Auditing Prices..."; btn.disabled = true;
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--brand-red); padding: 30px;">Analyzing exact item match pricing and verifying data integrity...</td></tr>';
+            const btn = document.getElementById('btn-generate-parity');
+            if(!window.currentProcedure) {
+                if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">Please select a global procedure from the top dropdown to view cross-facility price parity.</td></tr>';
+                return;
+            }
+            if (btn) { btn.innerText = "⏳ AI is Auditing Prices..."; btn.disabled = true; }
+            if (tbody) { tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--brand-red); padding: 30px;">Analyzing exact item match pricing and verifying data integrity...</td></tr>'; }
 
             try {
                 const res = await fetch(`${API_BASE}/price-parity`, {
@@ -10147,16 +10228,21 @@
                 if (windowBar) windowBar.style.display = 'none';
                 if (tableWrapper) tableWrapper.style.display = 'block';
                 if (btnTable) {
+                    btnTable.classList.add('active');
                     btnTable.style.background = '#fff';
-                    btnTable.style.color = '#0f172a';
-                    btnTable.style.boxShadow = '0 1px 2px rgba(0,0,0,0.06)';
+                    btnTable.style.color = 'var(--brand-red, #dc2626)';
+                    btnTable.style.boxShadow = '0 1px 2px rgba(0,0,0,0.08)';
                     btnTable.style.fontWeight = '700';
                 }
                 if (btnChart) {
+                    btnChart.classList.remove('active');
                     btnChart.style.background = 'transparent';
                     btnChart.style.color = '#64748b';
                     btnChart.style.boxShadow = 'none';
                     btnChart.style.fontWeight = '600';
+                }
+                if (!window.currentBudgetData && typeof fetchBudgetForecast === 'function') {
+                    fetchBudgetForecast();
                 }
             } else {
                 if (chartWrapper) chartWrapper.style.display = 'block';
@@ -10164,12 +10250,22 @@
                 if (tableWrapper) tableWrapper.style.display = 'none';
                 if (btnChart) {
                     btnChart.classList.add('active');
+                    btnChart.style.background = '#fff';
+                    btnChart.style.color = 'var(--brand-red, #dc2626)';
+                    btnChart.style.boxShadow = '0 1px 2px rgba(0,0,0,0.08)';
+                    btnChart.style.fontWeight = '700';
                 }
                 if (btnTable) {
                     btnTable.classList.remove('active');
+                    btnTable.style.background = 'transparent';
+                    btnTable.style.color = '#64748b';
+                    btnTable.style.boxShadow = 'none';
+                    btnTable.style.fontWeight = '600';
                 }
                 if (window.currentBudgetData) {
                     renderBudgetChart(window.currentBudgetData);
+                } else if (typeof fetchBudgetForecast === 'function') {
+                    fetchBudgetForecast();
                 }
             }
         }
