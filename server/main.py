@@ -2367,11 +2367,12 @@ def record_chat_feedback(payload: ChatFeedbackPayload):
         "healed": True if payload.rating == "negative" else False
     }
 
-def generate_conversational_speech(user_query: str, reply_text: str, procedure_name: str = "") -> str:
+def generate_conversational_speech(user_query: str, reply_text: str, procedure_name: str = "", chat_history: Optional[List[Dict[str, str]]] = None) -> str:
     """
     Synthesizes a friendly, natural, Siri/Alexa-style spoken voice response (1-2 sentences).
     Guarantees ZERO raw HTML, markdown syntax, tables, code, or technical parameters.
     CRITICAL: Grounds response with real numerical facts (dollars, percentages, case counts).
+    Uses chat_history context for conversation memory and continuity.
     """
     clean_no_html = re.sub(r"<[^>]+>", " ", reply_text or "")
     clean_no_html = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", clean_no_html)
@@ -2381,13 +2382,26 @@ def generate_conversational_speech(user_query: str, reply_text: str, procedure_n
     clean_no_html = re.sub(r"[#*_~`>]", " ", clean_no_html)
     clean_no_html = re.sub(r"\s+", " ", clean_no_html).strip()
 
+    history_context = ""
+    if chat_history and isinstance(chat_history, list):
+        recent_turns = []
+        for turn in chat_history[-4:]:
+            r = "User" if turn.get("role") == "user" else "Queen Bee"
+            c = re.sub(r"<[^>]+>", " ", turn.get("content", "")).strip()
+            c = re.sub(r"\s+", " ", c)
+            if len(c) > 220:
+                c = c[:220] + "..."
+            recent_turns.append(f"{r}: {c}")
+        if recent_turns:
+            history_context = "PRIOR CONVERSATION MEMORY:\n" + "\n".join(recent_turns) + "\n\n"
+
     # Fast GPT-4o-mini spoken voice synthesis
     api_key = os.environ.get("OPENAI_API_KEY", MultiTenantConfig.OPENAI_API_KEY)
     if api_key and openai_client:
         try:
             prompt = f"""
 You are Queen Bee, a warm, authoritative clinical AI voice assistant for hospital supply chain executives (speaking aloud like Siri or Alexa).
-User Question: "{user_query}"
+{history_context}LATEST User Question: "{user_query}"
 Active Procedure: "{procedure_name}"
 Technical Report:
 \"\"\"{clean_no_html[:2500]}\"\"\"
@@ -2395,10 +2409,11 @@ Technical Report:
 Generate a 1 to 2 sentence conversational spoken response that speaks directly to the user.
 CRITICAL SPOKEN VOICE RULES:
 1. MUST INCLUDE REAL NUMERICAL STATISTICS: You must state the exact numbers, dollar figures (e.g. "$18,420", "$4,250 savings"), percentages (e.g. "16.8%"), case counts (e.g. "242 cases"), or top item names and spend from the Technical Report. Never speak a generic placeholder without real numbers if statistics are in the report.
-2. Speak in friendly, natural conversational English for audio output (like Alexa or Siri).
-3. NEVER speak or mention HTML tags, markdown symbols (hashtags, asterisks, brackets, backticks), code blocks, or raw JSON.
-4. Keep the spoken response between 25 and 55 words: punchy, clear, and packed with concrete facts.
-5. End with a natural follow-up prompt or question to encourage conversation.
+2. CONVERSATIONAL CONTINUITY & MEMORY: Use the Prior Conversation Memory to understand the conversation context. If the user refers to 'that', 'it', 'there', 'those items', or asks a follow-up about prior questions, maintain continuous conversational coherence.
+3. Speak in friendly, natural conversational English for audio output (like Alexa or Siri).
+4. NEVER speak or mention HTML tags, markdown symbols (hashtags, asterisks, brackets, backticks), code blocks, or raw JSON.
+5. Keep the spoken response between 25 and 55 words: punchy, clear, and packed with concrete facts.
+6. End with a natural follow-up prompt or question to encourage conversation.
 """
             res = openai_client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -2478,7 +2493,7 @@ def ask_the_bee(payload: AskTheBeePayload):
                 dashboard_context=payload.dashboard_context
             )
             raw_reply = swarm_res["reply"]
-            spoken = generate_conversational_speech(payload.query, raw_reply, payload.procedure_name)
+            spoken = generate_conversational_speech(payload.query, raw_reply, payload.procedure_name, payload.chat_history)
             return {
                 "reply": raw_reply, 
                 "spoken_response": spoken,
@@ -2533,7 +2548,7 @@ def ask_the_bee(payload: AskTheBeePayload):
         
         response = agent.invoke(prompt)
         raw_output = response["output"]
-        spoken = generate_conversational_speech(payload.query, raw_output, payload.procedure_name)
+        spoken = generate_conversational_speech(payload.query, raw_output, payload.procedure_name, payload.chat_history)
         return {"reply": raw_output, "spoken_response": spoken}
         
     except ImportError as e:
