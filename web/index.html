@@ -4645,7 +4645,19 @@
                 }
             } catch(e) {}
         }
-        setTimeout(syncVoiceSelfHealingRules, 1500);
+        // Programmatic Select2 voice bridge helper
+        function setSelect2VoiceValue(selector, val, triggerChange = true) {
+            const $el = $(selector);
+            if ($el.length) {
+                $el.val(val);
+                if (triggerChange) {
+                    $el.trigger('change');
+                    if ($el.hasClass('select2-hidden-accessible') || $el.data('select2')) {
+                        $el.trigger('change.select2');
+                    }
+                }
+            }
+        }
 
         // Autonomous Voice-to-Dashboard Navigator
         const VoiceNavigator = {
@@ -4697,8 +4709,9 @@
                 let targetProc = matchedProc;
                 if (procSel.length) {
                     procSel.find('option').each(function() {
-                        const optVal = $(this).val();
+                        let optVal = (this && typeof this.value !== 'undefined') ? this.value : (typeof this.val === 'function' ? this.val() : $(this).val());
                         if (!optVal) return;
+                        optVal = String(optVal);
                         if (targetProc && (optVal.toUpperCase() === targetProc.toUpperCase() || optVal.toUpperCase().includes(targetProc.toUpperCase()))) {
                             targetProc = optVal;
                             return false;
@@ -4733,8 +4746,195 @@
                     targetSurgeon = surgMatch[1].trim();
                 }
 
-                // 3. Modal & Specialized Workflow Triggers
-                if (q.includes("jira") || q.includes("ticket") || q.includes("raise issue") || q.includes("report issue") || q.includes("file ticket") || q.includes("report bug") || q.includes("bug report") || q.includes("create ticket") || q.includes("open issue") || q.includes("log issue") || q.includes("issue tracking")) {
+                // 3. Universal Modal Dismissal, Overlays & Drawers
+                // 3A-1. Universal Modal Dismissal ("close modal", "dismiss dialog", etc.)
+                if (/\b(close\s+modal|dismiss\s+modal|close\s+window|dismiss\s+window|close\s+dialog|dismiss\s+dialog|go\s+back|cancel\s+dialog)\b/i.test(q)) {
+                    let closedAny = false;
+                    if (typeof closeJiraModal === 'function') { closeJiraModal(); closedAny = true; }
+                    if (typeof closeAuditLogModal === 'function') { closeAuditLogModal(); closedAny = true; }
+                    if (typeof closeSiteOfServiceModal === 'function') { closeSiteOfServiceModal(); closedAny = true; }
+                    if (typeof closePriceDiscrepancyModal === 'function') { closePriceDiscrepancyModal(); closedAny = true; }
+                    if (typeof closeDisputeLetterModal === 'function') { closeDisputeLetterModal(); closedAny = true; }
+                    if (typeof closeCQOMethodologyModal === 'function') { closeCQOMethodologyModal(); closedAny = true; }
+                    if (typeof closePrefCardLightbox === 'function') { closePrefCardLightbox(); closedAny = true; }
+                    if (typeof closeSelfHealingModal === 'function') { closeSelfHealingModal(); closedAny = true; }
+                    if (typeof closeStandardizeModal === 'function') { closeStandardizeModal(); closedAny = true; }
+                    if (closedAny) {
+                        playActionSuccessChime();
+                        actionText += "Dismissed open dialog modal. ";
+                        tabNavigated = true;
+                    }
+                }
+                // 3A-2. Chat Console Drawer (Open / Close / Maximize / Clear)
+                else if (/\b(open\s+chat(?:\s+console|\s+drawer)?|show\s+chat(?:\s+console|\s+drawer)?|toggle\s+chat(?:\s+console|\s+drawer)?|start\s+chat|open\s+conversation)\b/i.test(q)) {
+                    const chatWin = document.getElementById('chat-window');
+                    const isClosed = !chatWin || chatWin.classList.contains('chat-closed') || chatWin.style.display === 'none';
+                    if (isClosed && typeof toggleChat === 'function') {
+                        toggleChat();
+                    }
+                    highlightVoiceTarget('#chat-window', '💬 Chat Console');
+                    playActionSuccessChime();
+                    actionText += "Opened Chat Console Drawer. ";
+                    tabNavigated = true;
+                } else if (/\b(close\s+chat(?:\s+console|\s+drawer)?|hide\s+chat(?:\s+console|\s+drawer)?|dismiss\s+chat(?:\s+console|\s+drawer)?)\b/i.test(q)) {
+                    const chatWin = document.getElementById('chat-window');
+                    const isOpen = chatWin && !chatWin.classList.contains('chat-closed') && chatWin.style.display !== 'none';
+                    if (isOpen && typeof toggleChat === 'function') {
+                        toggleChat();
+                    }
+                    playActionSuccessChime();
+                    actionText += "Closed Chat Console Drawer. ";
+                    tabNavigated = true;
+                } else if (/\b(maximize\s+chat|expand\s+chat|enlarge\s+chat|wide\s+chat)\b/i.test(q)) {
+                    if (typeof toggleChatExpand === 'function') {
+                        toggleChatExpand();
+                        playActionSuccessChime();
+                        actionText += "Toggled Maximize on Chat Window. ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(clear\s+chat(?:\s+history|\s+memory)?|reset\s+chat|wipe\s+chat)\b/i.test(q)) {
+                    if (typeof clearChatMemory === 'function') {
+                        clearChatMemory();
+                        playActionSuccessChime();
+                        actionText += "Cleared Chat Conversation History. ";
+                        tabNavigated = true;
+                    }
+                }
+                // 3A-3. Swarm Telemetry Drawer
+                else if (/\b(open\s+swarm\s+drawer|show\s+swarm\s+drawer|toggle\s+swarm\s+drawer|view\s+active\s+(?:worker\s+)?bees|swarm\s+telemetry)\b/i.test(q)) {
+                    if (typeof toggleSwarmDrawer === 'function') {
+                        toggleSwarmDrawer();
+                        highlightVoiceTarget('#swarm-drawer', '🐝 Swarm Telemetry');
+                        playActionSuccessChime();
+                        actionText += "Toggled Bee Swarm Telemetry Drawer. ";
+                        tabNavigated = true;
+                    }
+                }
+                // 3A-4. Notification Center Drawer
+                else if (/\b(notification|notifications|alert|alerts|bell|push\s+notif)\b/i.test(q) && !q.includes("set alert") && !q.includes("create alert")) {
+                    if (/\b(mark\s+all(?:\s+as)?\s+read|clear\s+all(?:\s+alerts|\s+notifs)?)\b/i.test(q)) {
+                        if (typeof markAllNotifsRead === 'function') {
+                            markAllNotifsRead();
+                            playActionSuccessChime();
+                            actionText += "Marked all notifications as read. ";
+                            tabNavigated = true;
+                        }
+                    } else if (typeof toggleNotificationDrawer === 'function') {
+                        toggleNotificationDrawer();
+                        highlightVoiceTarget('#notification-drawer', '🔔 Notifications');
+                        playActionSuccessChime();
+                        actionText += "Opened Notification Center. ";
+                        tabNavigated = true;
+                    }
+                }
+                // 3A-5. CQO Benchmark Percentile Target Switcher (10th%, 25th% Std, 50th% Median)
+                else if (/\b(?:set|change|switch|make|drop|increase|target)\s+(?:the\s+)?benchmark\s+(?:target\s+)?(?:to\s+)?10(?:th)?(?:\s*%|\s*percent)?\b/i.test(q) || /\b10th\s+percentile\s+(?:benchmark|target)\b/i.test(q) || /\baggressive\s+benchmark\s+target\b/i.test(q)) {
+                    if (typeof setBenchmarkPercentile === 'function') {
+                        setBenchmarkPercentile(10);
+                        openTabDirect('CQOTab', 'group-clinical');
+                        highlightVoiceTarget('.btn-benchmark[data-pct="10"]', '🎯 10th % Target');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ activeTab: 'CQOTab', lastBenchmarkPercentile: 10 });
+                        actionText += "Set CQO Benchmark Target to 10th Percentile (Aggressive Target). ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(?:set|change|switch|make|target)\s+(?:the\s+)?benchmark\s+(?:target\s+)?(?:to\s+)?25(?:th)?(?:\s*%|\s*percent)?\b/i.test(q) || /\b25th\s+percentile\s+(?:benchmark|target|standard)\b/i.test(q) || /\bstandard\s+benchmark\s+target\b/i.test(q)) {
+                    if (typeof setBenchmarkPercentile === 'function') {
+                        setBenchmarkPercentile(25);
+                        openTabDirect('CQOTab', 'group-clinical');
+                        highlightVoiceTarget('.btn-benchmark[data-pct="25"]', '🎯 25th % Target');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ activeTab: 'CQOTab', lastBenchmarkPercentile: 25 });
+                        actionText += "Set CQO Benchmark Target to 25th Percentile (Standard Target). ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(?:set|change|switch|make|target)\s+(?:the\s+)?benchmark\s+(?:target\s+)?(?:to\s+)?50(?:th)?(?:\s*%|\s*percent)?\b/i.test(q) || /\b50th\s+percentile\s+(?:benchmark|target|median)\b/i.test(q) || /\bmedian\s+benchmark\s+target\b/i.test(q)) {
+                    if (typeof setBenchmarkPercentile === 'function') {
+                        setBenchmarkPercentile(50);
+                        openTabDirect('CQOTab', 'group-clinical');
+                        highlightVoiceTarget('.btn-benchmark[data-pct="50"]', '🎯 50th % Target');
+                        playActionSuccessChime();
+                        VoiceWorkingMemory.updateContext({ activeTab: 'CQOTab', lastBenchmarkPercentile: 50 });
+                        actionText += "Set CQO Benchmark Target to 50th Percentile (Median Target). ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(?:change|switch|adjust|toggle)\s+(?:the\s+)?benchmark\s+(?:percentile|target)\b/i.test(q)) {
+                    openTabDirect('CQOTab', 'group-clinical');
+                    const currentPct = window.activeBenchmark || 25;
+                    const nextPct = currentPct === 25 ? 10 : (currentPct === 10 ? 50 : 25);
+                    if (typeof setBenchmarkPercentile === 'function') setBenchmarkPercentile(nextPct);
+                    highlightVoiceTarget(`.btn-benchmark[data-pct="${nextPct}"]`, `🎯 ${nextPct}th % Target`);
+                    playActionSuccessChime();
+                    VoiceWorkingMemory.updateContext({ activeTab: 'CQOTab', lastBenchmarkPercentile: nextPct });
+                    actionText += `Switched CQO Benchmark Target to ${nextPct}th Percentile. `;
+                    tabNavigated = true;
+                }
+                // 3A-6. Bee Hive Swarm Audit Autonomous Trigger
+                else if (/\b(?:run|launch|start|execute|mobilize)\s+(?:the\s+)?(?:bee\s+hive\s+)?(?:ai\s+)?swarm\s+audit\b/i.test(q) || /\b(?:mobilize|deploy)\s+(?:all\s+)?(?:12\s+)?(?:worker\s+)?bees\b/i.test(q) || /\bhive\s+audit\b/i.test(q)) {
+                    openTabDirect('SwarmTab', 'group-swarm');
+                    setTimeout(() => {
+                        highlightVoiceTarget('#btn-run-swarm-audit', '🐝 Swarm Audit Mobilized');
+                        playActionSuccessChime();
+                        if (typeof fetchSwarmAudit === 'function') fetchSwarmAudit();
+                    }, 150);
+                    actionText += "Mobilized all 12 Bee Hive Swarm Agents for full clinical audit. ";
+                    tabNavigated = true;
+                    VoiceWorkingMemory.updateContext({ activeTab: 'SwarmTab' });
+                }
+                // 3A-7. Price Discrepancies & Invoice Overcharges Modal
+                else if (/\b(show\s+price\s+discrepanc(?:y|ies)|open\s+price\s+discrepanc(?:y|ies)|invoice\s+audit|supplier\s+overcharge\s+modal)\b/i.test(q)) {
+                    if (typeof openPriceDiscrepancyModal === 'function') {
+                        openPriceDiscrepancyModal();
+                        highlightVoiceTarget('#price-discrepancy-modal', '🏷️ Price Discrepancies');
+                        playActionSuccessChime();
+                        actionText += "Opened Cross-Facility Price Discrepancy & Clawback Modal. ";
+                        tabNavigated = true;
+                    }
+                }
+                // 3A-8. Dispute Notice Letter Modal
+                else if (/\bgenerate\s+dispute\s+letter\s+(?:for\s+)?([a-z0-9\s]+)\b/i.test(q)) {
+                    const m = q.match(/\bgenerate\s+dispute\s+letter\s+(?:for\s+)?([a-z0-9\s]+)\b/i);
+                    const supplier = m ? m[1].trim() : "";
+                    if (typeof generateAndShowDisputeNotice === 'function') {
+                        generateAndShowDisputeNotice(supplier);
+                        highlightVoiceTarget('#dispute-letter-modal', '📜 Dispute Notice');
+                        playActionSuccessChime();
+                        actionText += `Generated formal contract dispute notice for ${supplier}. `;
+                        tabNavigated = true;
+                    }
+                } else if (/\b(copy\s+dispute\s+letter|copy\s+letter)\b/i.test(q)) {
+                    if (typeof copyDisputeLetter === 'function') {
+                        copyDisputeLetter();
+                        playActionSuccessChime();
+                        actionText += "Copied dispute letter to clipboard. ";
+                        tabNavigated = true;
+                    }
+                }
+                // 3A-9. Document & Dataset Exports (PDF, PPT, CSV)
+                else if (/\b(?:export|download)\s+(?:as\s+)?(?:executive\s+)?pdf(?:\s+report|\s+summary)?\b/i.test(q)) {
+                    if (typeof exportPDF === 'function') {
+                        exportPDF();
+                        playActionSuccessChime();
+                        actionText += "Generating and exporting executive clinical PDF dossier. ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(?:export|download)\s+(?:as\s+)?(?:powerpoint|ppt|presentation|deck|slides)\b/i.test(q)) {
+                    if (typeof exportPPT === 'function') {
+                        exportPPT();
+                        playActionSuccessChime();
+                        actionText += "Generating and downloading executive PowerPoint presentation deck. ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(?:download|export)\s+(?:as\s+)?csv(?:\s+dataset|\s+file|\s+data)?\b/i.test(q) || /\bexport\s+encounter\s+dataset\b/i.test(q)) {
+                    if (typeof downloadCSV === 'function') {
+                        downloadCSV();
+                        playActionSuccessChime();
+                        actionText += "Initiated CSV encounter dataset download. ";
+                        tabNavigated = true;
+                    }
+                }
+                // 3A-10. Existing Special Workflow Triggers (JIRA, Audit Log, ASC, Self-Healing)
+                else if (q.includes("jira") || q.includes("ticket") || q.includes("raise issue") || q.includes("report issue") || q.includes("file ticket") || q.includes("report bug") || q.includes("bug report") || q.includes("create ticket") || q.includes("open issue") || q.includes("log issue") || q.includes("issue tracking")) {
                     if (typeof openJiraIssueModal === 'function') {
                         openJiraIssueModal();
                         actionText += "Opened Jira Issue Ticketing (Space: UCHCQO). ";
@@ -4744,12 +4944,6 @@
                     if (typeof openAuditLogModal === 'function') {
                         openAuditLogModal();
                         actionText += "Opened Activity Audit Log (SQLite WAL Mode). ";
-                        tabNavigated = true;
-                    }
-                } else if (q.includes("notification") || q.includes("alert") || q.includes("bell") || q.includes("push notif")) {
-                    if (typeof toggleNotificationDrawer === 'function') {
-                        toggleNotificationDrawer();
-                        actionText += "Opened Notification Center. ";
                         tabNavigated = true;
                     }
                 } else if (q.includes("site of service") || q.includes("asc") || q.includes("migration") || q.includes("ambulatory")) {
@@ -5015,6 +5209,258 @@
                         actionText += "Switched spend hierarchy to Nested Treemap view. ";
                         tabNavigated = true;
                     }
+                }
+
+                // 3C-8. Hospital / Facility Filter via Select2
+                if (/\b(?:filter|select|include|isolate)?\s*(?:hospital|facility)?\s*(?:to\s+)?(uc\s+medical\s+center|west\s+chester|daniel\s+drake|fairfield|clermont)\b/i.test(q)) {
+                    const hospMatch = q.match(/\b(uc\s+medical\s+center|west\s+chester|daniel\s+drake|fairfield|clermont)\b/i);
+                    if (hospMatch) {
+                        const hospQuery = hospMatch[1].toLowerCase();
+                        const hospSel = $('#hospital-select');
+                        let matchedHosp = null;
+                        if (hospSel.length) {
+                            hospSel.find('option').each(function() {
+                                const optText = ($(this).text ? $(this).text() : (this.text || this.innerText || "")).toLowerCase();
+                                if (optText.includes(hospQuery)) {
+                                    matchedHosp = (this && typeof this.value !== 'undefined') ? this.value : (typeof this.val === 'function' ? this.val() : $(this).val());
+                                    return false;
+                                }
+                            });
+                            if (matchedHosp) {
+                                setSelect2VoiceValue('#hospital-select', [matchedHosp]);
+                                if (typeof applyFilters === 'function') applyFilters();
+                                highlightVoiceTarget('#hospital-select', `Facility: ${matchedHosp}`);
+                                playActionSuccessChime();
+                                actionText += `Filtered facility to ${matchedHosp}. `;
+                                tabNavigated = true;
+                            }
+                        }
+                    }
+                }
+
+                // 3C-9. Dashboard Surgeon Filter via Select2
+                if (targetSurgeon && (/\b(filter|isolate|select\s+surgeon|cases\s+by)\b/i.test(q) || (!q.includes("preference card") && !q.includes("pref card") && !q.includes("doctor card") && document.getElementById('PrefCardTab')?.style.display !== 'block'))) {
+                    const surgSel = $('#surgeon-select');
+                    if (surgSel.length) {
+                        let matchedSurg = null;
+                        surgSel.find('option').each(function() {
+                            const optText = ($(this).text ? $(this).text() : (this.text || this.innerText || "")).toLowerCase();
+                            if (optText.includes(targetSurgeon.toLowerCase())) {
+                                matchedSurg = (this && typeof this.value !== 'undefined') ? this.value : (typeof this.val === 'function' ? this.val() : $(this).val());
+                                return false;
+                            }
+                        });
+                        if (matchedSurg) {
+                            setSelect2VoiceValue('#surgeon-select', [matchedSurg]);
+                            if (typeof applyFilters === 'function') applyFilters();
+                            highlightVoiceTarget('#surgeon-select', `Dr. ${matchedSurg}`);
+                            playActionSuccessChime();
+                            actionText += `Filtered dashboard cases to Dr. ${matchedSurg}. `;
+                            tabNavigated = true;
+                        }
+                    }
+                }
+
+                // 3C-10. Minimum Item Quantity Filter
+                if (/\b(?:min|minimum)\s+(?:item\s+)?quantity\s+(?:to\s+)?(\d+)\b/i.test(q) || /\bitems?\s+with\s+quantity\s+(?:at\s+least|>=?)\s*(\d+)\b/i.test(q)) {
+                    const qtyMatch = q.match(/(\d+)/);
+                    if (qtyMatch) {
+                        const minQtySel = document.getElementById('min-qty-select');
+                        if (minQtySel) {
+                            minQtySel.value = qtyMatch[1];
+                            if (typeof applyFilters === 'function') applyFilters();
+                            highlightVoiceTarget('#min-qty-select', `Min Qty: ${qtyMatch[1]}`);
+                            playActionSuccessChime();
+                            actionText += `Filtered items to minimum quantity ${qtyMatch[1]}. `;
+                            tabNavigated = true;
+                        }
+                    }
+                }
+
+                // 3C-11. Time Period Cohort Filter
+                if (/\b(?:filter\s+to|show\s+data\s+for|time\s+period)?\s*(last\s+3\s+months|last\s+6\s+months|trailing\s+12\s+months|all\s+historical\s+data)\b/i.test(q)) {
+                    const tpSel = document.getElementById('time-period-select');
+                    if (tpSel) {
+                        if (q.includes("3 months")) tpSel.value = "last_3m";
+                        else if (q.includes("6 months")) tpSel.value = "last_6m";
+                        else if (q.includes("12 months") || q.includes("trailing")) tpSel.value = "trailing_12m";
+                        else if (q.includes("all")) tpSel.value = "all";
+                        if (typeof applyFilters === 'function') applyFilters();
+                        highlightVoiceTarget('#time-period-select', `Time: ${tpSel.options[tpSel.selectedIndex]?.text || tpSel.value}`);
+                        playActionSuccessChime();
+                        actionText += `Set cohort time period to ${tpSel.options[tpSel.selectedIndex]?.text || tpSel.value}. `;
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-12. Budget Display Window Horizons (Q1, Q2, H1, All)
+                if (/\b(?:show|switch\s+to|view)\s+(?:the\s+)?(q1|q2|q3|q4|first\s+half|second\s+half|h1|h2|full\s+year|entire\s+horizon|all\s+months)\s*(?:budget|forecast)?\b/i.test(q)) {
+                    let horizon = 'all';
+                    if (q.includes("q1")) horizon = 'q1';
+                    else if (q.includes("q2")) horizon = 'q2';
+                    else if (q.includes("q3")) horizon = 'q3';
+                    else if (q.includes("q4")) horizon = 'q4';
+                    else if (q.includes("first half") || q.includes("h1")) horizon = 'h1';
+                    else if (q.includes("second half") || q.includes("h2")) horizon = 'h2';
+
+                    openTabDirect('BudgetTab', 'group-value');
+                    if (typeof setBudgetDisplayWindow === 'function') {
+                        setBudgetDisplayWindow(horizon);
+                        highlightVoiceTarget('.budget-window-control', `Horizon: ${horizon.toUpperCase()}`);
+                        playActionSuccessChime();
+                        actionText += `Set budget display horizon to ${horizon.toUpperCase()}. `;
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-13. Budget Forecasting Algorithm Selector
+                if (/\b(?:switch\s+forecast\s+algorithm\s+to|use\s+algorithm|forecast\s+algorithm)\s+(prophet|holt\s*winters?|auto\s*arima|ensemble)\b/i.test(q)) {
+                    const algoSel = document.getElementById('budget-algorithm-select');
+                    if (algoSel) {
+                        if (q.includes("prophet")) algoSel.value = "prophet";
+                        else if (q.includes("holt")) algoSel.value = "holt_winters";
+                        else if (q.includes("arima")) algoSel.value = "auto_arima";
+                        else algoSel.value = "ensemble";
+
+                        openTabDirect('BudgetTab', 'group-value');
+                        if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
+                        highlightVoiceTarget('#budget-algorithm-select', `Algorithm: ${algoSel.value}`);
+                        playActionSuccessChime();
+                        actionText += `Switched forecasting engine to ${algoSel.options[algoSel.selectedIndex]?.text || algoSel.value}. `;
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-14. Reset Budget Simulation Scenario
+                if (/\b(reset\s+budget(?:\s+scenario)?|restore\s+baseline\s+forecast|clear\s+budget\s+levers)\b/i.test(q)) {
+                    if (typeof resetBudgetScenario === 'function') {
+                        resetBudgetScenario();
+                        highlightVoiceTarget('#btn-reset-budget', 'Budget Reset');
+                        playActionSuccessChime();
+                        actionText += "Reset budget simulation levers to baseline. ";
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-15. Toggle Budget Tuning Diagnostics
+                if (/\b(show\s+tuning\s+details|budget\s+diagnostics|toggle\s+tuning\s+diagnostics|tuning\s+parameters)\b/i.test(q)) {
+                    if (typeof toggleBudgetTuningDetails === 'function') {
+                        toggleBudgetTuningDetails();
+                        highlightVoiceTarget('#budget-tuning-accordion', 'Tuning Diagnostics');
+                        playActionSuccessChime();
+                        actionText += "Toggled budget tuning diagnostics. ";
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-16. Compare Preference Cards for Multiple Doctors
+                if (/\bcompare\s+(?:preference\s+cards?|cards?|surgeons?)\s+(?:for\s+)?(?:dr\.?\s+)?([a-z]+)\s+(?:and|vs\.?|with)\s+(?:dr\.?\s+)?([a-z]+)\b/i.test(q)) {
+                    const m = q.match(/\bcompare\s+(?:preference\s+cards?|cards?|surgeons?)\s+(?:for\s+)?(?:dr\.?\s+)?([a-z]+)\s+(?:and|vs\.?|with)\s+(?:dr\.?\s+)?([a-z]+)\b/i);
+                    if (m && m[1] && m[2]) {
+                        openTabDirect('CompareCardsTab', 'group-cards');
+                        const s1 = m[1].trim();
+                        const s2 = m[2].trim();
+                        setTimeout(() => {
+                            const compSel = $('#compare-surgeons-multi');
+                            if (compSel.length) {
+                                const matchedVals = [];
+                                compSel.find('option').each(function() {
+                                    const txt = $(this).text().toLowerCase();
+                                    if (txt.includes(s1) || txt.includes(s2)) {
+                                        matchedVals.push($(this).val());
+                                    }
+                                });
+                                if (matchedVals.length > 0) {
+                                    setSelect2VoiceValue('#compare-surgeons-multi', matchedVals);
+                                    if (typeof fetchCardComparison === 'function') fetchCardComparison();
+                                    highlightVoiceTarget('#compare-surgeons-multi', 'Comparing Doctors');
+                                    playActionSuccessChime();
+                                    actionText += `Loaded comparison between Dr. ${matchedVals.join(' and Dr. ')}. `;
+                                }
+                            }
+                        }, 300);
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-17. Filter Preference Card Supplies
+                if (/\b(?:filter|search)\s+(?:card\s+)?(?:items|supplies)\s+(?:for|to)\s+([a-z0-9\s]+)\b/i.test(q)) {
+                    const m = q.match(/\b(?:filter|search)\s+(?:card\s+)?(?:items|supplies)\s+(?:for|to)\s+([a-z0-9\s]+)\b/i);
+                    if (m && m[1]) {
+                        const pclInput = document.getElementById('pcl-search-input');
+                        if (pclInput) {
+                            pclInput.value = m[1].trim();
+                            if (typeof filterPclItems === 'function') filterPclItems();
+                            highlightVoiceTarget('#pcl-search-input', `Filter: "${m[1].trim()}"`);
+                            playActionSuccessChime();
+                            actionText += `Filtered preference card supplies to "${m[1].trim()}". `;
+                            tabNavigated = true;
+                        }
+                    }
+                }
+
+                // 3C-18. Approve and Lock Standardized Preference Card
+                if (/\b(?:approve\s+and\s+lock|approve|finalize|lock)\s+(?:this\s+)?preference\s+card\b/i.test(q)) {
+                    if (typeof approveAndLockPreferenceCard === 'function') {
+                        approveAndLockPreferenceCard();
+                        playActionSuccessChime();
+                        actionText += "Approved and locked the standardized surgeon preference card. ";
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-19. AI Predictive Modeling - Patient Age, BMI, ASA Class, Run
+                if (/\b(?:set|change)\s+(?:patient\s+)?age\s+(?:to\s+)?(\d+)\b/i.test(q)) {
+                    const m = q.match(/(\d+)/);
+                    if (m) {
+                        const inp = document.getElementById('predict-age');
+                        if (inp) {
+                            inp.value = m[1];
+                            openTabDirect('PredictTab', 'group-swarm');
+                            highlightVoiceTarget('#predict-age', `Age: ${m[1]}`);
+                            playActionSuccessChime();
+                            if (typeof runPrediction === 'function') runPrediction();
+                            actionText += `Set patient age to ${m[1]} and ran predictive risk model. `;
+                            tabNavigated = true;
+                        }
+                    }
+                } else if (/\b(?:set|change)\s+(?:patient\s+)?bmi\s+(?:to\s+)?(\d+(?:\.\d+)?)\b/i.test(q)) {
+                    const m = q.match(/(\d+(?:\.\d+)?)/);
+                    if (m) {
+                        const inp = document.getElementById('predict-bmi');
+                        if (inp) {
+                            inp.value = m[1];
+                            openTabDirect('PredictTab', 'group-swarm');
+                            highlightVoiceTarget('#predict-bmi', `BMI: ${m[1]}`);
+                            playActionSuccessChime();
+                            if (typeof runPrediction === 'function') runPrediction();
+                            actionText += `Set patient BMI to ${m[1]} and ran predictive risk model. `;
+                            tabNavigated = true;
+                        }
+                    }
+                } else if (/\b(?:set|change)\s+(?:patient\s+)?asa\s+(?:score|class|classification)?\s*(?:to\s+)?([1-5])\b/i.test(q)) {
+                    const m = q.match(/([1-5])/);
+                    if (m) {
+                        const sel = $('#predict-asa');
+                        if (sel.length) {
+                            setSelect2VoiceValue('#predict-asa', m[1]);
+                            openTabDirect('PredictTab', 'group-swarm');
+                            highlightVoiceTarget('#predict-asa', `ASA: Class ${m[1]}`);
+                            playActionSuccessChime();
+                            if (typeof runPrediction === 'function') runPrediction();
+                            actionText += `Set ASA physical classification to Class ${m[1]} and recalculated risk. `;
+                            tabNavigated = true;
+                        }
+                    }
+                } else if (/\b(?:run|calculate|forecast)\s+(?:ai\s+)?(?:prediction|risk\s+model|complication\s+risk)\b/i.test(q)) {
+                    openTabDirect('PredictTab', 'group-swarm');
+                    setTimeout(() => {
+                        highlightVoiceTarget('#btn-run-prediction', '🧠 AI Prediction');
+                        playActionSuccessChime();
+                        if (typeof runPrediction === 'function') runPrediction();
+                    }, 150);
+                    actionText += "Running AI Predictive Complication & Cost Model. ";
+                    tabNavigated = true;
                 }
 
                 // 3D. Tactical Tab Analytical Engines (Direct Action Triggers)
@@ -5718,7 +6164,7 @@
                             }
                         }
 
-                        // Verbal fallback verification: if spoken response or reply explicitly mentions navigating, guarantee the navigation
+                        // Verbal fallback verification: if spoken response or reply explicitly mentions navigating or executing, guarantee the action
                         if (!backendActionExecuted) {
                             const fullResponse = ((data.reply || "") + " " + (data.spoken_response || "")).toLowerCase();
                             if (fullResponse.includes("price parity") || fullResponse.includes("parity tab") || fullResponse.includes("parity matrix")) {
@@ -5728,6 +6174,9 @@
                                 executedActionText = "Navigated to Price Parity Analysis";
                             } else if (fullResponse.includes("cqo") || fullResponse.includes("value quadrant") || fullResponse.includes("quality quadrant")) {
                                 openTabDirect('CQOTab', 'group-clinical');
+                                if (fullResponse.includes("10th percentile") || fullResponse.includes("10%")) setBenchmarkPercentile(10);
+                                else if (fullResponse.includes("50th percentile") || fullResponse.includes("50%")) setBenchmarkPercentile(50);
+                                else if (fullResponse.includes("25th percentile") || fullResponse.includes("25%")) setBenchmarkPercentile(25);
                                 if (typeof fetchCQOSummary === 'function') fetchCQOSummary();
                                 backendActionExecuted = true;
                                 executedActionText = "Navigated to CQO Value Quadrant";
@@ -5745,9 +6194,23 @@
                                 executedActionText = "Navigated to Budget Forecast";
                             } else if (fullResponse.includes("swarm audit") || fullResponse.includes("swarm console")) {
                                 openTabDirect('SwarmTab', 'group-swarm');
-                                if (fullResponse.includes("audit") && typeof fetchSwarmAudit === 'function') fetchSwarmAudit();
+                                if (typeof fetchSwarmAudit === 'function') fetchSwarmAudit();
                                 backendActionExecuted = true;
                                 executedActionText = "Launched Swarm Audit";
+                            } else if (fullResponse.includes("chat console") || fullResponse.includes("opened the chat") || fullResponse.includes("conversation drawer")) {
+                                if (typeof toggleChat === 'function') {
+                                    const chatWin = document.getElementById('chat-window');
+                                    if (!chatWin || chatWin.classList.contains('chat-closed') || chatWin.style.display === 'none') {
+                                        toggleChat();
+                                    }
+                                }
+                                backendActionExecuted = true;
+                                executedActionText = "Opened Chat Console";
+                            } else if (fullResponse.includes("predictive model") || fullResponse.includes("risk prediction")) {
+                                openTabDirect('PredictTab', 'group-swarm');
+                                if (typeof runPrediction === 'function') runPrediction();
+                                backendActionExecuted = true;
+                                executedActionText = "Navigated to AI Predictive Modeling";
                             }
                         }
 

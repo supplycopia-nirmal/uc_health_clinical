@@ -2,3 +2,4 @@
 {"timestamp": "2026-11-01T15:46:36.526512", "misheard_query": "no change the volume shift percentage to 8", "intended_query": "instead of the line graph can you show me the table", "action_taken": "Autonomous Voice Driver Self-Healed"}
 {"timestamp": "2026-11-01T17:12:56.065384", "misheard_query": "yes change the volume shift to 9%", "intended_query": "instead of the line graph can you show me", "action_taken": "Autonomous Voice Driver Self-Healed"}
 {"timestamp": "2026-11-01T17:13:09.162269", "misheard_query": "instead of the line graph can you show me", "intended_query": "instead of the line graph I would like to see the table", "action_taken": "Autonomous Voice Driver Self-Healed"}
+{"timestamp": "2026-11-01T17:59:09.643926", "misheard_query": "line graph", "intended_query": "because i want review instead of the line graph view", "action_taken": "Autonomous Voice Driver Self-Healed"}
