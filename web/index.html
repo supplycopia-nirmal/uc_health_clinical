@@ -742,87 +742,85 @@
             80%, 100% { transform: scale(1.7); opacity: 0; }
         }
 
+        /* ==================== NON-BLOCKING FLOATING VOICE HUD CAPSULE ==================== */
         #queen-voice-orb-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 50000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            bottom: 24px;
+            right: 24px;
+            width: auto;
+            height: auto;
+            z-index: 99999;
+            display: block;
+            pointer-events: none;
+            transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s ease;
         }
         #queen-voice-orb-container.orb-hidden {
             opacity: 0;
             visibility: hidden;
+            transform: translateY(20px) scale(0.92);
             pointer-events: none;
         }
         .orb-backdrop {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.78);
-            backdrop-filter: blur(10px);
+            display: none !important; /* Non-blocking: full dashboard is 100% visible and interactive */
         }
         .orb-card {
+            pointer-events: auto;
             position: relative;
             z-index: 2;
-            width: 480px;
-            max-width: 92vw;
-            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-            border: 1px solid rgba(245, 158, 11, 0.35);
-            border-radius: 24px;
-            padding: 28px 24px;
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(245, 158, 11, 0.2);
+            width: 360px;
+            max-width: calc(100vw - 32px);
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1.5px solid rgba(245, 158, 11, 0.5);
+            border-radius: 18px;
+            padding: 14px 16px;
+            box-shadow: 0 16px 45px rgba(0, 0, 0, 0.55), 0 0 30px rgba(245, 158, 11, 0.25);
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            animation: orbCardEntrance 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: orbCapsuleEntrance 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
         }
-        @keyframes orbCardEntrance {
-            0% { transform: scale(0.85); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes orbCapsuleEntrance {
+            0% { transform: scale(0.88) translateY(18px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
         }
         .orb-header {
             width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 8px;
         }
         .orb-title {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 3px;
+            align-items: center;
+            gap: 8px;
         }
         .orb-badge {
             background: rgba(245, 158, 11, 0.15);
             border: 1px solid rgba(245, 158, 11, 0.5);
             color: #fbbf24;
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: 800;
-            padding: 2px 8px;
-            border-radius: 20px;
-            letter-spacing: 0.5px;
+            padding: 2px 7px;
+            border-radius: 12px;
+            letter-spacing: 0.4px;
         }
         .orb-status-text {
-            font-size: 13px;
+            font-size: 11.5px;
             font-weight: 600;
-            color: #e2e8f0;
+            color: #cbd5e1;
         }
         .orb-close-btn {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: #94a3b8;
-            font-size: 20px;
-            width: 32px;
-            height: 32px;
+            font-size: 16px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -832,79 +830,87 @@
             line-height: 1;
         }
         .orb-close-btn:hover {
-            background: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.2);
             color: #ffffff;
         }
 
         .orb-visual-stage {
             position: relative;
-            width: 220px;
-            height: 220px;
+            width: 80px;
+            height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 10px 0 20px 0;
+            margin: 2px 0 8px 0;
             cursor: pointer;
         }
         .orb-ring {
             position: absolute;
             border-radius: 50%;
-            border: 2px solid rgba(245, 158, 11, 0.4);
+            border: 1.5px solid rgba(245, 158, 11, 0.4);
             pointer-events: none;
             opacity: 0;
         }
         .glowing-core-orb {
             position: relative;
-            width: 120px;
-            height: 120px;
+            width: 54px;
+            height: 54px;
             border-radius: 50%;
             background: radial-gradient(circle at 35% 35%, #fbbf24 0%, #d97706 45%, #b45309 75%, #451a03 100%);
-            box-shadow: 0 0 35px rgba(245, 158, 11, 0.55), inset 0 0 20px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.55), inset 0 0 12px rgba(255, 255, 255, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.4s ease;
+            transition: all 0.3s ease;
             animation: orbIdleBreath 3s infinite ease-in-out;
         }
         @keyframes orbIdleBreath {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(245, 158, 11, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.4); }
-            50% { transform: scale(1.04); box-shadow: 0 0 45px rgba(245, 158, 11, 0.7), inset 0 0 25px rgba(255, 255, 255, 0.6); }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(245, 158, 11, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 32px rgba(245, 158, 11, 0.7), inset 0 0 16px rgba(255, 255, 255, 0.6); }
         }
         .orb-mic-icon {
             color: #ffffff;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+            filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
             transition: transform 0.2s ease;
         }
 
+        .orb-card.state-listening {
+            border-color: rgba(56, 189, 248, 0.8);
+            box-shadow: 0 16px 45px rgba(0, 0, 0, 0.55), 0 0 35px rgba(56, 189, 248, 0.35);
+        }
         .orb-card.state-listening .glowing-core-orb {
             background: radial-gradient(circle at 35% 35%, #38bdf8 0%, #0284c7 45%, #d97706 80%, #451a03 100%);
-            box-shadow: 0 0 50px rgba(56, 189, 248, 0.8), 0 0 90px rgba(245, 158, 11, 0.5), inset 0 0 25px rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 35px rgba(56, 189, 248, 0.85), inset 0 0 18px rgba(255, 255, 255, 0.7);
             animation: orbListenPulse 1.2s infinite ease-in-out;
         }
         .orb-card.state-listening .orb-ring.ring-1 {
-            width: 130px; height: 130px;
-            animation: orbRipple 1.8s infinite ease-out;
+            width: 60px; height: 60px;
+            animation: orbRipple 1.6s infinite ease-out;
         }
         .orb-card.state-listening .orb-ring.ring-2 {
-            width: 130px; height: 130px;
-            animation: orbRipple 1.8s infinite ease-out 0.6s;
+            width: 60px; height: 60px;
+            animation: orbRipple 1.6s infinite ease-out 0.5s;
         }
         .orb-card.state-listening .orb-ring.ring-3 {
-            width: 130px; height: 130px;
-            animation: orbRipple 1.8s infinite ease-out 1.2s;
+            width: 60px; height: 60px;
+            animation: orbRipple 1.6s infinite ease-out 1s;
         }
         @keyframes orbRipple {
-            0% { transform: scale(1); opacity: 0.8; border-color: rgba(56, 189, 248, 0.8); }
+            0% { transform: scale(1); opacity: 0.85; border-color: rgba(56, 189, 248, 0.85); }
             100% { transform: scale(2.1); opacity: 0; border-color: rgba(245, 158, 11, 0); }
         }
         @keyframes orbListenPulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.08); }
         }
 
+        .orb-card.state-thinking {
+            border-color: rgba(192, 132, 252, 0.8);
+            box-shadow: 0 16px 45px rgba(0, 0, 0, 0.55), 0 0 35px rgba(192, 132, 252, 0.35);
+        }
         .orb-card.state-thinking .glowing-core-orb {
             background: radial-gradient(circle at 35% 35%, #f472b6 0%, #c084fc 40%, #6366f1 75%, #1e1b4b 100%);
-            box-shadow: 0 0 55px rgba(192, 132, 252, 0.85), inset 0 0 30px rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 40px rgba(192, 132, 252, 0.85), inset 0 0 20px rgba(255, 255, 255, 0.8);
             animation: orbThinkingRotate 2.5s linear infinite, orbListenPulse 1.4s infinite ease-in-out;
         }
         @keyframes orbThinkingRotate {
@@ -912,56 +918,60 @@
             100% { filter: hue-rotate(360deg); }
         }
 
+        .orb-card.state-speaking {
+            border-color: rgba(16, 185, 129, 0.8);
+            box-shadow: 0 16px 45px rgba(0, 0, 0, 0.55), 0 0 35px rgba(16, 185, 129, 0.35);
+        }
         .orb-card.state-speaking .glowing-core-orb {
             background: radial-gradient(circle at 35% 35%, #34d399 0%, #059669 45%, #f59e0b 80%, #78350f 100%);
-            box-shadow: 0 0 55px rgba(16, 185, 129, 0.8), 0 0 95px rgba(245, 158, 11, 0.5), inset 0 0 25px rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.85), inset 0 0 18px rgba(255, 255, 255, 0.7);
             animation: orbSpeakWave 0.75s infinite alternate ease-in-out;
         }
         @keyframes orbSpeakWave {
             0% { transform: scale(1); }
-            100% { transform: scale(1.12); }
+            100% { transform: scale(1.1); }
         }
 
         .orb-transcript-box {
             width: 100%;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 14px;
-            padding: 14px 16px;
-            margin-bottom: 18px;
-            min-height: 72px;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            min-height: 48px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
         }
         .orb-transcript-label {
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: 800;
             color: #94a3b8;
-            letter-spacing: 0.8px;
-            margin-bottom: 4px;
+            letter-spacing: 0.6px;
+            margin-bottom: 2px;
         }
         .orb-transcript-text {
-            font-size: 14.5px;
+            font-size: 12.5px;
             color: #f8fafc;
             font-weight: 600;
-            line-height: 1.4;
+            line-height: 1.35;
             max-width: 100%;
             word-break: break-word;
         }
         .orb-action-hud {
-            margin-top: 10px;
+            margin-top: 6px;
             background: rgba(16, 185, 129, 0.15);
             border: 1px solid #10b981;
             color: #34d399;
             border-radius: 9999px;
-            padding: 4px 12px;
-            font-size: 12px;
+            padding: 2px 10px;
+            font-size: 11px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             animation: pulseHud 1.5s infinite alternate;
         }
         @keyframes pulseHud {
@@ -1068,25 +1078,25 @@
     <datalist id="catalog-subcats"></datalist>
     <datalist id="catalog-brands"></datalist>
 
-    <div class="controls" style="justify-content: space-between; align-items: center; padding: 10px 18px;">
-        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <img src="SC_Logo.png" alt="SupplyCopia Logo" style="height: 35px; object-fit: contain;">
-            <button class="btn-swarm-pill" onclick="toggleSwarmDrawer()">
+    <div class="controls" style="display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; padding: 8px 16px; gap: 12px; overflow-x: auto;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0; white-space: nowrap;">
+            <img src="SC_Logo.png" alt="SupplyCopia Logo" style="height: 32px; object-fit: contain;">
+            <button class="btn-swarm-pill" onclick="toggleSwarmDrawer()" title="12 Autonomous Bee Swarm Agents Active">
                 <span class="pulse-dot"></span>
-                🐝 Bee Hive Swarm Active (12 Bees)
+                🐝 Swarm Active (12 Bees)
             </button>
-            <button class="btn-wake-word-pill active" id="btn-wake-word" onclick="toggleWakeWordListening()" title="Wake-Word Activation: Say 'Hey Queen Bee' anytime!">
+            <button class="btn-wake-word-pill active" id="btn-wake-word" onclick="toggleWakeWordListening()" title="Voice Activation: Say 'Hey Queen Bee' anytime! Click to Mute">
                 <span class="wake-pulse-dot" id="wake-word-dot"></span>
-                <span id="wake-word-label">🎙️ "Hey Queen Bee": <b>Listening</b></span>
+                <span id="wake-word-label">🎙️ Hey Queen Bee</span>
             </button>
         </div>
         
-        <div style="flex: 0 1 500px; display: flex; flex-direction: column; gap: 3px;">
-            <label style="color: var(--brand-red); font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px;">Global Procedure Selection</label>
+        <div style="flex: 1 1 320px; max-width: 440px; min-width: 200px; display: flex; flex-direction: column; gap: 2px;">
+            <label style="color: var(--brand-red); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Global Procedure Selection</label>
             <select id="procedure-select" class="select2"><option value="">-- Choose a Procedure to Begin --</option></select>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-shrink: 0; white-space: nowrap;">
             <!-- Notification Bell & Drawer -->
             <div class="notif-bell-container">
                 <button class="btn-notif-bell" id="notif-bell-btn" onclick="toggleNotificationDrawer()" title="Push Notifications & System Alerts">
@@ -5109,13 +5119,13 @@
 
             if (window.wakeWordListening) {
                 if (dot) dot.classList.remove('inactive');
-                if (label) label.innerHTML = `🎙️ "Hey Queen Bee": <b>Listening</b>`;
+                if (label) label.innerHTML = `🎙️ Hey Queen Bee`;
                 if (pill) pill.classList.add('active');
                 resumeWakeWordRecognizer();
                 showVoiceNavToast(`🎙️ Voice Activation Active: Say "Hey Queen Bee" anytime!`);
             } else {
                 if (dot) dot.classList.add('inactive');
-                if (label) label.innerHTML = `🎙️ "Hey Queen Bee": <b>Muted</b>`;
+                if (label) label.innerHTML = `🎙️ Muted`;
                 if (pill) pill.classList.remove('active');
                 pauseWakeWordRecognizer();
             }
