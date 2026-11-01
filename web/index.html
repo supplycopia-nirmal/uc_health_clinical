@@ -6432,7 +6432,7 @@
                         chatMessages.scrollTop = chatMessages.scrollHeight;
                     }
 
-                    setOrbState('speaking', "Queen Bee Speaking...", navResult.actionText || "");
+                    setOrbState('speaking', "Queen Bee Speaking... (Tap Orb to Interrupt)", navResult.actionText || "");
 
                     // Speak ONLY the conversational, human-friendly spoken text (Alexa/Siri style)
                     speakVoiceResponse(spokenText);
@@ -6442,7 +6442,7 @@
                     const fallbackSpeech = navResult.actionText 
                         ? `${navResult.actionText} I have completed the requested analytical operation on your dashboard.` 
                         : "I have updated your dashboard view with verified clinical statistics.";
-                    setOrbState('speaking', "Queen Bee Speaking...", navResult.actionText || "");
+                    setOrbState('speaking', "Queen Bee Speaking... (Tap Orb to Interrupt)", navResult.actionText || "");
                     speakVoiceResponse(fallbackSpeech);
                 }
             } finally {
@@ -6465,93 +6465,9 @@
         }
 
         function startBargeInListener(currentSpokenText = "") {
-            if (isBargeInActive) return;
-            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRec) return;
-
-            pauseWakeWordRecognizer();
+            // Disabled to eliminate acoustic self-echo where speakers feed back into the microphone.
+            // Users can interrupt anytime via Orb tap, Spacebar, or Escape.
             stopBargeInListener();
-            isBargeInActive = true;
-
-            try {
-                bargeInRecognizer = new SpeechRec();
-            } catch(e) {
-                console.warn("Could not create barge-in recognizer:", e);
-                isBargeInActive = false;
-                return;
-            }
-
-            bargeInRecognizer.lang = 'en-US';
-            bargeInRecognizer.interimResults = true;
-            bargeInRecognizer.continuous = true;
-
-            const normalizedTTS = (currentSpokenText || window.currentSpokenText || "")
-                .toLowerCase()
-                .replace(/[^a-z0-9\s]/g, '')
-                .trim();
-
-            bargeInRecognizer.onresult = (event) => {
-                if (!window.isQueenBeeSpeaking && !isBargeInActive) return;
-
-                let interim = "";
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    interim += " " + event.results[i][0].transcript;
-                }
-                const spoken = interim.toLowerCase().trim();
-                if (!spoken || spoken.length < 2) return;
-
-                // Interruption check: explicit keywords or novel speech not in current TTS output
-                const isExplicitInterruption = /\b(stop|wait|hold on|pause|quiet|shut up|hey|queen bee|change|set|no|switch|cancel|actually|what about|instead|show me|navigate)\b/i.test(spoken);
-
-                let isNovelSpeech = false;
-                if (!isExplicitInterruption && spoken.length > 5) {
-                    const words = spoken.split(/\s+/).filter(w => w.length > 2);
-                    let novelWords = 0;
-                    for (const w of words) {
-                        if (!normalizedTTS.includes(w)) {
-                            novelWords++;
-                        }
-                    }
-                    if (novelWords >= 2) {
-                        isNovelSpeech = true;
-                    }
-                }
-
-                if (isExplicitInterruption || isNovelSpeech) {
-                    console.log("⚡ Full-duplex Barge-In triggered! User spoke:", spoken);
-                    stopBargeInListener();
-                    stopQueenBeeSpeaking(true);
-                    playBargeInChime();
-                    setOrbState('listening', "Listening to your interruption...", "");
-                    startOrbListening(spoken);
-                }
-            };
-
-            bargeInRecognizer.onerror = (e) => {
-                if (e.error !== 'aborted' && isBargeInActive && window.isQueenBeeSpeaking) {
-                    setTimeout(() => {
-                        if (isBargeInActive && window.isQueenBeeSpeaking) {
-                            try { bargeInRecognizer && bargeInRecognizer.start(); } catch(err) {}
-                        }
-                    }, 300);
-                }
-            };
-
-            bargeInRecognizer.onend = () => {
-                if (isBargeInActive && window.isQueenBeeSpeaking) {
-                    setTimeout(() => {
-                        if (isBargeInActive && window.isQueenBeeSpeaking) {
-                            try { bargeInRecognizer && bargeInRecognizer.start(); } catch(err) {}
-                        }
-                    }, 150);
-                }
-            };
-
-            try {
-                bargeInRecognizer.start();
-            } catch(err) {
-                console.warn("Barge-in start error:", err);
-            }
         }
 
         function speakVoiceResponse(spokenText, onComplete) {
@@ -6560,6 +6476,11 @@
             window.autoSpeak = true;
             window.isQueenBeeSpeaking = true;
             window.currentSpokenText = spokenText || "";
+
+            // Strict Acoustic Isolation: Mute all background speech recognition while Queen Bee speaks
+            pauseWakeWordRecognizer();
+            stopOrbListening();
+            stopBargeInListener();
 
             let finishedCalled = false;
             const handleSpeechFinished = () => {
@@ -6575,15 +6496,18 @@
                 }
 
                 // --- NATURAL 2-WAY CONTINUOUS CONVERSATION (TURN-TAKING) ---
-                // Queen Bee has finished speaking. Automatically reopen the microphone so the user can reply!
+                // Queen Bee has finished speaking her full response.
+                // Reopen the microphone after room echo clears (350ms clearance delay)
                 if (isOrbActive) {
                     setOrbState('listening', "Listening... your turn to speak", "");
                     if (window.orbReListenTimer) clearTimeout(window.orbReListenTimer);
                     window.orbReListenTimer = setTimeout(() => {
-                        startOrbListening();
+                        if (!window.isQueenBeeSpeaking && !window.currentAudio) {
+                            startOrbListening();
+                        }
                     }, 350);
 
-                    // Silence timeout: if user doesn't speak within 12s, transition smoothly back to idle
+                    // Silence timeout: if user doesn't speak within 14s, transition smoothly back to idle
                     if (window.silenceIdleTimeout) clearTimeout(window.silenceIdleTimeout);
                     window.silenceIdleTimeout = setTimeout(() => {
                         const c = document.getElementById('orb-card-element');
@@ -6591,7 +6515,14 @@
                             stopOrbListening();
                             setOrbState('idle', "Standing by - Tap Orb or say 'Hey Queen Bee'", "");
                         }
-                    }, 12000);
+                    }, 14000);
+                } else {
+                    // Orb was closed or minimized; re-arm background wake word recognizer after audio finishes
+                    setTimeout(() => {
+                        if (!window.isQueenBeeSpeaking && !window.currentAudio) {
+                            resumeWakeWordRecognizer();
+                        }
+                    }, 400);
                 }
             };
 
@@ -6607,12 +6538,13 @@
             window.currentAudio = audio;
 
             audio.onplay = () => {
-                // Enable full-duplex microphone monitoring for immediate barge-in during speech playback
-                startBargeInListener(spokenText);
+                // Ensure all microphones remain completely paused during speech output
+                pauseWakeWordRecognizer();
+                stopOrbListening();
+                stopBargeInListener();
             };
 
             audio.onended = () => {
-                stopBargeInListener();
                 window.isQueenBeeSpeaking = false;
                 window.currentAudio = null;
                 handleSpeechFinished();
@@ -6620,7 +6552,6 @@
 
             audio.onerror = (e) => {
                 console.warn("OpenAI TTS audio error:", e);
-                stopBargeInListener();
                 window.isQueenBeeSpeaking = false;
                 window.currentAudio = null;
                 handleSpeechFinished();
@@ -6630,7 +6561,6 @@
             if (playPromise !== undefined) {
                 playPromise.catch((err) => {
                     console.log("Audio play prevented or interrupted:", err);
-                    stopBargeInListener();
                     window.isQueenBeeSpeaking = false;
                     handleSpeechFinished();
                 });
