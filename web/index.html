@@ -4368,17 +4368,40 @@
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
                 if (!AudioCtx) return;
                 const ctx = new AudioCtx();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
-                osc.frequency.exponentialRampToValueAtTime(1318.51, ctx.currentTime + 0.18); // E6 note
-                gain.gain.setValueAtTime(0.18, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.45);
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+
+                // Luxurious, gentle ambient acoustic chime (warm dual-tone chord with soft decay)
+                const notes = [
+                    { freq: 523.25, start: 0, dur: 0.55, gain: 0.12 },     // C5 warm fundamental
+                    { freq: 659.25, start: 0.06, dur: 0.50, gain: 0.10 },  // E5 warm third
+                    { freq: 783.99, start: 0.13, dur: 0.65, gain: 0.09 },  // G5 bright fifth
+                    { freq: 1046.50, start: 0.13, dur: 0.70, gain: 0.05 }  // C6 celestial sparkle
+                ];
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1800, ctx.currentTime);
+                filter.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+                notes.forEach(n => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(n.freq, now + n.start);
+
+                    gain.gain.setValueAtTime(0.0001, now + n.start);
+                    gain.gain.exponentialRampToValueAtTime(n.gain, now + n.start + 0.025);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + n.start + n.dur);
+
+                    osc.connect(gain);
+                    gain.connect(filter);
+
+                    osc.start(now + n.start);
+                    osc.stop(now + n.start + n.dur + 0.05);
+                });
             } catch (e) {
                 console.log("AudioContext chime muted:", e);
             }
@@ -4492,7 +4515,7 @@
                     actionText += "Navigated to Global Procedure Cards (BOM). ";
                     navigated = true;
                 } else if (q.includes("cost") || q.includes("variance") || q.includes("scatter") || q.includes("dashboard") || q.includes("spend")) {
-                    openTabDirect('CostVarianceTab');
+                    openTabDirect('DashboardTab');
                     actionText += "Navigated to Cost & Variance Analytics. ";
                     navigated = true;
                 } else if (q.includes("price parity") || q.includes("parity") || q.includes("discrepanc") || q.includes("clawback")) {
@@ -4670,7 +4693,14 @@
         }
 
         function openChatFromOrb() {
-            closeVoiceOrb();
+            // Minimize floating orb capsule without silencing Queen Bee speech!
+            const container = document.getElementById('queen-voice-orb-container');
+            if (container) container.classList.add('orb-hidden');
+            isOrbActive = false;
+            stopOrbListening();
+            resumeWakeWordRecognizer();
+            
+            // Open the chat window so the user can inspect tables/text while listening
             toggleChat();
         }
 
@@ -5037,6 +5067,20 @@
         });
 
         // Background Wake-Word Recognizer ("Hey Queen Bee")
+        async function ensureMicrophoneAccess() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(t => t.stop());
+                    return true;
+                } catch(e) {
+                    console.warn("User has not yet granted microphone permission:", e);
+                    return false;
+                }
+            }
+            return true;
+        }
+
         function initWakeWordRecognition() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRec) {
@@ -5047,6 +5091,10 @@
             }
 
             try {
+                if (wakeWordRecognizer) {
+                    try { wakeWordRecognizer.abort(); } catch(e) {}
+                }
+
                 wakeWordRecognizer = new SpeechRec();
                 wakeWordRecognizer.lang = 'en-US';
                 wakeWordRecognizer.continuous = true;
@@ -5057,7 +5105,8 @@
 
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
                         const transcript = event.results[i][0].transcript.toLowerCase();
-                        const WAKE_REGEX = /\b(hey\s+queen\s+bee|queen\s+bee|hey\s+bee|ask\s+the\s+bee|hello\s+bee)\b/i;
+                        // Robust regex covering natural variations & slight slurs/mispronunciations
+                        const WAKE_REGEX = /\b(hey\s+queen\s*bee|hey\s+quee\s*bee|hey\s+queen|hey\s+quee|queen\s*bee|quee\s*bee|queen\s*be|queen\s*b|que\s*bee|hey\s*bee|ask\s*the\s*bee|hello\s*bee)\b/i;
                         const match = transcript.match(WAKE_REGEX);
                         if (match) {
                             console.log("👑 Wake-Word Activated:", transcript);
@@ -5065,10 +5114,10 @@
                             
                             openVoiceOrb(true);
                             if (remainder && remainder.length > 2) {
-                                // User spoke the wake word and command in one breath: "Hey Queen Bee take me to knee"
+                                // User spoke the wake word and command in one breath
                                 setTimeout(() => {
                                     processVoiceOrbCommand(remainder);
-                                }, 400);
+                                }, 350);
                             }
                             break;
                         }
@@ -5076,8 +5125,15 @@
                 };
 
                 wakeWordRecognizer.onerror = (e) => {
-                    // Suppress harmless 'no-speech' or 'aborted'
-                    if (e.error !== 'no-speech' && e.error !== 'aborted') {
+                    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                        const dot = document.getElementById('wake-word-dot');
+                        const label = document.getElementById('wake-word-label');
+                        const pill = document.getElementById('btn-wake-word');
+                        if (dot) dot.classList.add('inactive');
+                        if (label) label.innerHTML = `🎙️ Click to Allow Mic`;
+                        if (pill) pill.classList.remove('active');
+                        window.wakeWordListening = false;
+                    } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
                         console.log("Wake-word recognizer event:", e.error);
                     }
                 };
@@ -5087,12 +5143,12 @@
                     if (window.wakeWordListening && !isOrbActive) {
                         setTimeout(() => {
                             try { wakeWordRecognizer.start(); } catch(e) {}
-                        }, 500);
+                        }, 400);
                     }
                 };
 
                 if (window.wakeWordListening) {
-                    wakeWordRecognizer.start();
+                    try { wakeWordRecognizer.start(); } catch(e) {}
                 }
             } catch (err) {
                 console.warn("Could not start continuous wake recognizer:", err);
@@ -5111,16 +5167,18 @@
             }
         }
 
-        function toggleWakeWordListening() {
+        async function toggleWakeWordListening() {
             window.wakeWordListening = !window.wakeWordListening;
             const dot = document.getElementById('wake-word-dot');
             const label = document.getElementById('wake-word-label');
             const pill = document.getElementById('btn-wake-word');
 
             if (window.wakeWordListening) {
+                await ensureMicrophoneAccess();
                 if (dot) dot.classList.remove('inactive');
                 if (label) label.innerHTML = `🎙️ Hey Queen Bee`;
                 if (pill) pill.classList.add('active');
+                initWakeWordRecognition();
                 resumeWakeWordRecognizer();
                 showVoiceNavToast(`🎙️ Voice Activation Active: Say "Hey Queen Bee" anytime!`);
             } else {
@@ -5130,6 +5188,20 @@
                 pauseWakeWordRecognizer();
             }
         }
+
+        // Auto-resume microphone recognizer on first user interaction
+        document.addEventListener('click', function startWakeOnFirstInteraction() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (AudioCtx) {
+                    const dummyCtx = new AudioCtx();
+                    if (dummyCtx.state === 'suspended') dummyCtx.resume();
+                }
+            } catch(e) {}
+            if (window.wakeWordListening) {
+                resumeWakeWordRecognizer();
+            }
+        }, { once: true });
 
         // Initialize Wake-Word on DOM ready
         $(document).ready(function() {
@@ -6322,8 +6394,23 @@
             // Deactivate all tab-groups
             document.querySelectorAll('.tab-group').forEach(tg => tg.classList.remove('active'));
 
+            // Tab alias mapping for safety & synonyms
+            const tabAliasMap = {
+                'CostVarianceTab': 'DashboardTab',
+                'CostTab': 'DashboardTab',
+                'VarianceTab': 'DashboardTab',
+                'SpendTab': 'DashboardTab',
+                'AnalyticsTab': 'DashboardTab'
+            };
+            if (tabAliasMap[tabName]) tabName = tabAliasMap[tabName];
+
             window.activeTabName = tabName;
-            const targetEl = document.getElementById(tabName);
+            let targetEl = document.getElementById(tabName);
+            if (!targetEl) {
+                console.warn(`Tab '${tabName}' not found in DOM, falling back to DashboardTab`);
+                tabName = 'DashboardTab';
+                targetEl = document.getElementById('DashboardTab');
+            }
             if (targetEl) targetEl.style.display = "block";
             if (window.logUserActivity) {
                 window.logUserActivity('Tab Navigation', `Navigated to ${tabName}`, 'ui_navigation');
@@ -6371,6 +6458,9 @@
         }
 
         function openTabDirect(tabName, groupId) {
+            if (tabName === 'CostVarianceTab' || tabName === 'SpendTab' || tabName === 'VarianceTab') {
+                tabName = 'DashboardTab';
+            }
             openTab(null, tabName);
             if (!groupId) {
                 if (tabName === 'DashboardTab' || tabName === 'CQOTab') groupId = 'group-clinical';
