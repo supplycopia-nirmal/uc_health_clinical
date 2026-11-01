@@ -659,6 +659,385 @@
             td, th { padding: 6px; font-size: 10pt; border-bottom: 1px solid #ddd;}
             input { border: none !important; background: transparent !important; }
         }
+
+        /* ==================== GLOWING VOICE ORB & WAKE-WORD STYLES ==================== */
+        .btn-wake-word-pill {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 20px;
+            padding: 5px 12px;
+            color: #f8fafc;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 0 10px rgba(245, 158, 11, 0.2);
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        .btn-wake-word-pill:hover {
+            border-color: #f59e0b;
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
+            transform: translateY(-1px);
+        }
+        .btn-wake-word-pill.active {
+            border-color: #10b981;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+        }
+        .wake-pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 6px #10b981;
+            animation: wakeBlink 1.8s infinite ease-in-out;
+        }
+        .wake-pulse-dot.inactive {
+            background: #94a3b8;
+            box-shadow: none;
+            animation: none;
+        }
+        @keyframes wakeBlink {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.5; }
+        }
+
+        .floating-orb-mini-trigger {
+            position: fixed;
+            bottom: 24px;
+            right: 172px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #fbbf24 0%, #d97706 50%, #78350f 100%);
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.4), 0 0 20px rgba(245, 158, 11, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 9998;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            user-select: none;
+        }
+        .floating-orb-mini-trigger:hover {
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: 0 6px 20px rgba(217, 119, 6, 0.6), 0 0 25px rgba(245, 158, 11, 0.5);
+        }
+        .mini-orb-core {
+            font-size: 20px;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+        }
+        .mini-orb-ping {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid rgba(245, 158, 11, 0.6);
+            animation: miniPing 2.4s infinite cubic-bezier(0, 0, 0.2, 1);
+        }
+        @keyframes miniPing {
+            0% { transform: scale(1); opacity: 0.8; }
+            80%, 100% { transform: scale(1.7); opacity: 0; }
+        }
+
+        #queen-voice-orb-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 50000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        #queen-voice-orb-container.orb-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .orb-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(10px);
+        }
+        .orb-card {
+            position: relative;
+            z-index: 2;
+            width: 480px;
+            max-width: 92vw;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            border-radius: 24px;
+            padding: 28px 24px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(245, 158, 11, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            animation: orbCardEntrance 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes orbCardEntrance {
+            0% { transform: scale(0.85); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .orb-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .orb-title {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 3px;
+        }
+        .orb-badge {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            color: #fbbf24;
+            font-size: 10.5px;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+        }
+        .orb-status-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+        .orb-close-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #94a3b8;
+            font-size: 20px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            line-height: 1;
+        }
+        .orb-close-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+        }
+
+        .orb-visual-stage {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0 20px 0;
+            cursor: pointer;
+        }
+        .orb-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(245, 158, 11, 0.4);
+            pointer-events: none;
+            opacity: 0;
+        }
+        .glowing-core-orb {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #fbbf24 0%, #d97706 45%, #b45309 75%, #451a03 100%);
+            box-shadow: 0 0 35px rgba(245, 158, 11, 0.55), inset 0 0 20px rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s ease;
+            animation: orbIdleBreath 3s infinite ease-in-out;
+        }
+        @keyframes orbIdleBreath {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(245, 158, 11, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.4); }
+            50% { transform: scale(1.04); box-shadow: 0 0 45px rgba(245, 158, 11, 0.7), inset 0 0 25px rgba(255, 255, 255, 0.6); }
+        }
+        .orb-mic-icon {
+            color: #ffffff;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+            transition: transform 0.2s ease;
+        }
+
+        .orb-card.state-listening .glowing-core-orb {
+            background: radial-gradient(circle at 35% 35%, #38bdf8 0%, #0284c7 45%, #d97706 80%, #451a03 100%);
+            box-shadow: 0 0 50px rgba(56, 189, 248, 0.8), 0 0 90px rgba(245, 158, 11, 0.5), inset 0 0 25px rgba(255, 255, 255, 0.7);
+            animation: orbListenPulse 1.2s infinite ease-in-out;
+        }
+        .orb-card.state-listening .orb-ring.ring-1 {
+            width: 130px; height: 130px;
+            animation: orbRipple 1.8s infinite ease-out;
+        }
+        .orb-card.state-listening .orb-ring.ring-2 {
+            width: 130px; height: 130px;
+            animation: orbRipple 1.8s infinite ease-out 0.6s;
+        }
+        .orb-card.state-listening .orb-ring.ring-3 {
+            width: 130px; height: 130px;
+            animation: orbRipple 1.8s infinite ease-out 1.2s;
+        }
+        @keyframes orbRipple {
+            0% { transform: scale(1); opacity: 0.8; border-color: rgba(56, 189, 248, 0.8); }
+            100% { transform: scale(2.1); opacity: 0; border-color: rgba(245, 158, 11, 0); }
+        }
+        @keyframes orbListenPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .orb-card.state-thinking .glowing-core-orb {
+            background: radial-gradient(circle at 35% 35%, #f472b6 0%, #c084fc 40%, #6366f1 75%, #1e1b4b 100%);
+            box-shadow: 0 0 55px rgba(192, 132, 252, 0.85), inset 0 0 30px rgba(255, 255, 255, 0.8);
+            animation: orbThinkingRotate 2.5s linear infinite, orbListenPulse 1.4s infinite ease-in-out;
+        }
+        @keyframes orbThinkingRotate {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+
+        .orb-card.state-speaking .glowing-core-orb {
+            background: radial-gradient(circle at 35% 35%, #34d399 0%, #059669 45%, #f59e0b 80%, #78350f 100%);
+            box-shadow: 0 0 55px rgba(16, 185, 129, 0.8), 0 0 95px rgba(245, 158, 11, 0.5), inset 0 0 25px rgba(255, 255, 255, 0.7);
+            animation: orbSpeakWave 0.75s infinite alternate ease-in-out;
+        }
+        @keyframes orbSpeakWave {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.12); }
+        }
+
+        .orb-transcript-box {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            min-height: 72px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .orb-transcript-label {
+            font-size: 9.5px;
+            font-weight: 800;
+            color: #94a3b8;
+            letter-spacing: 0.8px;
+            margin-bottom: 4px;
+        }
+        .orb-transcript-text {
+            font-size: 14.5px;
+            color: #f8fafc;
+            font-weight: 600;
+            line-height: 1.4;
+            max-width: 100%;
+            word-break: break-word;
+        }
+        .orb-action-hud {
+            margin-top: 10px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid #10b981;
+            color: #34d399;
+            border-radius: 9999px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            animation: pulseHud 1.5s infinite alternate;
+        }
+        @keyframes pulseHud {
+            0% { transform: scale(0.98); opacity: 0.85; }
+            100% { transform: scale(1.02); opacity: 1; }
+        }
+
+        #voice-nav-toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border: 1px solid #f59e0b;
+            color: #ffffff;
+            padding: 12px 22px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(245, 158, 11, 0.35);
+            z-index: 60000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #voice-nav-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .orb-footer {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .orb-hints {
+            font-size: 11px;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+        .orb-btn-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+        .orb-action-btn {
+            flex: 1;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+            transition: all 0.2s ease;
+        }
+        .orb-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.45);
+        }
+        .orb-action-btn.secondary {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: #e2e8f0;
+            box-shadow: none;
+        }
+        .orb-action-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -678,11 +1057,15 @@
     <datalist id="catalog-brands"></datalist>
 
     <div class="controls" style="justify-content: space-between; align-items: center; padding: 10px 18px;">
-        <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <img src="SC_Logo.png" alt="SupplyCopia Logo" style="height: 35px; object-fit: contain;">
             <button class="btn-swarm-pill" onclick="toggleSwarmDrawer()">
                 <span class="pulse-dot"></span>
                 🐝 Bee Hive Swarm Active (12 Bees)
+            </button>
+            <button class="btn-wake-word-pill active" id="btn-wake-word" onclick="toggleWakeWordListening()" title="Wake-Word Activation: Say 'Hey Queen Bee' anytime!">
+                <span class="wake-pulse-dot" id="wake-word-dot"></span>
+                <span id="wake-word-label">🎙️ "Hey Queen Bee": <b>Listening</b></span>
             </button>
         </div>
         
@@ -1862,6 +2245,74 @@
                 <ul id="predict-factors-list" style="color: var(--text-muted); font-size: 14px; margin-bottom: 0; padding-left: 20px;"></ul>
             </div>
         </div>
+    </div>
+
+    <!-- Floating Mini Voice Orb beside Ask The Bee -->
+    <div class="floating-orb-mini-trigger" id="mini-orb-trigger" onclick="activateVoiceOrbManual()" title="Queen Bee Voice Driver: Click or say 'Hey Queen Bee'">
+        <div class="mini-orb-core">👑</div>
+        <div class="mini-orb-ping"></div>
+    </div>
+
+    <!-- Glowing Voice Orb Overlay Modal -->
+    <div id="queen-voice-orb-container" class="orb-hidden">
+        <div class="orb-backdrop" onclick="closeVoiceOrb()"></div>
+        <div class="orb-card" id="orb-card-element">
+            <div class="orb-header">
+                <div class="orb-title">
+                    <span class="orb-badge">👑 QUEEN BEE VOICE DRIVER</span>
+                    <span class="orb-status-text" id="orb-status-text">Listening for command...</span>
+                </div>
+                <button class="orb-close-btn" onclick="closeVoiceOrb()" title="Minimize Voice Orb">&times;</button>
+            </div>
+            
+            <div class="orb-visual-stage" onclick="toggleOrbListening()" title="Click to start/pause listening">
+                <div class="orb-ring ring-1"></div>
+                <div class="orb-ring ring-2"></div>
+                <div class="orb-ring ring-3"></div>
+                
+                <div class="glowing-core-orb" id="glowing-orb">
+                    <div class="orb-mic-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                            <line x1="12" y1="19" x2="12" y2="23"></line>
+                            <line x1="8" y1="23" x2="16" y2="23"></line>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Voice Transcription & Navigation HUD -->
+            <div class="orb-transcript-box">
+                <div class="orb-transcript-label">LIVE VOICE TRANSCRIPTION & COMMAND</div>
+                <div class="orb-transcript-text" id="orb-transcript-text">"Say 'Hey Queen Bee' or ask any question..."</div>
+                <div class="orb-action-hud" id="orb-action-hud" style="display: none;">
+                    <span class="hud-icon">🧭</span>
+                    <span class="hud-text" id="orb-hud-text">Navigating to Cost & Variance...</span>
+                </div>
+            </div>
+
+            <!-- Footer Controls & Hints -->
+            <div class="orb-footer">
+                <div class="orb-hints">
+                    <span>💡 Try: <i>"Hey Queen Bee, take me to preference card for Dr. Utz"</i> or <i>"Show cost variance for Total Knee"</i></span>
+                </div>
+                <div class="orb-btn-group">
+                    <button class="orb-action-btn" id="orb-manual-listen-btn" onclick="toggleOrbListening()">
+                        <span>🎙️ Speak Now</span>
+                    </button>
+                    <button class="orb-action-btn secondary" onclick="openChatFromOrb()">
+                        <span>💬 Open Chat Window</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD Floating Toast for Voice Navigation -->
+    <div id="voice-nav-toast">
+        <span style="font-size: 16px;">🧭</span>
+        <span id="voice-nav-toast-text">Navigating to Preference Cards...</span>
     </div>
 
     <button id="chat-toggle-btn" onclick="toggleChat()">
@@ -3880,7 +4331,555 @@
             }
         }
 
-        window.audioQueue = []; // Initialize queue state
+        // ==================== GLOWING VOICE ORB & WAKE-WORD CONTROLLER ====================
+        window.wakeWordListening = true;
+        let wakeWordRecognizer = null;
+        let orbSpeechRecognizer = null;
+        let isOrbActive = false;
+        let speechSilenceTimer = null;
+
+        function playWakeChime() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
+                osc.frequency.exponentialRampToValueAtTime(1318.51, ctx.currentTime + 0.18); // E6 note
+                gain.gain.setValueAtTime(0.18, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.45);
+            } catch (e) {
+                console.log("AudioContext chime muted:", e);
+            }
+        }
+
+        function showVoiceNavToast(text) {
+            const toast = document.getElementById('voice-nav-toast');
+            const toastText = document.getElementById('voice-nav-toast-text');
+            if (!toast || !toastText) return;
+            toastText.innerText = text;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
+        }
+
+        // Autonomous Voice-to-Dashboard Navigator
+        const VoiceNavigator = {
+            detectAndExecute(rawQuery) {
+                if (!rawQuery) return { navigated: false };
+                const q = rawQuery.toLowerCase().trim();
+                let actionText = "";
+                let navigated = false;
+
+                // 1. Detect Procedure Mentions
+                const allProcs = window.allProcedures || [];
+                let matchedProc = null;
+                
+                // Fuzzy procedural aliases
+                const procAliases = {
+                    "total knee": "TOTAL KNEE ARTHROPLASTY",
+                    "knee": "TOTAL KNEE ARTHROPLASTY",
+                    "colonoscopy": "COLONOSCOPY",
+                    "lesion": "EXCISION OF LESION OR MASS",
+                    "mass": "EXCISION OF LESION OR MASS",
+                    "excision": "EXCISION OF LESION OR MASS",
+                    "cholecystectomy": "LAP CHOLECYSTECTOMY",
+                    "gallbladder": "LAP CHOLECYSTECTOMY",
+                    "hernia": "REPAIR OF INGUINAL HERNIA",
+                    "inguinal": "REPAIR OF INGUINAL HERNIA",
+                    "cystoscopy": "CYSTOURETHROSCOPY",
+                    "carpal tunnel": "CARPAL TUNNEL",
+                    "spine": "SPINAL FUSION"
+                };
+
+                for (const [alias, canonical] of Object.entries(procAliases)) {
+                    if (q.includes(alias)) {
+                        matchedProc = allProcs.find(p => p.toUpperCase().includes(canonical.toUpperCase())) || canonical;
+                        break;
+                    }
+                }
+
+                if (!matchedProc) {
+                    for (const p of allProcs) {
+                        if (q.includes(p.toLowerCase())) {
+                            matchedProc = p;
+                            break;
+                        }
+                    }
+                }
+
+                if (matchedProc && matchedProc !== window.currentProcedure) {
+                    window.currentProcedure = matchedProc;
+                    const procSel = $('#procedure-select');
+                    if (procSel.length) {
+                        procSel.val(matchedProc).trigger('change');
+                        actionText += `Filtered to ${matchedProc}. `;
+                        navigated = true;
+                    }
+                }
+
+                // 2. Detect Surgeon Mentions (Dr. Utz, Dr. Sabharwal, etc.)
+                let targetSurgeon = null;
+                const surgMatch = q.match(/\b(?:dr\.?|doctor)\s+([a-z]+(?:\s+[a-z]+)?)/i);
+                if (surgMatch && surgMatch[1]) {
+                    targetSurgeon = surgMatch[1].trim();
+                }
+
+                // 3. Detect Tab Navigation
+                if (q.includes("compare card") || q.includes("compare preference") || q.includes("compare") || q.includes("comparison")) {
+                    openTabDirect('CompareCardsTab');
+                    actionText += "Navigated to Multi-Surgeon Card Comparison. ";
+                    navigated = true;
+                } else if (q.includes("preference card") || q.includes("pref card") || q.includes("surgeon card") || targetSurgeon) {
+                    openTabDirect('PrefCardTab');
+                    actionText += "Navigated to Preference Card Optimizer. ";
+                    navigated = true;
+
+                    if (targetSurgeon) {
+                        setTimeout(() => {
+                            const surgSel = $('#pref-surgeon-select');
+                            if (surgSel.length) {
+                                // Find best match among options
+                                let foundOption = null;
+                                surgSel.find('option').each(function() {
+                                    if ($(this).text().toLowerCase().includes(targetSurgeon.toLowerCase())) {
+                                        foundOption = $(this).val();
+                                        return false;
+                                    }
+                                });
+                                if (foundOption) {
+                                    surgSel.val(foundOption).trigger('change.select2');
+                                    actionText += `Selected Dr. ${foundOption}. `;
+                                    if (typeof fetchPreferenceCard === 'function') fetchPreferenceCard();
+                                }
+                            }
+                        }, 400);
+                    }
+                } else if (q.includes("global procedure") || q.includes("procedure card") || q.includes("standard pack") || q.includes("bom")) {
+                    openTabDirect('ProcCardTab');
+                    actionText += "Navigated to Global Procedure Cards (BOM). ";
+                    navigated = true;
+                } else if (q.includes("cost") || q.includes("variance") || q.includes("scatter") || q.includes("dashboard") || q.includes("spend")) {
+                    openTabDirect('CostVarianceTab');
+                    actionText += "Navigated to Cost & Variance Analytics. ";
+                    navigated = true;
+                } else if (q.includes("price parity") || q.includes("parity") || q.includes("discrepanc") || q.includes("clawback")) {
+                    openTabDirect('ParityTab');
+                    actionText += "Navigated to Cross-Facility Price Parity. ";
+                    navigated = true;
+                } else if (q.includes("leakage") || q.includes("off contract") || q.includes("off-contract")) {
+                    openTabDirect('LeakageTab');
+                    actionText += "Navigated to Savings Leakage Engine. ";
+                    navigated = true;
+                } else if (q.includes("swarm") || q.includes("queen bee") || q.includes("hive audit") || q.includes("executive briefing")) {
+                    openTabDirect('SwarmTab');
+                    actionText += "Navigated to Queen Bee Swarm Briefing. ";
+                    navigated = true;
+                    if (q.includes("run") || q.includes("launch") || q.includes("audit")) {
+                        setTimeout(() => {
+                            if (typeof launchSwarmAudit === 'function') launchSwarmAudit();
+                        }, 300);
+                    }
+                } else if (q.includes("predict") || q.includes("forecast") || q.includes("run rate") || q.includes("budget")) {
+                    openTabDirect('PredictTab');
+                    actionText += "Navigated to Predictive Budget Forecasting. ";
+                    navigated = true;
+                } else if (q.includes("cqo") || q.includes("clinical quality") || q.includes("outcomes")) {
+                    openTabDirect('CQOTab');
+                    actionText += "Navigated to CQO Quality & Finance Portal. ";
+                    navigated = true;
+                }
+
+                // 4. Modal Triggers
+                if (q.includes("notification") || q.includes("alert")) {
+                    toggleNotificationDrawer();
+                    actionText += "Opened Notification Center. ";
+                    navigated = true;
+                } else if (q.includes("site of service") || q.includes("asc") || q.includes("migration")) {
+                    if (typeof openSiteOfServiceModal === 'function') {
+                        openSiteOfServiceModal();
+                        actionText += "Opened ASC Site-of-Service Triage. ";
+                        navigated = true;
+                    }
+                } else if (q.includes("generate insights") || q.includes("run insights") || q.includes("ai insights")) {
+                    if (typeof fetchInsights === 'function') {
+                        fetchInsights();
+                        actionText += "Generated Multi-Modal AI Insights. ";
+                        navigated = true;
+                    }
+                }
+
+                if (navigated && actionText) {
+                    showVoiceNavToast(`🧭 Queen Bee Voice Driver: ${actionText.trim()}`);
+                }
+
+                return { navigated, actionText };
+            }
+        };
+
+        function setOrbState(state, statusText, actionText) {
+            const card = document.getElementById('orb-card-element');
+            const statusEl = document.getElementById('orb-status-text');
+            const hudEl = document.getElementById('orb-action-hud');
+            const hudText = document.getElementById('orb-hud-text');
+
+            if (card) {
+                card.classList.remove('state-listening', 'state-thinking', 'state-speaking');
+                if (state && state !== 'idle') {
+                    card.classList.add(`state-${state}`);
+                }
+            }
+
+            if (statusEl && statusText) {
+                statusEl.innerText = statusText;
+            }
+
+            if (hudEl && hudText) {
+                if (actionText) {
+                    hudText.innerText = actionText;
+                    hudEl.style.display = 'inline-flex';
+                } else {
+                    hudEl.style.display = 'none';
+                }
+            }
+        }
+
+        function openVoiceOrb(autoListen = true) {
+            const container = document.getElementById('queen-voice-orb-container');
+            if (!container) return;
+            container.classList.remove('orb-hidden');
+            isOrbActive = true;
+            playWakeChime();
+
+            // Mute background wake recognizer while active orb modal is open
+            pauseWakeWordRecognizer();
+
+            if (autoListen) {
+                startOrbListening();
+            } else {
+                setOrbState('idle', "Ready - Click Orb or Speak", "");
+            }
+        }
+
+        function closeVoiceOrb() {
+            const container = document.getElementById('queen-voice-orb-container');
+            if (container) container.classList.add('orb-hidden');
+            isOrbActive = false;
+            stopOrbListening();
+            setOrbState('idle', "Standing by...", "");
+            
+            // Resume background wake recognizer
+            resumeWakeWordRecognizer();
+        }
+
+        function activateVoiceOrbManual() {
+            openVoiceOrb(true);
+        }
+
+        function openChatFromOrb() {
+            closeVoiceOrb();
+            toggleChat();
+        }
+
+        function toggleOrbListening() {
+            const card = document.getElementById('orb-card-element');
+            if (card && card.classList.contains('state-listening')) {
+                stopOrbListening();
+                setOrbState('idle', "Paused - Click Orb to Speak", "");
+            } else {
+                startOrbListening();
+            }
+        }
+
+        function startOrbListening() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) {
+                setOrbState('idle', "Speech Recognition not supported in this browser. Use microphone button.", "");
+                return;
+            }
+
+            if (orbSpeechRecognizer) {
+                try { orbSpeechRecognizer.abort(); } catch(e) {}
+            }
+
+            orbSpeechRecognizer = new SpeechRec();
+            orbSpeechRecognizer.lang = 'en-US';
+            orbSpeechRecognizer.interimResults = true;
+            orbSpeechRecognizer.continuous = false;
+
+            setOrbState('listening', "Listening... (Say command or question)", "");
+            const transcriptEl = document.getElementById('orb-transcript-text');
+            if (transcriptEl) transcriptEl.innerText = "Listening...";
+
+            orbSpeechRecognizer.onresult = (event) => {
+                let interim = "";
+                let finalTranscript = "";
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interim += event.results[i][0].transcript;
+                    }
+                }
+                const spoken = finalTranscript || interim;
+                if (transcriptEl && spoken) {
+                    transcriptEl.innerText = `"${spoken}"`;
+                }
+
+                if (finalTranscript && finalTranscript.trim().length > 1) {
+                    processVoiceOrbCommand(finalTranscript.trim());
+                }
+            };
+
+            orbSpeechRecognizer.onerror = (err) => {
+                console.log("Orb speech recognition error:", err);
+                if (isOrbActive) {
+                    setOrbState('idle', "Tap Orb to speak again", "");
+                }
+            };
+
+            orbSpeechRecognizer.onend = () => {
+                const card = document.getElementById('orb-card-element');
+                if (card && card.classList.contains('state-listening')) {
+                    // if ended naturally without processing, switch to idle
+                    setOrbState('idle', "Tap Orb to Speak", "");
+                }
+            };
+
+            try {
+                orbSpeechRecognizer.start();
+            } catch(e) {
+                console.error("Failed to start orb speech recognizer:", e);
+            }
+        }
+
+        function stopOrbListening() {
+            if (orbSpeechRecognizer) {
+                try { orbSpeechRecognizer.stop(); } catch(e) {}
+                orbSpeechRecognizer = null;
+            }
+        }
+
+        async function processVoiceOrbCommand(userSpeech) {
+            stopOrbListening();
+            setOrbState('thinking', "Queen Bee is analyzing & navigating...", "");
+            
+            // Clean wake word prefix if user said e.g. "Hey Queen Bee show me..."
+            let cleanCommand = userSpeech.replace(/\b(hey\s+queen\s+bee|queen\s+bee|hey\s+bee|ask\s+the\s+bee|hello\s+bee)\b/gi, '').trim();
+            if (!cleanCommand) cleanCommand = userSpeech;
+
+            const transcriptEl = document.getElementById('orb-transcript-text');
+            if (transcriptEl) transcriptEl.innerText = `"${cleanCommand}"`;
+
+            // 1. Autonomous Navigation Execution
+            const navResult = VoiceNavigator.detectAndExecute(cleanCommand);
+            if (navResult.navigated) {
+                setOrbState('thinking', "Executing navigation...", navResult.actionText);
+            }
+
+            // 2. Query Ask The Bee for Comprehensive Answer
+            try {
+                window.autoSpeak = true; // Guarantee voice response
+                const res = await fetch(`${API_BASE}/ask-the-bee`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        procedure_name: window.currentProcedure || "",
+                        query: cleanCommand,
+                        preferred_bee: "queen_bee",
+                        chat_history: window.chatMemory || [],
+                        dashboard_context: typeof getDashboardContext === 'function' ? getDashboardContext() : ""
+                    })
+                });
+
+                const data = await res.json();
+                const reply = data.reply || "I have navigated your dashboard to the requested cohort.";
+
+                // Record in Chat Memory and Window
+                if (window.chatMemory) {
+                    window.chatMemory.push({ role: "user", content: cleanCommand });
+                    window.chatMemory.push({ role: "assistant", content: reply });
+                }
+
+                // Append to chat messages UI
+                const chatMessages = document.getElementById('chat-messages');
+                if (chatMessages) {
+                    const uDiv = document.createElement('div');
+                    uDiv.className = 'chat-msg msg-user';
+                    uDiv.innerText = cleanCommand;
+                    chatMessages.appendChild(uDiv);
+
+                    const bDiv = document.createElement('div');
+                    bDiv.className = 'chat-msg msg-bot';
+                    bDiv.innerHTML = `<div style="font-size: 11px; font-weight: 700; color: #ea580c; margin-bottom: 4px;">👑 QUEEN BEE (VOICE)</div>` + (typeof marked !== 'undefined' ? marked.parse(reply) : reply);
+                    chatMessages.appendChild(bDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+
+                setOrbState('speaking', "Queen Bee Responding...", navResult.actionText);
+
+                // Speak voice response
+                speakVoiceResponse(reply);
+
+            } catch (err) {
+                console.error("Voice orb error:", err);
+                setOrbState('idle', "Request completed", navResult.actionText || "");
+            }
+        }
+
+        function speakVoiceResponse(text) {
+            if (!text) return;
+
+            // Trigger backend OpenAI TTS streaming
+            if (typeof playTTS === 'function') {
+                playTTS(text);
+            }
+
+            // Also prepare native SpeechSynthesis as instantaneous fallback
+            if ('speechSynthesis' in window) {
+                // If audio isn't playing after 800ms, use SpeechSynthesis
+                setTimeout(() => {
+                    if (!window.currentAudio || window.currentAudio.paused) {
+                        let plain = text.replace(/[*#`_~>|]/g, ' ')
+                                        .replace(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/g, '$1 dollars')
+                                        .replace(/%/g, ' percent')
+                                        .replace(/\s+/g, ' ')
+                                        .trim();
+                        // Truncate to first 3 sentences for snappy spoken voice
+                        const sentences = plain.match(/[^.!?]+[.!?]+/g) || [plain];
+                        const conciseSpoken = sentences.slice(0, 3).join(' ');
+
+                        window.speechSynthesis.cancel();
+                        const utter = new SpeechSynthesisUtterance(conciseSpoken);
+                        utter.rate = 1.05;
+                        utter.pitch = 1.0;
+                        
+                        // Select natural voice
+                        const voices = window.speechSynthesis.getVoices();
+                        const preferred = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Siri')));
+                        if (preferred) utter.voice = preferred;
+
+                        utter.onend = () => {
+                            if (isOrbActive) {
+                                setTimeout(() => {
+                                    setOrbState('idle', "Tap Orb to speak again", "");
+                                }, 1000);
+                            }
+                        };
+                        window.speechSynthesis.speak(utter);
+                    }
+                }, 800);
+            }
+        }
+
+        // Background Wake-Word Recognizer ("Hey Queen Bee")
+        function initWakeWordRecognition() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) {
+                console.log("SpeechRecognition not available for continuous wake-word.");
+                const pill = document.getElementById('btn-wake-word');
+                if (pill) pill.style.display = 'none';
+                return;
+            }
+
+            try {
+                wakeWordRecognizer = new SpeechRec();
+                wakeWordRecognizer.lang = 'en-US';
+                wakeWordRecognizer.continuous = true;
+                wakeWordRecognizer.interimResults = true;
+
+                wakeWordRecognizer.onresult = (event) => {
+                    if (isOrbActive) return; // Ignore if user is already interacting with orb modal
+
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        const transcript = event.results[i][0].transcript.toLowerCase();
+                        const WAKE_REGEX = /\b(hey\s+queen\s+bee|queen\s+bee|hey\s+bee|ask\s+the\s+bee|hello\s+bee)\b/i;
+                        const match = transcript.match(WAKE_REGEX);
+                        if (match) {
+                            console.log("👑 Wake-Word Activated:", transcript);
+                            const remainder = transcript.substring(transcript.indexOf(match[0]) + match[0].length).trim();
+                            
+                            openVoiceOrb(true);
+                            if (remainder && remainder.length > 2) {
+                                // User spoke the wake word and command in one breath: "Hey Queen Bee take me to knee"
+                                setTimeout(() => {
+                                    processVoiceOrbCommand(remainder);
+                                }, 400);
+                            }
+                            break;
+                        }
+                    }
+                };
+
+                wakeWordRecognizer.onerror = (e) => {
+                    // Suppress harmless 'no-speech' or 'aborted'
+                    if (e.error !== 'no-speech' && e.error !== 'aborted') {
+                        console.log("Wake-word recognizer event:", e.error);
+                    }
+                };
+
+                wakeWordRecognizer.onend = () => {
+                    // Auto-restart wake-word listener if enabled
+                    if (window.wakeWordListening && !isOrbActive) {
+                        setTimeout(() => {
+                            try { wakeWordRecognizer.start(); } catch(e) {}
+                        }, 500);
+                    }
+                };
+
+                if (window.wakeWordListening) {
+                    wakeWordRecognizer.start();
+                }
+            } catch (err) {
+                console.warn("Could not start continuous wake recognizer:", err);
+            }
+        }
+
+        function pauseWakeWordRecognizer() {
+            if (wakeWordRecognizer) {
+                try { wakeWordRecognizer.abort(); } catch(e) {}
+            }
+        }
+
+        function resumeWakeWordRecognizer() {
+            if (window.wakeWordListening && wakeWordRecognizer && !isOrbActive) {
+                try { wakeWordRecognizer.start(); } catch(e) {}
+            }
+        }
+
+        function toggleWakeWordListening() {
+            window.wakeWordListening = !window.wakeWordListening;
+            const dot = document.getElementById('wake-word-dot');
+            const label = document.getElementById('wake-word-label');
+            const pill = document.getElementById('btn-wake-word');
+
+            if (window.wakeWordListening) {
+                if (dot) dot.classList.remove('inactive');
+                if (label) label.innerHTML = `🎙️ "Hey Queen Bee": <b>Listening</b>`;
+                if (pill) pill.classList.add('active');
+                resumeWakeWordRecognizer();
+                showVoiceNavToast(`🎙️ Voice Activation Active: Say "Hey Queen Bee" anytime!`);
+            } else {
+                if (dot) dot.classList.add('inactive');
+                if (label) label.innerHTML = `🎙️ "Hey Queen Bee": <b>Muted</b>`;
+                if (pill) pill.classList.remove('active');
+                pauseWakeWordRecognizer();
+            }
+        }
+
+        // Initialize Wake-Word on DOM ready
+        $(document).ready(function() {
+            setTimeout(() => {
+                initWakeWordRecognition();
+            }, 1200);
+        });
 
         window.audioQueue = []; // Initialize queue state
         window.nextAudio = null; // Buffer for preloading
