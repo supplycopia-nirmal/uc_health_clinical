@@ -4646,6 +4646,154 @@
                     }
                 }
 
+                // 3C. Universal Tab Filter & View Toggles across the Entire Application
+                // 3C-1. Budget Exclude Last Month / Billing Runout Lag Buffer
+                if (/\b(exclude\s+(?:the\s+)?(?:most\s+recent|last)\s+month|drop\s+(?:the\s+)?(?:most\s+recent|last)\s+month|omit\s+(?:the\s+)?(?:most\s+recent|last)\s+month|enable\s+(?:the\s+)?(?:billing|lag)\s+buffer|lag\s+buffer)\b/i.test(q)) {
+                    const chk = document.getElementById('budget-exclude-last-month');
+                    if (chk) {
+                        chk.checked = true;
+                        if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                        if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
+                        actionText += "Excluded most recent month (billing lag buffer enabled) and recalculated budget projections. ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(include\s+(?:the\s+)?(?:most\s+recent|last)\s+month|keep\s+(?:the\s+)?(?:most\s+recent|last)\s+month|disable\s+(?:the\s+)?(?:billing|lag)\s+buffer)\b/i.test(q)) {
+                    const chk = document.getElementById('budget-exclude-last-month');
+                    if (chk) {
+                        chk.checked = false;
+                        if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                        if (typeof fetchBudgetForecast === 'function') fetchBudgetForecast();
+                        actionText += "Included most recent month in budget forecast. ";
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-2. Tabular Schedule vs Line Graph / Chart View Switching
+                if (/\b(table\s+view|tabular\s+view|switch\s+to\s+table|show\s+table|monthly\s+schedule)\b/i.test(q)) {
+                    if (isBudgetTabActive || q.includes("budget") || q.includes("forecast") || q.includes("spend")) {
+                        if (typeof switchBudgetView === 'function') switchBudgetView('table');
+                        if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                        actionText += "Switched Budget Forecast to Monthly Schedule Table View. ";
+                        tabNavigated = true;
+                    } else if (document.getElementById('CompareCardsTab')?.style.display === 'block' || q.includes("card") || q.includes("compare")) {
+                        if (typeof switchCompareView === 'function') switchCompareView('table');
+                        actionText += "Switched Compare Preference Cards to Table View. ";
+                        tabNavigated = true;
+                    } else {
+                        if (typeof switchBudgetView === 'function') switchBudgetView('table');
+                        actionText += "Switched view to table format. ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(line\s*graph|chart\s+view|graph\s+view|switch\s+to\s+graph|switch\s+to\s+chart|visual\s+view)\b/i.test(q)) {
+                    if (isBudgetTabActive || q.includes("budget") || q.includes("forecast") || q.includes("spend")) {
+                        if (typeof switchBudgetView === 'function') switchBudgetView('chart');
+                        if (!isBudgetTabActive) openTabDirect('BudgetTab', 'group-value');
+                        actionText += "Switched Budget Forecast to Line Graph View. ";
+                        tabNavigated = true;
+                    } else if (document.getElementById('CompareCardsTab')?.style.display === 'block' || q.includes("card") || q.includes("compare")) {
+                        if (typeof switchCompareView === 'function') switchCompareView('chart');
+                        actionText += "Switched Compare Preference Cards to Chart View. ";
+                        tabNavigated = true;
+                    } else {
+                        if (typeof switchBudgetView === 'function') switchBudgetView('chart');
+                        actionText += "Switched view to line graph format. ";
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-3. Outlier Classification Toggles
+                if (/\b(show\s+only\s+outliers|outliers\s+only|filter\s+(?:to\s+)?outliers|isolate\s+outliers)\b/i.test(q)) {
+                    const sel = $('#outlier-select');
+                    if (sel.length) {
+                        sel.val(['Yes']).trigger('change.select2');
+                        if (typeof applyFilters === 'function') applyFilters();
+                        actionText += "Filtered cohort to Outlier Cases only. ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(exclude\s+outliers|normal\s+cases\s+only|no\s+outliers|non-outliers|hide\s+outliers)\b/i.test(q)) {
+                    const sel = $('#outlier-select');
+                    if (sel.length) {
+                        sel.val(['No']).trigger('change.select2');
+                        if (typeof applyFilters === 'function') applyFilters();
+                        actionText += "Filtered cohort to Normal Cases only (excluding outliers). ";
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-4. Cost Per Case Band Toggles
+                if (/\b(under\s+(?:\$)?500|less\s+than\s+(?:\$)?500|tier\s*1)\b/i.test(q)) {
+                    const band = document.getElementById('cost-range-select');
+                    if (band) {
+                        band.value = 'under_500';
+                        if (typeof applyFilters === 'function') applyFilters();
+                        actionText += "Filtered Cost Per Case Band to Tier 1 (Under $500). ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(500\s*(?:to|-)\s*(?:\$)?1000|tier\s*2)\b/i.test(q)) {
+                    const band = document.getElementById('cost-range-select');
+                    if (band) {
+                        band.value = '500_1000';
+                        if (typeof applyFilters === 'function') applyFilters();
+                        actionText += "Filtered Cost Per Case Band to Tier 2 ($500 - $1,000). ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(1000\s*(?:to|-)\s*(?:\$)?2000|tier\s*3)\b/i.test(q)) {
+                    const band = document.getElementById('cost-range-select');
+                    if (band) {
+                        band.value = '1000_2000';
+                        if (typeof applyFilters === 'function') applyFilters();
+                        actionText += "Filtered Cost Per Case Band to Tier 3 ($1,000 - $2,000). ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(over\s+(?:\$)?2000|greater\s+than\s+(?:\$)?2000|tier\s*4|high\s+cost\s+band)\b/i.test(q)) {
+                    const band = document.getElementById('cost-range-select');
+                    if (band) {
+                        band.value = 'over_2000';
+                        if (typeof applyFilters === 'function') applyFilters();
+                        actionText += "Filtered Cost Per Case Band to Tier 4 (Over $2,000 High-Cost Band). ";
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-5. Reset / Clear All Filters
+                if (/\b(reset\s+filters|clear\s+filters|reset\s+all|restore\s+filters|show\s+all\s+cases)\b/i.test(q)) {
+                    if (typeof resetDashboardFilters === 'function') {
+                        resetDashboardFilters();
+                        actionText += "Reset all dashboard cohort filters to baseline. ";
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-6. Acuity / Risk-Adjusted Scatter Toggle
+                if (/\b(risk\s+adjusted\s+scatter|risk-adjusted\s+cpc|stratification|acuity\s+adjusted)\b/i.test(q)) {
+                    if (typeof switchCPCScatterMode === 'function') {
+                        switchCPCScatterMode('risk_adj');
+                        actionText += "Switched CPC Scatter to Risk-Adjusted Acuity Mode. ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(raw\s+cpc|unadjusted\s+cpc|raw\s+scatter)\b/i.test(q)) {
+                    if (typeof switchCPCScatterMode === 'function') {
+                        switchCPCScatterMode('raw');
+                        actionText += "Switched CPC Scatter to Raw Unadjusted Mode. ";
+                        tabNavigated = true;
+                    }
+                }
+
+                // 3C-7. Spend Hierarchy Visuals (Treemap vs Radial Sunburst)
+                if (/\b(sunburst|radial\s+sunburst)\b/i.test(q)) {
+                    if (typeof switchSpendHierarchyView === 'function') {
+                        switchSpendHierarchyView('sunburst');
+                        actionText += "Switched spend hierarchy to Radial Sunburst view. ";
+                        tabNavigated = true;
+                    }
+                } else if (/\b(treemap|nested\s+treemap)\b/i.test(q)) {
+                    if (typeof switchSpendHierarchyView === 'function') {
+                        switchSpendHierarchyView('treemap');
+                        actionText += "Switched spend hierarchy to Nested Treemap view. ";
+                        tabNavigated = true;
+                    }
+                }
+
                 // 4. Tab Navigation (Prioritize Specific Functional Tabs over Generic Words)
                 // 4A. Cross-Facility Price Parity & Clawback Analysis
                 if (!tabNavigated && (q.includes("price parity") || q.includes("parity") || q.includes("cross facility") || q.includes("cross-facility") || q.includes("clawback") || q.includes("discrepanc") || q.includes("price spread") || q.includes("pricing parity"))) {
@@ -4657,8 +4805,11 @@
                     tabNavigated = true;
                 }
                 // 4B. CQO & Value Quadrant
-                else if (!tabNavigated && (q.includes("cqo") || q.includes("value quadrant") || q.includes("quality quadrant") || q.includes("clinical quality") || q.includes("outcomes") || q.includes("infection") || q.includes("champion") || q.includes("pareto"))) {
+                else if (!tabNavigated && (q.includes("quadrant") || q.includes("quadrant analysis") || q.includes("cqo") || q.includes("value quadrant") || q.includes("quality quadrant") || q.includes("clinical quality") || q.includes("outcomes") || q.includes("infection") || q.includes("champion") || q.includes("clinical champion") || q.includes("pareto"))) {
                     openTabDirect('CQOTab', 'group-clinical');
+                    if (typeof fetchCQOSummary === 'function') {
+                        setTimeout(() => fetchCQOSummary(), 80);
+                    }
                     actionText += "Navigated to CQO Quality & Value Quadrant. ";
                     tabNavigated = true;
                 }
@@ -4795,6 +4946,13 @@
                     }
                 }
             }
+
+            // If returning to idle state, re-arm the background wake-word listener so "Hey Queen Bee" immediately wakes up
+            if (state === 'idle') {
+                setTimeout(() => {
+                    resumeWakeWordRecognizer();
+                }, 150);
+            }
         }
 
         // Master Speech Cancellation / Interruption Function
@@ -4836,7 +4994,7 @@
             }
 
             if (!silent) {
-                setOrbState('idle', "Paused. Tap Orb to Speak", "");
+                setOrbState('idle', "Paused. Tap Orb or say 'Hey Queen Bee'", "");
             }
         }
 
@@ -4847,13 +5005,10 @@
             isOrbActive = true;
             playWakeChime();
 
-            // Mute background wake recognizer while active orb modal is open
-            pauseWakeWordRecognizer();
-
             if (autoListen) {
                 startOrbListening();
             } else {
-                setOrbState('idle', "Ready - Click Orb or Speak", "");
+                setOrbState('idle', "Ready - Click Orb or say 'Hey Queen Bee'", "");
             }
         }
 
@@ -4909,6 +5064,9 @@
         let isProcessingOrbCommand = false;
 
         function startOrbListening() {
+            // Pause background wake word recognizer to guarantee exclusive mic access
+            pauseWakeWordRecognizer();
+
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRec) {
                 setOrbState('idle', "Speech Recognition not supported in this browser. Use microphone button.", "");
@@ -5048,6 +5206,9 @@
             }
             accumulatedOrbSpeech = "";
             currentTurnTranscript = "";
+            setTimeout(() => {
+                resumeWakeWordRecognizer();
+            }, 200);
         }
 
         // Conversational Siri/Alexa-style spoken text sanitizer (Grounded in real statistics)
@@ -5127,8 +5288,17 @@
                 stopOrbListening();
                 
                 // Clean wake word prefix if user said e.g. "Hey Queen Bee show me..."
-                let cleanCommand = userSpeech.replace(/\b(hey\s+queen\s+bee|queen\s+bee|hey\s+bee|ask\s+the\s+bee|hello\s+bee)\b/gi, '').trim();
-                if (!cleanCommand) cleanCommand = userSpeech;
+                let cleanCommand = userSpeech.replace(/\b(hey\s+queen\s*bee|hey\s+quee\s*bee|hey\s+queen|hey\s+quee|queen\s*bee|quee\s*bee|queen\s*be|queen\s*b|que\s*bee|hey\s*bee|ask\s*the\s*bee|hello\s*bee)\b/gi, '').trim();
+                if (!cleanCommand) {
+                    playWakeChime();
+                    setOrbState('listening', "Listening... I'm listening, please go ahead", "");
+                    const transcriptEl = document.getElementById('orb-transcript-text');
+                    if (transcriptEl) transcriptEl.innerText = "I'm listening, please go ahead...";
+                    setTimeout(() => {
+                        if (isOrbActive && !window.currentAudio) startOrbListening();
+                    }, 350);
+                    return;
+                }
                 cleanCommand = normalizeSpokenClinicalQuery(cleanCommand);
 
                 const transcriptEl = document.getElementById('orb-transcript-text');
@@ -5375,7 +5545,9 @@
                 wakeWordRecognizer.interimResults = true;
 
                 wakeWordRecognizer.onresult = (event) => {
-                    if (isOrbActive) return; // Ignore if user is already interacting with orb modal
+                    const card = document.getElementById('orb-card-element');
+                    const isOrbBusy = isOrbActive && card && (card.classList.contains('state-listening') || card.classList.contains('state-thinking') || card.classList.contains('state-speaking'));
+                    if (isOrbBusy) return; // Ignore if user is already actively speaking/listening/thinking
 
                     for (let i = event.resultIndex; i < event.results.length; ++i) {
                         const transcript = event.results[i][0].transcript.toLowerCase();
@@ -5386,12 +5558,27 @@
                             console.log("👑 Wake-Word Activated:", transcript);
                             const remainder = transcript.substring(transcript.indexOf(match[0]) + match[0].length).trim();
                             
-                            openVoiceOrb(true);
+                            pauseWakeWordRecognizer();
+                            playWakeChime();
+
+                            if (!isOrbActive) {
+                                openVoiceOrb(false);
+                            }
+
                             if (remainder && remainder.length > 2) {
                                 // User spoke the wake word and command in one breath
+                                setOrbState('thinking', "Queen Bee is analyzing & navigating...", "");
                                 setTimeout(() => {
                                     processVoiceOrbCommand(remainder);
-                                }, 350);
+                                }, 300);
+                            } else {
+                                // User said "Hey Queen Bee" to activate listening mode
+                                setOrbState('listening', "Listening... I'm listening, please go ahead", "");
+                                const transcriptEl = document.getElementById('orb-transcript-text');
+                                if (transcriptEl) transcriptEl.innerText = "I'm listening, please go ahead...";
+                                setTimeout(() => {
+                                    startOrbListening();
+                                }, 250);
                             }
                             break;
                         }
@@ -5413,11 +5600,15 @@
                 };
 
                 wakeWordRecognizer.onend = () => {
-                    // Auto-restart wake-word listener if enabled
-                    if (window.wakeWordListening && !isOrbActive) {
-                        setTimeout(() => {
-                            try { wakeWordRecognizer.start(); } catch(e) {}
-                        }, 400);
+                    // Auto-restart wake-word listener if enabled and not currently occupied with active speech
+                    if (window.wakeWordListening) {
+                        const card = document.getElementById('orb-card-element');
+                        const isOrbBusy = isOrbActive && card && (card.classList.contains('state-listening') || card.classList.contains('state-thinking') || card.classList.contains('state-speaking'));
+                        if (!isOrbBusy && !window.currentAudio) {
+                            setTimeout(() => {
+                                try { wakeWordRecognizer.start(); } catch(e) {}
+                            }, 350);
+                        }
                     }
                 };
 
@@ -5436,8 +5627,12 @@
         }
 
         function resumeWakeWordRecognizer() {
-            if (window.wakeWordListening && wakeWordRecognizer && !isOrbActive) {
-                try { wakeWordRecognizer.start(); } catch(e) {}
+            if (window.wakeWordListening && wakeWordRecognizer) {
+                const card = document.getElementById('orb-card-element');
+                const isOrbBusy = isOrbActive && card && (card.classList.contains('state-listening') || card.classList.contains('state-thinking') || card.classList.contains('state-speaking'));
+                if (!isOrbBusy && !window.currentAudio) {
+                    try { wakeWordRecognizer.start(); } catch(e) {}
+                }
             }
         }
 
