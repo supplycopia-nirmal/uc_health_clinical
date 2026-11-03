@@ -298,28 +298,30 @@ def check_user_auth(request: Request) -> Optional[Dict[str, Any]]:
     user = get_session_user(request)
     if user:
         return user
-    # 2. Check HTTP Basic auth header for automated testing / curl backwards compatibility
-    auth_header = request.headers.get("Authorization")
-    if auth_header and auth_header.startswith("Basic "):
-        try:
-            b64_creds = auth_header.split(" ", 1)[1]
-            decoded = base64.b64decode(b64_creds).decode("utf-8")
-            u, p = decoded.split(":", 1)
-            env_user = os.getenv("APP_USERNAME", "admin")
-            env_pwd = os.getenv("APP_PASSWORD", "secret")
-            if (secrets.compare_digest(u, env_user) and secrets.compare_digest(p, env_pwd)) or \
-               (secrets.compare_digest(u, "admin") and secrets.compare_digest(p, "secret")) or \
-               (secrets.compare_digest(u, "uchealth_admin") and secrets.compare_digest(p, "clinical_copia")):
-                return {
-                    "username": u,
-                    "email": f"{u}@uchealth.com",
-                    "display_name": "UC Health Administrator",
-                    "role": "uchealth_admin",
-                    "facility": "UC Health Cincinnati Medical Center",
-                    "sso_provider": "Basic Auth Fallback"
-                }
-        except Exception:
-            pass
+    # 2. Check HTTP Basic auth header for automated testing / curl backwards compatibility (API only)
+    path = request.url.path
+    if path.startswith("/api/"):
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Basic "):
+            try:
+                b64_creds = auth_header.split(" ", 1)[1]
+                decoded = base64.b64decode(b64_creds).decode("utf-8")
+                u, p = decoded.split(":", 1)
+                env_user = os.getenv("APP_USERNAME", "admin")
+                env_pwd = os.getenv("APP_PASSWORD", "secret")
+                if (secrets.compare_digest(u, env_user) and secrets.compare_digest(p, env_pwd)) or \
+                   (secrets.compare_digest(u, "admin") and secrets.compare_digest(p, "secret")) or \
+                   (secrets.compare_digest(u, "uchealth_admin") and secrets.compare_digest(p, "clinical_copia")):
+                    return {
+                        "username": u,
+                        "email": f"{u}@uchealth.com",
+                        "display_name": "UC Health Administrator",
+                        "role": "uchealth_admin",
+                        "facility": "UC Health Cincinnati Medical Center",
+                        "sso_provider": "Basic Auth Fallback"
+                    }
+            except Exception:
+                pass
     return None
 
 WEB_DIR = BASE_DIR / "web"
@@ -334,6 +336,8 @@ def serve_frontend(request: Request):
 
 @app.get("/login")
 def serve_login(request: Request, returnUrl: str = "/"):
+    if request.query_params.get("logged_out"):
+        return FileResponse(WEB_DIR / "login.html")
     user = check_user_auth(request)
     if user:
         return RedirectResponse(url=returnUrl or "/", status_code=status.HTTP_302_FOUND)
@@ -448,8 +452,16 @@ def saml_metadata():
 @app.get("/saml/logout")
 @app.get("/saml/sls")
 def saml_logout(request: Request):
-    resp = RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    is_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
+    resp = RedirectResponse(url="/login?logged_out=1", status_code=status.HTTP_302_FOUND)
+    # Ensure cookie deletion matches both HTTPS (Secure=True) and HTTP (Secure=False)
+    resp.delete_cookie(key=COOKIE_NAME, path="/", secure=is_https, httponly=True, samesite="lax")
+    resp.delete_cookie(key=COOKIE_NAME, path="/", secure=True, httponly=True, samesite="lax")
+    resp.delete_cookie(key=COOKIE_NAME, path="/", secure=False, httponly=True, samesite="lax")
     resp.delete_cookie(key=COOKIE_NAME, path="/")
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
     return resp
     
 @app.get("/SC_Logo.png")
@@ -836,12 +848,12 @@ def generate_insights(payload: InsightPayload):
                 p25_cat_target = max(1.0, c_avg_case * 0.78)
                 c_var = max(0.0, c_avg_case - p25_cat_target)
 
-                cat_label = str(cat).title()[:24]
+                cat_label = str(cat).strip()
                 commodity_table.append({
                     "sub_category": cat_label,
                     "current_spend": round(c_spend, 2),
                     "avg_case_spend": round(c_avg_case, 2),
-                    "lowest_brand": lowest_brand[:30],
+                    "lowest_brand": str(lowest_brand).strip(),
                     "lowest_unit_cost": round(lowest_cost, 2),
                     "price_spread": round(spread, 2),
                     "annual_savings_opp": round(c_opp, 2),

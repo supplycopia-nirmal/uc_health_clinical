@@ -85,6 +85,11 @@
         <h1 class="get-started">Get started</h1>
         <p class="email-valid">Sign in with your organization SSO to access the Clinical Quality Optimization (CQO) Studio.</p>
 
+        <div id="logoutBanner" style="display: none; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600; margin-bottom: 16px; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">✓</span>
+          <span>You have been signed out successfully. Sign in to resume your session.</span>
+        </div>
+
         <div class="sso-button-group">
           <a href="/saml/login" class="primary-btn-normal sso-login-button" id="btnSsoLogin">
             <svg class="sso-icon" viewBox="0 0 21 21" width="20" height="20">
@@ -152,6 +157,11 @@
     const urlParams = new URLSearchParams(window.location.search);
     let returnUrl = urlParams.get('returnUrl') || '/';
     if (returnUrl === '/login' || returnUrl.startsWith('/login?')) returnUrl = '/';
+
+    if (urlParams.get('logged_out')) {
+      const banner = document.getElementById('logoutBanner');
+      if (banner) banner.style.display = 'flex';
+    }
 
     // Reveal developer bypass strictly on localhost environments
     const host = window.location.hostname;

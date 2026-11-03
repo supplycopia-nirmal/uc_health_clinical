@@ -217,11 +217,42 @@
         .loading-text { font-weight: 700; color: #1e293b; font-size: 15px; margin-bottom: 4px; }
         .loading-subtext { font-size: 12px; color: #64748b; font-weight: 500; }
         
-        /* --- Form Elements --- */
-        .select2-container--default .select2-selection--single { height: auto !important; min-height: 34px; border: 1px solid var(--card-border); border-radius: 4px; font-size: 12px; }
+        /* --- Form Elements & Select2 Dropdown Layering --- */
+        .select2-container--open { z-index: 999999 !important; }
+        .select2-dropdown {
+            z-index: 999999 !important;
+            border: 1px solid var(--brand-red) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22) !important;
+            background: #ffffff !important;
+            overflow: hidden !important;
+        }
+        .select2-container--default .select2-selection--single { height: auto !important; min-height: 34px; border: 1px solid var(--card-border); border-radius: 6px; font-size: 12px; }
         .select2-container--default .select2-selection--single .select2-selection__rendered { white-space: normal !important; word-break: break-word; line-height: 1.4 !important; padding: 6px 10px; color: var(--text-dark); }
-        .select2-results__option { white-space: normal !important; word-break: break-word; font-size: 12px; }
-        .select2-container--default .select2-selection--multiple { border: 1px solid var(--card-border); min-height: 34px; border-radius: 4px; font-size: 12px; }
+        .select2-search--dropdown {
+            padding: 8px 10px !important;
+            background: #f8fafc !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+        .select2-search--dropdown .select2-search__field {
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            padding: 7px 12px !important;
+            font-size: 12px !important;
+            font-family: inherit !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            outline: none !important;
+            background-color: #ffffff !important;
+            color: #1e293b !important;
+        }
+        .select2-search--dropdown .select2-search__field:focus {
+            border-color: var(--brand-red) !important;
+            box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.15) !important;
+        }
+        .select2-results__option { white-space: normal !important; word-break: break-word; font-size: 12px; padding: 8px 12px !important; }
+        .select2-results__option--highlighted[aria-selected] { background-color: var(--brand-red) !important; color: #fff !important; }
+        .select2-container--default .select2-selection--multiple { border: 1px solid var(--card-border); min-height: 34px; border-radius: 6px; font-size: 12px; }
 
         .controls { padding: 15px 20px; background: #fff; border-radius: 8px; border: 1px solid var(--card-border); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
         .filter-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; }
@@ -1446,9 +1477,6 @@
                     </button>
                     <button id="btn-metric-charges" class="segmented-btn" onclick="switchCaseScatterMetric('charges')">
                         🏥 Total Procedure Charges
-                    </button>
-                    <button id="btn-metric-intensity" class="segmented-btn" onclick="switchCaseScatterMetric('intensity')">
-                        ⚡ Supply Intensity (%)
                     </button>
                 </div>
             </div>
@@ -3183,6 +3211,12 @@
 
         $(document).ready(function() {
             $('.select2').select2({ width: '100%' });
+            $('#procedure-select').on('select2:open', function() {
+                setTimeout(() => {
+                    const searchField = document.querySelector('.select2-container--open .select2-search__field');
+                    if (searchField) searchField.setAttribute('placeholder', 'Search surgical procedure...');
+                }, 10);
+            });
             initUserProfile();
             loadProcedures();
             loadCatalog(); 
@@ -4386,10 +4420,10 @@
                             <tbody>
                                 ${(data.commodity_table || []).map(row => `
                                     <tr style="border-bottom: 1px solid #f1f5f9;">
-                                        <td style="padding: 8px 10px; font-weight: 700; color: #1e293b;">${escapeHtml(row.sub_category)}</td>
+                                        <td style="padding: 8px 10px; font-weight: 700; color: #1e293b; white-space: normal; word-break: break-word; max-width: 320px;" title="${escapeHtml(row.sub_category)}">${escapeHtml(row.sub_category)}</td>
                                         <td style="padding: 8px 10px; text-align: right; font-weight: 600;">$${Number(row.current_spend).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
                                         <td style="padding: 8px 10px; text-align: right;">$${Number(row.avg_case_spend).toFixed(2)}</td>
-                                        <td style="padding: 8px 10px; color: #2563eb; font-weight: 600;">${escapeHtml(row.lowest_brand)}</td>
+                                        <td style="padding: 8px 10px; color: #2563eb; font-weight: 600; white-space: normal; word-break: break-word;" title="${escapeHtml(row.lowest_brand)}">${escapeHtml(row.lowest_brand)}</td>
                                         <td style="padding: 8px 10px; text-align: right;">$${Number(row.lowest_unit_cost).toFixed(2)}</td>
                                         <td style="padding: 8px 10px; text-align: right; color: #dc2626; font-weight: 600;">+$${Number(row.price_spread).toFixed(2)}</td>
                                         <td style="padding: 8px 10px; text-align: right; font-weight: 800; color: #047857;">+$${Number(row.annual_savings_opp).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
@@ -4461,9 +4495,9 @@
                 };
                 const layout = {
                     barmode: 'group',
-                    margin: { l: 140, r: 25, t: 15, b: 40 },
+                    margin: { l: 280, r: 25, t: 15, b: 40 },
                     xaxis: { title: 'Avg Cost ($)', tickprefix: '$', gridcolor: '#f1f5f9' },
-                    yaxis: { autorange: 'reversed' },
+                    yaxis: { autorange: 'reversed', automargin: true },
                     legend: { orientation: 'h', y: -0.25, x: 0.1 },
                     paper_bgcolor: 'transparent',
                     plot_bgcolor: 'transparent',
@@ -9675,7 +9709,7 @@
 
         window.switchCaseScatterMetric = function(mode) {
             window.caseScatterMetric = mode;
-            ['cpc', 'charges', 'intensity'].forEach(m => {
+            ['cpc', 'charges'].forEach(m => {
                 const btn = document.getElementById(`btn-metric-${m}`);
                 if (btn) {
                     if (m === mode) {
@@ -9802,13 +9836,9 @@
             let yTickFormat = '$,.0f';
             let chartMetricName = 'Surgical Supply Cost';
             if (metricMode === 'charges') {
-                yAxisTitle = 'Total Procedure Charges ($) (Labor, OR Room Time & Overhead)';
+                yAxisTitle = 'Total Procedure Charges ($)';
                 yTickFormat = '$,.0f';
                 chartMetricName = 'Total Procedure Charges';
-            } else if (metricMode === 'intensity') {
-                yAxisTitle = 'Supply Cost Intensity Ratio (%)';
-                yTickFormat = '.1f';
-                chartMetricName = 'Supply Intensity Ratio (%)';
             }
 
             const chartTitle = overlappingCaseCount > 0
@@ -10010,8 +10040,7 @@
                 let badgeClass = item.status === 'Standard' ? 'badge-standard' : 
                                  (item.status === 'Clinical Variance' ? 'badge-clinical-variance' : 
                                  (item.status === 'Omitted' ? 'badge-omitted' : 'badge-non-standard'));
-                const subCatDisplay = item.sub_category.length > 34 ? item.sub_category.substring(0, 32) + '...' : item.sub_category;
-                tr.innerHTML = `<td><span class="badge ${badgeClass}">${item.status}</span></td><td title="${escapeHtml(item.sub_category)}">${escapeHtml(subCatDisplay)}</td><td style="${(item.status === 'Non-Standard' || item.status === 'Clinical Variance') ? 'color: var(--brand-red); font-weight: bold;' : ''}">${item.qty}</td><td style="color: var(--text-muted);">${item.std_avg_qty > 0 ? item.std_avg_qty.toFixed(1) : '-'}</td><td>$${item.total_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`;
+                tr.innerHTML = `<td><span class="badge ${badgeClass}">${item.status}</span></td><td style="white-space: normal; word-break: break-word;" title="${escapeHtml(item.sub_category)}">${escapeHtml(item.sub_category)}</td><td style="${(item.status === 'Non-Standard' || item.status === 'Clinical Variance') ? 'color: var(--brand-red); font-weight: bold;' : ''}">${item.qty}</td><td style="color: var(--text-muted);">${item.std_avg_qty > 0 ? item.std_avg_qty.toFixed(1) : '-'}</td><td>$${item.total_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`;
                 tbody.appendChild(tr);
             });
 
@@ -11199,6 +11228,10 @@
 
         async function simulateLogout() {
             if (await showLightboxConfirm("Sign out of UC Health Clinical Value System (SSO Session)?", "Sign Out Confirmation", { confirmText: "Sign Out", cancelText: "Stay Signed In" })) {
+                try {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                } catch(e) {}
                 window.location.href = "/logout";
             }
         }
