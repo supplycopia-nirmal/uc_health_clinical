@@ -62,9 +62,26 @@ class ContractBee:
         pct_val = max(5, min(95, percentile))
         benchmark_cpc = float(np.percentile(case_costs, pct_val)) if total_cases > 0 else 0.0
 
-        # Potential savings: cases with cost > benchmark_cpc
-        potential_savings = float(np.sum(np.maximum(0, case_costs - benchmark_cpc)))
-        savings_pct = (potential_savings / total_spend * 100) if total_spend > 0 else 0.0
+        # Check dynamic savings map for procedure
+        dyn_savings = 0.0
+        try:
+            from pathlib import Path
+            import json
+            p_json = Path(__file__).resolve().parent.parent.parent / "data" / "uc_health_procedure_dynamic_savings.json"
+            if p_json.exists():
+                with open(p_json, "r", encoding="utf-8") as f:
+                    dyn_map = json.load(f)
+                    p_data = dyn_map.get(proc_clean, {})
+                    dyn_savings = float(p_data.get('identified_savings', 0.0))
+        except Exception:
+            pass
+
+        if dyn_savings > 0:
+            potential_savings = dyn_savings
+            savings_pct = (potential_savings / total_spend * 100) if total_spend > 0 else 0.0
+        else:
+            potential_savings = float(np.sum(np.maximum(0, case_costs - benchmark_cpc)))
+            savings_pct = (potential_savings / total_spend * 100) if total_spend > 0 else 0.0
 
         # Contracted vs Off-Contract Spend calculation
         med_supply_mask = proc_df['spend_category'].astype(str).str.upper() == 'MEDICAL SUPPLY'

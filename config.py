@@ -88,6 +88,10 @@ class MultiTenantConfig:
         return DATA_DIR / f"{cls.TENANT_SLUG}_physician_matrix.csv"
 
     @classmethod
+    def dynamic_savings_path(cls) -> Path:
+        return DATA_DIR / f"{cls.TENANT_SLUG}_procedure_dynamic_savings.json"
+
+    @classmethod
     def rlhf_path(cls) -> Path:
         return DATA_DIR / "rlhf_preference_cards.jsonl"
 

@@ -206,7 +206,7 @@ class LiveAlertEngine:
                 "type": "contract_leakage",
                 "bee": "Contract Bee",
                 "icon": "🚨",
-                "icon_bg": "#fee2e2",
+                "icon_bg": "#f1f5f9",
                 "title": "Contract Compliance & Savings Opportunity",
                 "desc": contract_desc,
                 "time": "Active Cohort Analysis",

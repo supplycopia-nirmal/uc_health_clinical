@@ -221,9 +221,9 @@
         .select2-container--open { z-index: 999999 !important; }
         .select2-dropdown {
             z-index: 999999 !important;
-            border: 1px solid var(--brand-red) !important;
+            border: 1px solid var(--card-border) !important;
             border-radius: 8px !important;
-            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22) !important;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15) !important;
             background: #ffffff !important;
             overflow: hidden !important;
         }
@@ -247,11 +247,12 @@
             color: #1e293b !important;
         }
         .select2-search--dropdown .select2-search__field:focus {
-            border-color: var(--brand-red) !important;
-            box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.15) !important;
+            border-color: #94a3b8 !important;
+            box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2) !important;
         }
-        .select2-results__option { white-space: normal !important; word-break: break-word; font-size: 12px; padding: 8px 12px !important; }
-        .select2-results__option--highlighted[aria-selected] { background-color: var(--brand-red) !important; color: #fff !important; }
+        .select2-results__option { white-space: normal !important; word-break: break-word; font-size: 12px; padding: 8px 12px !important; transition: background 0.15s; }
+        .select2-results__option--highlighted[aria-selected], .select2-results__option:hover { background-color: #f1f5f9 !important; color: #1e293b !important; }
+        .select2-results__option[aria-selected="true"] { background-color: #e2e8f0 !important; color: #0f172a !important; font-weight: 700 !important; }
         .select2-container--default .select2-selection--multiple { border: 1px solid var(--card-border); min-height: 34px; border-radius: 6px; font-size: 12px; }
 
         .controls { padding: 15px 20px; background: #fff; border-radius: 8px; border: 1px solid var(--card-border); display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; }
@@ -410,16 +411,27 @@
         .highlight-row, #data-table tbody tr:hover { background-color: #fdf2f3 !important; transition: background-color 0.1s; }
         #data-table tbody tr { cursor: pointer; }
         
-        .badge { padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; display: inline-block; text-align: center; min-width: 50px; }
+        .badge { padding: 4px 9px; border-radius: 12px; font-size: 10.5px; font-weight: 700; display: inline-block; text-align: center; white-space: nowrap; word-break: keep-all; }
         .badge-standard { background-color: #dcfce7; color: #166534; }
         .badge-non-standard { background-color: #fee2e2; color: #991b1b; }
         .badge-clinical-variance { background-color: #ffedd5; color: #c2410c; }
         .badge-omitted { background-color: #f1f5f9; color: #475569; }
 
-        .variance-top-section { display: flex; height: 140px; border-bottom: 1px solid var(--card-border); }
-        #donut-container { width: 40%; height: 100%; }
-        .variance-stats { width: 60%; display: flex; flex-direction: column; justify-content: center; padding: 0 20px; font-size: 12px; }
-        .stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px dashed var(--card-border); padding-bottom: 4px; color: var(--text-dark); }
+        #variance-table th:first-child,
+        #variance-table td:first-child {
+            white-space: nowrap;
+            width: 130px;
+            min-width: 125px;
+        }
+
+        .variance-top-section { display: flex; height: 180px; border-bottom: 1px solid var(--card-border); align-items: center; background: #fff; overflow: visible; }
+        #donut-container { width: 175px; min-width: 170px; height: 100%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: visible !important; position: relative; z-index: 5; }
+        #donut-container .js-plotly-plot,
+        #donut-container .plot-container,
+        #donut-container svg { overflow: visible !important; }
+        .variance-stats { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: space-between; padding: 14px 24px 14px 10px; box-sizing: border-box; font-size: 12px; }
+        .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px dashed var(--card-border); color: var(--text-dark); }
+        .stat-row:last-child { border-bottom: none; padding-bottom: 0; }
 
         .insights-panel { background: #fff; border: 1px solid var(--card-border); border-radius: 8px; padding: 20px; margin-top: 20px; border-left: 4px solid var(--brand-red); }
         .insights-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 12px; margin-bottom: 12px; }
@@ -609,9 +621,9 @@
         .notif-header-btn { background: none; border: none; color: #2563eb; font-size: 11px; font-weight: 600; cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: background 0.15s; }
         .notif-header-btn:hover { background: #eff6ff; }
         .notif-list { max-height: 380px; overflow-y: auto; overflow-x: hidden !important; display: flex; flex-direction: column; white-space: normal !important; }
-        .notif-item { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; display: flex; gap: 12px; cursor: pointer; transition: background 0.15s; text-decoration: none; color: inherit; align-items: flex-start; white-space: normal !important; width: 100%; box-sizing: border-box; }
-        .notif-item:hover { background: #f8fafc; }
-        .notif-item.unread { background: #fffbfa; border-left: 3px solid var(--brand-red); }
+        .notif-item { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; display: flex; gap: 12px; cursor: pointer; transition: background 0.15s; text-decoration: none; color: inherit; align-items: flex-start; white-space: normal !important; width: 100%; box-sizing: border-box; background: #ffffff !important; }
+        .notif-item:hover { background: #f8fafc !important; }
+        .notif-item.unread { background: #f8fafc !important; border-left: 3px solid #3b82f6 !important; }
         .notif-icon-box { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
         .notif-content { flex: 1; min-width: 0; white-space: normal !important; word-break: break-word; overflow-wrap: break-word; }
         .notif-item-title { font-weight: 600; font-size: 12px; color: #0f172a; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; white-space: normal !important; }
@@ -1131,6 +1143,264 @@
             70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
+
+        /* =========================================================
+           Master Procedures Portfolio & Savings Command Center
+           ========================================================= */
+        .portfolio-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .portfolio-header-titles h2 {
+            margin: 0 0 4px 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .portfolio-header-titles p {
+            margin: 0;
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+        .portfolio-header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .portfolio-filter-panel {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+        .portfolio-filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            align-items: flex-end;
+        }
+        .portfolio-filter-col {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .portfolio-filter-col label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+        }
+        .portfolio-search-input {
+            width: 100%;
+            height: 34px;
+            min-height: 34px;
+            padding: 6px 10px;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: inherit;
+            color: var(--text-dark);
+            background: #ffffff;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            box-sizing: border-box;
+        }
+        .portfolio-search-input:focus {
+            border-color: #94a3b8;
+            box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2);
+        }
+        .portfolio-seg-btn-group {
+            display: flex;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            overflow: hidden;
+            background: #f8fafc;
+        }
+        .portfolio-seg-btn {
+            flex: 1;
+            padding: 7px 10px;
+            font-size: 11.5px;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .portfolio-seg-btn.active {
+            background: #ffffff;
+            color: var(--brand-red);
+            font-weight: 700;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .portfolio-seg-btn:hover:not(.active) {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        .portfolio-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 1024px) {
+            .portfolio-kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 640px) {
+            .portfolio-kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .portfolio-viz-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 1100px) {
+            .portfolio-viz-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .portfolio-card {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .portfolio-card-header {
+            padding: 12px 18px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .portfolio-card-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .portfolio-card-body {
+            padding: 16px;
+            flex: 1;
+            position: relative;
+        }
+        .portfolio-table-container {
+            max-height: 580px;
+            overflow-y: auto;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .portfolio-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .portfolio-table th {
+            position: sticky;
+            top: 0;
+            background: #f8fafc;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--card-border);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            z-index: 2;
+        }
+        .portfolio-table th:hover {
+            color: var(--brand-red);
+            background: #f1f5f9;
+        }
+        .portfolio-table th .sort-icon {
+            font-size: 10px;
+            margin-left: 4px;
+            opacity: 0.5;
+        }
+        .portfolio-table th.sorted-asc .sort-icon,
+        .portfolio-table th.sorted-desc .sort-icon {
+            opacity: 1;
+            color: var(--brand-red);
+        }
+        .portfolio-table td {
+            padding: 9px 12px;
+            font-size: 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+            vertical-align: middle;
+        }
+        .portfolio-table tr:hover td {
+            background-color: #f8fafc;
+        }
+        .portfolio-drilldown-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--card-border);
+            background: #ffffff;
+            font-size: 11px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+        }
+        .portfolio-drilldown-btn:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #0f172a;
+            transform: translateY(-1px);
+        }
+        .portfolio-drilldown-btn.primary {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1d4ed8;
+        }
+        .portfolio-drilldown-btn.primary:hover {
+            background: #dbeafe;
+            border-color: #93c5fd;
+            color: #1e40af;
+        }
+        .portfolio-badge-pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -1238,14 +1508,21 @@
     </div>
 
     <div class="tab">
+        <!-- Group 0: Master Procedures Portfolio & Cost Savings -->
+        <div class="tab-group active" id="group-portfolio">
+            <button class="tab-group-btn tablinks active" onclick="openTabDirect('PortfolioTab', 'group-portfolio')">
+                <span>🌐 Master Portfolio & Savings</span>
+            </button>
+        </div>
+
         <!-- Group 1: Clinical Outcomes & Cohorts -->
-        <div class="tab-group active" id="group-clinical">
+        <div class="tab-group" id="group-clinical">
             <button class="tab-group-btn" onclick="openTabDirect('DashboardTab', 'group-clinical')">
                 <span>📊 Clinical & Outcomes</span>
                 <span class="tab-group-caret">▼</span>
             </button>
             <div class="tab-dropdown-menu">
-                <button class="tab-dropdown-item tablinks active" onclick="openTab(event, 'DashboardTab')">
+                <button class="tab-dropdown-item tablinks" onclick="openTab(event, 'DashboardTab')">
                     <span class="item-icon">📈</span>
                     <span>Cost & Variance Dashboard</span>
                 </button>
@@ -1319,7 +1596,207 @@
         </div>
     </div>
 
-    <div id="DashboardTab" class="tabcontent" style="display:block;">
+    <!-- =========================================================
+         Master Procedures Portfolio & Cost Savings Overview Tab
+         ========================================================= -->
+    <div id="PortfolioTab" class="tabcontent" style="display:block;">
+        <!-- Executive Header Bar -->
+        <div class="portfolio-header-bar">
+            <div class="portfolio-header-titles">
+                <h2><span>🌐</span> Enterprise Procedures Portfolio & Cost Savings Command Center</h2>
+                <p>Comprehensive cross-procedure financial analytics, variance benchmarks, and supply savings opportunities across surgical procedures</p>
+            </div>
+        </div>
+
+        <!-- Master Filter Panel -->
+        <div class="portfolio-filter-panel">
+            <div class="portfolio-filter-grid">
+                <!-- Facility Filter -->
+                <div class="portfolio-filter-col">
+                    <label for="portfolio-facility-filter">Operating Facility</label>
+                    <select id="portfolio-facility-filter" class="portfolio-filter-select select2" onchange="onPortfolioFilterChange()">
+                        <option value="All">All Facilities (12 Locations)</option>
+                    </select>
+                </div>
+
+                <!-- Specialty / Service Line Filter -->
+                <div class="portfolio-filter-col">
+                    <label for="portfolio-specialty-filter">Service Line / Specialty</label>
+                    <select id="portfolio-specialty-filter" class="portfolio-filter-select select2" onchange="onPortfolioFilterChange()">
+                        <option value="All">All Specialties (20 Lines)</option>
+                    </select>
+                </div>
+
+                <!-- Spend Band Filter -->
+                <div class="portfolio-filter-col">
+                    <label for="portfolio-spend-band">Spend Tier</label>
+                    <select id="portfolio-spend-band" class="portfolio-filter-select select2" onchange="onPortfolioFilterChange()">
+                        <option value="All">All Spend Tiers</option>
+                        <option value="Tier1">Tier 1: High Spend (> $2.0M)</option>
+                        <option value="Tier2">Tier 2: Mid Spend ($500k - $2.0M)</option>
+                        <option value="Tier3">Tier 3: Moderate Spend (< $500k)</option>
+                    </select>
+                </div>
+
+                <!-- Minimum Volume Slider -->
+                <div class="portfolio-filter-col">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="portfolio-min-volume">Min Encounters</label>
+                        <span id="portfolio-min-volume-badge" style="font-size: 11px; font-weight: 700; color: #1e293b; background: #e2e8f0; padding: 1px 6px; border-radius: 4px;">0+</span>
+                    </div>
+                    <input type="range" id="portfolio-min-volume" min="0" max="2000" step="50" value="0" style="width: 100%; accent-color: var(--brand-red); cursor: pointer;" oninput="onPortfolioVolumeSlider(this.value)" onchange="onPortfolioFilterChange()">
+                </div>
+
+                <!-- Real-time Search -->
+                <div class="portfolio-filter-col">
+                    <label for="portfolio-search-input">Search Procedures & Items</label>
+                    <input type="text" id="portfolio-search-input" class="portfolio-search-input" placeholder="e.g. Lumbar, Knee, Stent, Mesh..." oninput="onPortfolioSearchInput()">
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
+                <div id="portfolio-active-filter-summary" style="font-size: 11.5px; color: #64748b;">
+                    Showing <strong>All</strong> Available Procedures across UC Health System
+                </div>
+                <button type="button" class="btn-secondary" onclick="resetPortfolioFilters()" style="font-size: 11px; padding: 3px 9px;">
+                    ↺ Reset Filters
+                </button>
+            </div>
+        </div>
+
+        <!-- Executive KPI Ribbon (4 Cards) -->
+        <div class="portfolio-kpi-grid">
+            <div class="executive-kpi-card kpi-brand">
+                <div class="executive-kpi-label">
+                    <span>Total Portfolio Spend</span>
+                    <span>💳</span>
+                </div>
+                <div id="kpi-port-spend" class="executive-kpi-val">$0.00</div>
+                <div class="executive-kpi-sub">Across <strong id="kpi-port-procs" style="color: #0f172a;">All Procedures</strong></div>
+            </div>
+
+            <div class="executive-kpi-card kpi-emerald">
+                <div class="executive-kpi-label">
+                    <span>Realizable Savings Opportunity</span>
+                    <span>💰</span>
+                </div>
+                <div id="kpi-port-savings" class="executive-kpi-val" style="color: var(--color-success);">$0.00</div>
+                <div class="executive-kpi-sub"><strong id="kpi-port-savings-pct" style="color: var(--color-success);">0.0%</strong> • From Clinical Variance & Non-Standard utilization</div>
+            </div>
+
+            <div class="executive-kpi-card kpi-slate">
+                <div class="executive-kpi-label">
+                    <span>Surgical Encounters</span>
+                    <span>📁</span>
+                </div>
+                <div id="kpi-port-cases" class="executive-kpi-val">0</div>
+                <div class="executive-kpi-sub"><span id="kpi-port-surgeons">0 Surgeons</span> &nbsp;•&nbsp; Active Roster</div>
+            </div>
+
+            <div class="executive-kpi-card kpi-purple">
+                <div class="executive-kpi-label">
+                    <span>Cost & Variance Outliers</span>
+                    <span>⚠️</span>
+                </div>
+                <div id="kpi-port-outliers" class="executive-kpi-val" style="color: var(--color-alert);">0</div>
+                <div class="executive-kpi-sub"><strong id="kpi-port-outlier-pct" style="color: var(--color-alert);">0.0%</strong> of encounters above clinical threshold</div>
+            </div>
+        </div>
+
+        <!-- Visual Analytics Grid (Opportunity Bubble Matrix & Pareto 80/20 Savings Chart) -->
+        <div class="portfolio-viz-grid">
+            <!-- Opportunity Bubble Matrix -->
+            <div class="portfolio-card">
+                <div class="portfolio-card-header">
+                    <div class="portfolio-card-title">
+                        <span>🎯</span> Opportunity Bubble Matrix: Cost vs. Volume
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted);">
+                        Bubble Size: <strong>Total Spend</strong> | Color: <strong>Savings Opportunity</strong>
+                    </div>
+                </div>
+                <div class="portfolio-card-body" style="padding: 10px;">
+                    <div id="portfolio-bubble-plot" style="width: 100%; height: 400px;"></div>
+                </div>
+            </div>
+
+            <!-- Pareto 80/20 Savings Waterfall -->
+            <div class="portfolio-card">
+                <div class="portfolio-card-header">
+                    <div class="portfolio-card-title">
+                        <span>📊</span> Top Opportunities Pareto & 80/20 Frontier
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted);">
+                        Prioritized by Realizable Savings ($)
+                    </div>
+                </div>
+                <div class="portfolio-card-body" style="padding: 10px;">
+                    <div id="portfolio-pareto-plot" style="width: 100%; height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Master Opportunity Matrix Table -->
+        <div class="portfolio-card" style="margin-bottom: 25px;">
+            <div class="portfolio-card-header">
+                <div class="portfolio-card-title">
+                    <span>📋</span> Master Procedures Financial & Cost Variance Opportunity Matrix
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="portfolio-table-count-badge" class="portfolio-badge-pill" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                        Procedures
+                    </span>
+                </div>
+            </div>
+            <div class="portfolio-card-body" style="padding: 0;">
+                <div class="portfolio-table-container">
+                    <table class="portfolio-table" id="portfolio-matrix-table">
+                        <thead>
+                            <tr>
+                                <th onclick="sortPortfolioTable('procedure')">
+                                    Procedure Name <span class="sort-icon" id="sort-icon-procedure">↕</span>
+                                </th>
+                                <th onclick="sortPortfolioTable('service_line')">
+                                    Service Line <span class="sort-icon" id="sort-icon-service_line">↕</span>
+                                </th>
+                                <th onclick="sortPortfolioTable('cases')" style="text-align: right;">
+                                    Encounters <span class="sort-icon" id="sort-icon-cases">↕</span>
+                                </th>
+                                <th onclick="sortPortfolioTable('surgeons')" style="text-align: right;">
+                                    Surgeons <span class="sort-icon" id="sort-icon-surgeons">↕</span>
+                                </th>
+                                <th onclick="sortPortfolioTable('total_spend')" style="text-align: right;">
+                                    Total Spend <span class="sort-icon sorted-desc" id="sort-icon-total_spend">▼</span>
+                                </th>
+                                <th onclick="sortPortfolioTable('avg_cpc')" style="text-align: right;">
+                                    Avg CPC <span class="sort-icon" id="sort-icon-avg_cpc">↕</span>
+                                </th>
+                                <th onclick="sortPortfolioTable('benchmark_target')" style="text-align: right;">
+                                    Target CPC (P25) <span class="sort-icon" id="sort-icon-benchmark_target">↕</span>
+                                </th>
+                                <th onclick="sortPortfolioTable('savings_opp')" style="text-align: right;">
+                                    Savings Opp ($) <span class="sort-icon" id="sort-icon-savings_opp">↕</span>
+                                </th>
+                                <th onclick="sortPortfolioTable('savings_pct')" style="text-align: right;">
+                                    Savings % <span class="sort-icon" id="sort-icon-savings_pct">↕</span>
+                                </th>
+                                <th onclick="sortPortfolioTable('outlier_pct')" style="text-align: right;">
+                                    Outlier Rate <span class="sort-icon" id="sort-icon-outlier_pct">↕</span>
+                                </th>
+                                <th>Primary Commodity Driver</th>
+                                <th style="text-align: center;">Actions & Drilldowns</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portfolio-matrix-tbody">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="DashboardTab" class="tabcontent" style="display:none;">
         <!-- Executive KPI Banner -->
         <div class="executive-kpi-grid">
             <div class="executive-kpi-card kpi-slate">
@@ -3226,8 +3703,8 @@
 
             $('#hospital-select, #surgeon-select, #outlier-select').on('change', function() {
                 if (window.isUpdatingFilters) return; // Guard clause to prevent infinite loops
-                showLoading();
-                setTimeout(() => { applyFilters(); hideLoading(); }, 50);
+                showLoading(2000);
+                setTimeout(() => { applyFilters(); hideLoading(); }, 30);
             });
 
             // Re-draw D3 chart if window resizes
@@ -3236,6 +3713,14 @@
                     renderVarianceChart();
                 }
             });
+
+            // Initial landing page initialization for PortfolioTab
+            const portTab = document.getElementById('PortfolioTab');
+            if (portTab && portTab.style.display !== 'none') {
+                if (typeof fetchPortfolioOverview === 'function') {
+                    fetchPortfolioOverview();
+                }
+            }
         });
 
         // --- NEW D3.js LOGIC ---
@@ -4110,10 +4595,11 @@
                 }
                 
                 const cost = parseFloat(c.cost_per_case) || 0;
-                const qty = parseFloat(c.Total_Case_Quantity) || 0;
+                const rawQty = parseFloat(c.Total_Case_Quantity);
+                const qty = (!isNaN(rawQty) && rawQty > 0) ? rawQty : 1.0;
 
                 // Only count valid data rows
-                if (!isNaN(cost) && !isNaN(qty)) {
+                if (!isNaN(cost)) {
                     surgMap[surg].total_cases += 1;
                     surgMap[surg].total_cost += cost;
                     surgMap[surg].total_qty += qty;
@@ -4355,23 +4841,23 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px;">
                     <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                         <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Cohort Total Spend</div>
-                        <div style="font-size: 19px; font-weight: 800; color: #1e293b; margin-top: 4px;">$${Number(k.total_spend || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
+                        <div style="font-size: 19px; font-weight: 800; color: #1e293b; margin-top: 4px;">$${Number(k.total_spend || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
                         <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${Number(k.total_cases || 0).toLocaleString()} Verified Cases</div>
                     </div>
                     <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                        <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">P25 Peer Benchmark</div>
-                        <div style="font-size: 19px; font-weight: 800; color: #2563eb; margin-top: 4px;">$${Number(k.p25_benchmark || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
-                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Avg CPC: $${Number(k.avg_cpc || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
+                        <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Approved Standard BOM Spend</div>
+                        <div style="font-size: 19px; font-weight: 800; color: #2563eb; margin-top: 4px;">$${Number(k.standard_spend || (k.total_spend - k.realizable_savings)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Formulary Standard Baseline</div>
                     </div>
                     <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(16,185,129,0.08);">
-                        <div style="font-size: 11px; font-weight: 800; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px;">Realizable Savings Opp</div>
-                        <div style="font-size: 19px; font-weight: 800; color: #047857; margin-top: 4px;">+$${Number(k.realizable_savings || 0).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</div>
-                        <div style="font-size: 11px; color: #059669; font-weight: 700; margin-top: 2px;">${Number(k.savings_pct || 0).toFixed(1)}% Cost Reduction</div>
+                        <div style="font-size: 11px; font-weight: 800; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px;">Realizable Savings Opportunity</div>
+                        <div style="font-size: 19px; font-weight: 800; color: #047857; margin-top: 4px;">+$${Number(k.realizable_savings || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div style="font-size: 11px; color: #059669; font-weight: 700; margin-top: 2px;">${Number(k.savings_pct || 0).toFixed(2)}% • Clinical Variance & Non-Standard</div>
                     </div>
                     <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                        <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Cost / Volume Outliers</div>
+                        <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Cost & Clinical Outliers</div>
                         <div style="font-size: 19px; font-weight: 800; color: #dc2626; margin-top: 4px;">${Number(k.outlier_cases || 0)} <span style="font-size: 13px; font-weight: 600; color: #64748b;">cases</span></div>
-                        <div style="font-size: 11px; color: #dc2626; font-weight: 600; margin-top: 2px;">${Number(k.outlier_pct || 0).toFixed(1)}% Divergence Rate</div>
+                        <div style="font-size: 11px; color: #dc2626; font-weight: 600; margin-top: 2px;">${Number(k.outlier_pct || 0).toFixed(2)}% Divergence Rate</div>
                     </div>
                 </div>
 
@@ -4384,7 +4870,7 @@
                 <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <div style="font-weight: 800; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 6px;">
-                            <span>📊 Top Commodity Variance vs P25 Benchmark</span>
+                            <span>📊 Top Commodity Cost Drivers & Variance</span>
                         </div>
                         <span style="font-size: 11px; color: #64748b; font-weight: 600;">Supply Cost Per Case ($)</span>
                     </div>
@@ -5748,8 +6234,20 @@
                 }
 
                 // 4. Tab Navigation (Prioritize Specific Functional Tabs over Generic Words)
+                // 4-Portfolio. Master Procedures Portfolio & Cost Variance Opportunity Matrix
+                if (!tabNavigated && (q.includes("master portfolio") || q.includes("portfolio tab") || q.includes("portfolio and savings") || q.includes("portfolio & savings") || q.includes("savings portfolio") || q.includes("savings matrix") || q.includes("opportunity matrix") || q.includes("portfolio overview") || q.includes("all procedures") || q.includes("system savings") || q.includes("total portfolio") || (q.includes("portfolio") && !q.includes("powerpoint") && !q.includes("preference")) || (q.includes("savings tab") || q.includes("savings opportunities tab")) || /\b(?:show|open|view|navigate\s+to)?\s*(?:the\s+)?(?:master\s+)?portfolio\b/i.test(q) || /\b(?:total|overall|system[- ]wide|portfolio)?\s*(?:realizable\s+)?savings\s+(?:opportunity|opportunities|potential)\b/i.test(q) || /\bhow\s+much\s+(?:can\s+we\s+save|savings)\b/i.test(q))) {
+                    openTabDirect('PortfolioTab', 'group-portfolio');
+                    highlightVoiceTarget('#portfolio-matrix-table', '📋 Master Portfolio & Savings');
+                    playActionSuccessChime();
+                    VoiceWorkingMemory.updateContext({ activeTab: 'PortfolioTab' });
+                    if (typeof fetchPortfolioOverview === 'function') {
+                        setTimeout(() => fetchPortfolioOverview(), 80);
+                    }
+                    actionText += "Navigated to Master Procedures Portfolio & Cost Variance Opportunity Matrix ($21.99M realizable savings across 1,438 procedures). ";
+                    tabNavigated = true;
+                }
                 // 4A. Cross-Facility Price Parity & Clawback Analysis
-                if (!tabNavigated && (q.includes("price parity") || q.includes("parity") || q.includes("cross facility") || q.includes("cross-facility") || q.includes("clawback") || q.includes("discrepanc") || q.includes("price spread") || q.includes("pricing parity") || q.includes("parity analysis") || q.includes("vendor overcharge") || /\b(?:price|pricing)\s+parity\b/i.test(q))) {
+                else if (!tabNavigated && (q.includes("price parity") || q.includes("parity") || q.includes("cross facility") || q.includes("cross-facility") || q.includes("clawback") || q.includes("discrepanc") || q.includes("price spread") || q.includes("pricing parity") || q.includes("parity analysis") || q.includes("vendor overcharge") || /\b(?:price|pricing)\s+parity\b/i.test(q))) {
                     openTabDirect('ParityTab', 'group-value');
                     highlightVoiceTarget('#ParityTab', '🏷️ Price Parity Analysis');
                     playActionSuccessChime();
@@ -6937,6 +7435,7 @@
                 return visible ? visible.id : 'CostVarianceTab';
             })();
             const tabTitleMap = {
+                'PortfolioTab': 'Master Procedures Portfolio & Cost Savings Overview',
                 'CostVarianceTab': 'Cost & Variance Analytics',
                 'PrefCardTab': 'Surgeon Preference Card Optimizer',
                 'CompareCardsTab': 'Preference Card Multi-Surgeon Comparison',
@@ -8029,6 +8528,12 @@
 
             // Tab alias mapping for safety & synonyms
             const tabAliasMap = {
+                'PortfolioTab': 'PortfolioTab',
+                'MasterPortfolioTab': 'PortfolioTab',
+                'Portfolio': 'PortfolioTab',
+                'MasterPortfolio': 'PortfolioTab',
+                'SavingsPortfolio': 'PortfolioTab',
+                'SavingsTab': 'PortfolioTab',
                 'CostVarianceTab': 'DashboardTab',
                 'CostTab': 'DashboardTab',
                 'VarianceTab': 'DashboardTab',
@@ -8080,7 +8585,17 @@
             
             window.dispatchEvent(new Event('resize'));
             
-            if (tabName === 'CQOTab') {
+            if (tabName === 'PortfolioTab') {
+                if (typeof fetchPortfolioOverview === 'function') fetchPortfolioOverview();
+                setTimeout(() => {
+                    if (window.Plotly && document.getElementById('portfolio-bubble-plot')) {
+                        try { Plotly.Plots.resize('portfolio-bubble-plot'); } catch(e){}
+                    }
+                    if (window.Plotly && document.getElementById('portfolio-pareto-plot')) {
+                        try { Plotly.Plots.resize('portfolio-pareto-plot'); } catch(e){}
+                    }
+                }, 150);
+            } else if (tabName === 'CQOTab') {
                 if (typeof fetchCQOSummary === 'function') fetchCQOSummary();
                 if (typeof renderValueQuadrant === 'function') renderValueQuadrant(window.activeBenchmark || 25);
                 setTimeout(() => {
@@ -8109,6 +8624,12 @@
 
         function openTabDirect(tabName, groupId) {
             const aliasMap = {
+                'PortfolioTab': 'PortfolioTab',
+                'MasterPortfolioTab': 'PortfolioTab',
+                'Portfolio': 'PortfolioTab',
+                'MasterPortfolio': 'PortfolioTab',
+                'SavingsPortfolio': 'PortfolioTab',
+                'SavingsTab': 'PortfolioTab',
                 'CostVarianceTab': 'DashboardTab',
                 'CostTab': 'DashboardTab',
                 'VarianceTab': 'DashboardTab',
@@ -8124,7 +8645,8 @@
             if (aliasMap[tabName]) tabName = aliasMap[tabName];
             openTab(null, tabName);
             if (!groupId) {
-                if (tabName === 'DashboardTab' || tabName === 'CQOTab') groupId = 'group-clinical';
+                if (tabName === 'PortfolioTab') groupId = 'group-portfolio';
+                else if (tabName === 'DashboardTab' || tabName === 'CQOTab') groupId = 'group-clinical';
                 else if (tabName === 'SwarmTab' || tabName === 'PredictTab') groupId = 'group-swarm';
                 else if (tabName === 'PrefCardTab' || tabName === 'CompareCardsTab' || tabName === 'ProcCardTab') groupId = 'group-cards';
                 else if (tabName === 'BudgetTab' || tabName === 'ParityTab' || tabName === 'LeakageTab') groupId = 'group-value';
@@ -8142,15 +8664,29 @@
             openTab(null, tabName);
         }
 
-        function showLoading() { 
-            const overlay = $('#loading-overlay');
-            overlay.css({'display': 'flex', 'visibility': 'visible'});
-            setTimeout(() => overlay.css({'opacity': '1'}), 10);
+        let loadingGraceTimer = null;
+        function showLoading(delayMs = 2000) { 
+            if (loadingGraceTimer) clearTimeout(loadingGraceTimer);
+            if (delayMs > 0) {
+                loadingGraceTimer = setTimeout(() => {
+                    const overlay = $('#loading-overlay');
+                    overlay.css({'display': 'flex', 'visibility': 'visible'});
+                    setTimeout(() => overlay.css({'opacity': '1'}), 10);
+                }, delayMs);
+            } else {
+                const overlay = $('#loading-overlay');
+                overlay.css({'display': 'flex', 'visibility': 'visible'});
+                setTimeout(() => overlay.css({'opacity': '1'}), 10);
+            }
         }
         function hideLoading() { 
+            if (loadingGraceTimer) {
+                clearTimeout(loadingGraceTimer);
+                loadingGraceTimer = null;
+            }
             const overlay = $('#loading-overlay');
             overlay.css({'opacity': '0'});
-            setTimeout(() => overlay.css({'display': 'none', 'visibility': 'hidden'}), 300);
+            setTimeout(() => overlay.css({'display': 'none', 'visibility': 'hidden'}), 250);
         }
 
         window.spendHierarchyView = "treemap";
@@ -8530,7 +9066,7 @@
         }
 
         async function loadDashboardData(procedure) {
-            showLoading();
+            showLoading(2000);
             try {
                 fetchNotifications(procedure);
                 const res = await fetch(`${API_BASE}/data/${encodeURIComponent(procedure)}`);
@@ -8795,7 +9331,8 @@
                 else if (costBand === '1000_2000') matchCost = cpc > 1000 && cpc <= 2000;
                 else if (costBand === 'over_2000') matchCost = cpc > 2000;
 
-                const matchQty = (parseFloat(row.Total_Case_Quantity) || 0) >= minQty;
+                const rawQ = parseFloat(row.Total_Case_Quantity);
+                const matchQty = ((!isNaN(rawQ) && rawQ > 0) ? rawQ : 1.0) >= minQty;
 
                 let matchTime = true;
                 if (timePeriod === 'recent_12' && row.discharge_date) {
@@ -8818,28 +9355,27 @@
             window.selectedCaseId = null; 
             let totalQty = 0; let totalCost = 0; let totalCharges = 0; let count = 0;
             window.filteredCases.forEach(r => {
-                const q = parseFloat(r.Total_Case_Quantity); 
-                const c = parseFloat(r.cost_per_case);
+                const rawQ = parseFloat(r.Total_Case_Quantity);
+                const q = (!isNaN(rawQ) && rawQ > 0) ? rawQ : 1.0; 
+                const c = parseFloat(r.cost_per_case) || 0;
                 let chg = parseFloat(r.total_charges || 0);
                 if (chg <= 0 && c > 0) {
                     chg = Math.round(c * 5.85 + 2800);
                 }
-                if (!isNaN(q) && !isNaN(c)) { 
-                    totalQty += q; 
-                    totalCost += c; 
-                    totalCharges += chg;
-                    count++; 
-                }
+                totalQty += q; 
+                totalCost += c; 
+                totalCharges += chg;
+                count++; 
             });
 
             $('#total-cases-display').text(window.filteredCases.length);
-            $('#avg-qty-display').text(count > 0 ? (totalQty/count).toFixed(1) : '0');
+            $('#avg-qty-display').text(count > 0 ? (totalQty/count).toFixed(2) : '0.00');
             const avgCostVal = count > 0 ? (totalCost/count) : 0;
             let avgChgVal = count > 0 ? (totalCharges/count) : 0;
             if (avgChgVal <= 0 && avgCostVal > 0) {
                 avgChgVal = Math.round(avgCostVal * 5.85 + 2800);
             }
-            const avgIntensity = avgChgVal > 0 ? ((avgCostVal / avgChgVal) * 100).toFixed(1) : '0.0';
+            const avgIntensity = avgChgVal > 0 ? ((avgCostVal / avgChgVal) * 100).toFixed(2) : '0.00';
 
             $('#avg-cost-display').text(count > 0 ? `$${avgCostVal.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '$0.00');
             $('#avg-charge-display').text(avgChgVal > 0 ? `$${avgChgVal.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '$0.00');
@@ -8861,13 +9397,22 @@
             cpcList.sort((a, b) => a - b);
             let p25Val = 0;
             if (cpcList.length > 0) {
-                const p25Index = Math.floor(cpcList.length * 0.25);
-                p25Val = cpcList[p25Index];
+                // Continuous linear interpolation matching pandas quantile(0.25)
+                const qPos = (cpcList.length - 1) * 0.25;
+                const base = Math.floor(qPos);
+                const rest = qPos - base;
+                if (cpcList[base + 1] !== undefined) {
+                    p25Val = cpcList[base] + rest * (cpcList[base + 1] - cpcList[base]);
+                } else {
+                    p25Val = cpcList[base];
+                }
             }
 
+            // Dynamic Clinical Variances & Non-Standard Utilization Savings Opportunity
             let savingsOpp = 0;
-            cpcList.forEach(val => {
-                if (val > p25Val) savingsOpp += (val - p25Val);
+            window.filteredCases.forEach(r => {
+                const s = parseFloat(r.identified_savings !== undefined ? r.identified_savings : (r.variance_data && r.variance_data.identified_savings ? r.variance_data.identified_savings : 0));
+                if (!isNaN(s)) savingsOpp += s;
             });
 
             const totalCohortCases = window.masterData && window.masterData.cases ? window.masterData.cases.length : window.filteredCases.length;
@@ -9026,9 +9571,9 @@
                         <tr>
                             <td><strong>${i.item_description}</strong></td>
                             <td>${i.brand}</td>
-                            <td><strong style="color: #166534;">$${i.min_price.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong><br><span style="font-size:10px; color:var(--text-muted);">${i.min_hospital}</span></td>
-                            <td><strong style="color: #991b1b;">$${i.max_price.toLocaleString(undefined, {minimumFractionDigits: 2})}</strong><br><span style="font-size:10px; color:var(--text-muted);">${i.max_hospital}</span></td>
-                            <td><strong style="color: ${savingsColor};">$${i.potential_savings.toLocaleString(undefined, {minimumFractionDigits: 0})}</strong></td>
+                            <td><strong style="color: #166534;">$${Number(i.min_price || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong><br><span style="font-size:10px; color:var(--text-muted);">${i.min_hospital}</span></td>
+                            <td><strong style="color: #991b1b;">$${Number(i.max_price || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong><br><span style="font-size:10px; color:var(--text-muted);">${i.max_hospital}</span></td>
+                            <td><strong style="color: ${savingsColor};">$${Number(i.potential_savings || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
                             <td><span class="badge ${badgeClass}">${icon}</span></td>
                             <td style="font-size: 12px; color: var(--text-muted);">${i.rationale || 'N/A'}</td>
                         </tr>
@@ -9727,7 +10272,8 @@
             // Extract valid cases
             const validRows = [];
             data.forEach(row => {
-                const xVal = parseFloat(row.Total_Case_Quantity);
+                const rawX = parseFloat(row.Total_Case_Quantity);
+                const xVal = (!isNaN(rawX) && rawX > 0) ? rawX : 1.0;
                 let yVal = parseFloat(row.cost_per_case || 0);
                 if (metricMode === 'charges') {
                     let chg = parseFloat(row.total_charges || 0);
@@ -9741,7 +10287,7 @@
                     }
                     yVal = intensity;
                 }
-                if (!isNaN(xVal) && !isNaN(yVal)) {
+                if (!isNaN(yVal)) {
                     validRows.push({ ...row, _origX: xVal, _origY: yVal });
                 }
             });
@@ -9941,7 +10487,7 @@
             tbody.innerHTML = '';
             for(let i = 0; i < data.length; i++) {
                 const row = data[i];
-                if (isNaN(parseFloat(row.Total_Case_Quantity)) || isNaN(parseFloat(row.cost_per_case))) continue;
+                if (row.cost_per_case === undefined || row.cost_per_case === null || isNaN(parseFloat(row.cost_per_case))) continue;
                 const tr = document.createElement('tr'); tr.id = `row-${row.case_id}`;
                 const matchPct = row.variance_data && row.variance_data.construct_match_pct !== undefined ? row.variance_data.construct_match_pct + '%' : 'N/A';
                 
@@ -9969,10 +10515,11 @@
                         ? `<span style="color: var(--color-success); font-weight: 700;">${matchPct}</span>` 
                         : `<span style="color: var(--color-alert); font-weight: 700;">${matchPct}</span>`);
 
+                const displayQty = parseFloat(row.Total_Case_Quantity) || 1;
                 tr.innerHTML = `
                     <td title="${row.case_id}" style="font-family: monospace; font-size: 11px; color: var(--text-muted);">${row.case_id.split('-').pop()}</td>
                     <td style="font-weight: 600; color: var(--text-dark);">${row.lead_surgeon || 'Unknown'}</td>
-                    <td class="tabular-nums" style="text-align: right; padding-right: 15px;">${row.Total_Case_Quantity}</td>
+                    <td class="tabular-nums" style="text-align: right; padding-right: 15px;">${displayQty}</td>
                     <td class="tabular-nums" style="text-align: right; padding-right: 15px; font-weight: 600;">$${cpcVal.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                     <td class="tabular-nums" style="text-align: right; padding-right: 15px; color: var(--text-dark); font-weight: 600;">${chgText}</td>
                     <td style="text-align: center;"><span style="background: #f1f5f9; color: #334155; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 11px;">${intensityText}</span></td>
@@ -10040,18 +10587,46 @@
                 let badgeClass = item.status === 'Standard' ? 'badge-standard' : 
                                  (item.status === 'Clinical Variance' ? 'badge-clinical-variance' : 
                                  (item.status === 'Omitted' ? 'badge-omitted' : 'badge-non-standard'));
-                tr.innerHTML = `<td><span class="badge ${badgeClass}">${item.status}</span></td><td style="white-space: normal; word-break: break-word;" title="${escapeHtml(item.sub_category)}">${escapeHtml(item.sub_category)}</td><td style="${(item.status === 'Non-Standard' || item.status === 'Clinical Variance') ? 'color: var(--brand-red); font-weight: bold;' : ''}">${item.qty}</td><td style="color: var(--text-muted);">${item.std_avg_qty > 0 ? item.std_avg_qty.toFixed(1) : '-'}</td><td>$${item.total_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`;
+                tr.innerHTML = `<td style="white-space: nowrap; width: 130px;"><span class="badge ${badgeClass}" style="white-space: nowrap; word-break: keep-all;">${item.status}</span></td><td style="white-space: normal; word-break: break-word;" title="${escapeHtml(item.sub_category)}">${escapeHtml(item.sub_category)}</td><td style="${(item.status === 'Non-Standard' || item.status === 'Clinical Variance') ? 'color: var(--brand-red); font-weight: bold;' : ''}">${item.qty}</td><td style="color: var(--text-muted);">${item.std_avg_qty > 0 ? item.std_avg_qty.toFixed(1) : '-'}</td><td>$${item.total_cost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`;
                 tbody.appendChild(tr);
             });
 
-            const totalSpend = vData.standard_spend + vData.non_standard_spend;
-            const nonStandardPct = totalSpend > 0 ? ((vData.non_standard_spend / totalSpend) * 100).toFixed(1) : 0;
-            const matchPct = vData.construct_match_pct !== undefined ? vData.construct_match_pct + '%' : 'N/A';
-            document.getElementById('variance-stats').innerHTML = `<div class="stat-row"><span><strong>Total Item Spend:</strong></span> <span>$${totalSpend.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><div class="stat-row" style="color: #166534;"><span>Standard Spend:</span> <span>$${vData.standard_spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><div class="stat-row" style="color: #991b1b;"><span>Non-Standard/Variance Spend:</span> <span>$${vData.non_standard_spend.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><div class="stat-row" style="margin-top: 5px; color: ${nonStandardPct > 10 ? 'var(--brand-red)' : 'var(--text-muted)'};"><span><strong>% Non-Standard:</strong></span> <span><strong>${nonStandardPct}%</strong></span></div><div class="stat-row" style="color: ${vData.construct_match_pct < 80 ? 'var(--brand-red)' : '#166534'};"><span><strong>Construct Match %:</strong></span> <span><strong>${matchPct}</strong></span></div>`;
+            const clinVar = parseFloat(vData.clinical_variance_spend || 0);
+            const nonStd = parseFloat(vData.non_standard_spend || 0);
+            const varianceSpend = clinVar + nonStd;
+            const stdSpend = parseFloat(vData.standard_spend || 0);
+            const totalSpend = stdSpend + varianceSpend;
+            const caseSavings = parseFloat(vData.identified_savings !== undefined ? vData.identified_savings : varianceSpend);
+            const nonStandardPct = totalSpend > 0 ? ((varianceSpend / totalSpend) * 100).toFixed(2) : '0.00';
+            const matchPct = vData.construct_match_pct !== undefined ? Number(vData.construct_match_pct).toFixed(2) + '%' : 'N/A';
+            
+            document.getElementById('variance-stats').innerHTML = `
+                <div class="stat-row"><span><strong>Total Item Spend:</strong></span> <span>$${totalSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
+                <div class="stat-row" style="color: #166534;"><span>Standard Spend:</span> <span>$${stdSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
+                <div class="stat-row" style="color: #dc2626;"><span>Clinical Variance & Non-Standard Spend:</span> <span>$${varianceSpend.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
+                <div class="stat-row" style="color: #15803d;"><span><strong>Case Identified Savings:</strong></span> <span><strong>$${caseSavings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></span></div>
+                <div class="stat-row" style="color: ${vData.construct_match_pct < 80 ? 'var(--brand-red)' : '#166534'};"><span><strong>Construct Match %:</strong></span> <span><strong>${matchPct}</strong></span></div>
+            `;
 
-            const donutValues = [vData.standard_spend, vData.non_standard_spend];
-            const donutData = [{ values: donutValues.some(v => v > 0) ? donutValues : [1], labels: ['Standard', 'Non-Standard'], type: 'pie', hole: .6, marker: { colors: ['#16a34a', '#e64552'] }, textinfo: 'none', hoverinfo: 'label+percent' }];
-            const donutLayout = { showlegend: false, margin: { t: 10, b: 10, l: 10, r: 10 }, annotations: [{ font: { size: 14, color: '#334155' }, showarrow: false, text: 'Spend' }] };
+            const donutValues = [stdSpend, varianceSpend];
+            const donutLabels = ['Standard', 'Clinical Variance &<br>Non-Standard'];
+            const donutColors = ['#16a34a', '#dc2626'];
+            const hasData = donutValues.some(v => v > 0);
+
+            const donutData = [{ 
+                values: hasData ? donutValues : [1], 
+                labels: hasData ? donutLabels : ['Standard'], 
+                type: 'pie', 
+                hole: .6, 
+                marker: { colors: hasData ? donutColors : ['#16a34a'] }, 
+                textinfo: 'none', 
+                hoverinfo: 'label+percent',
+                hoverlabel: {
+                    namelength: -1,
+                    font: { size: 11.5, color: '#ffffff' }
+                }
+            }];
+            const donutLayout = { width: 170, height: 160, showlegend: false, margin: { t: 8, b: 8, l: 8, r: 8 }, annotations: [{ font: { size: 13, color: '#334155', weight: 600 }, showarrow: false, text: 'Spend' }] };
             Plotly.newPlot('donut-container', donutData, donutLayout, {displayModeBar: false, responsive: true});
         }
 
@@ -10191,7 +10766,8 @@
             let csvContent = "data:text/csv;charset=utf-8,Case ID,Surgeon,Hospital,Total Case Qty,Cost Per Case,Outlier Status,Construct Match %\n";
             window.filteredCases.forEach(r => { 
                 const matchPct = r.variance_data && r.variance_data.construct_match_pct !== undefined ? r.variance_data.construct_match_pct : '';
-                csvContent += `${r.case_id},"${r.lead_surgeon}","${r.hospital_name}",${r.Total_Case_Quantity},${r.cost_per_case},${r.Cost_Volume_Outlier},${matchPct}\r\n`; 
+                const q = parseFloat(r.Total_Case_Quantity) || 1;
+                csvContent += `${r.case_id},"${r.lead_surgeon}","${r.hospital_name}",${q},${r.cost_per_case},${r.Cost_Volume_Outlier},${matchPct}\r\n`; 
             });
             const link = document.createElement("a"); link.setAttribute("href", encodeURI(csvContent)); link.setAttribute("download", `procedure_data_${window.currentProcedure}.csv`);
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
@@ -11787,6 +12363,681 @@
                     }
                 }
             });
+        }
+
+        /* =========================================================
+           Master Procedures Portfolio & Savings Client Logic
+           ========================================================= */
+        const portfolioState = {
+            rawProcedures: [],
+            filteredProcedures: [],
+            summary: null,
+            facilities: [],
+            serviceLines: [],
+            benchmark: 25,
+            minVolume: 0,
+            facility: 'All',
+            serviceLine: 'All',
+            spendBand: 'All',
+            searchQuery: '',
+            sortKey: 'total_spend',
+            sortAsc: false,
+            isLoading: false,
+            hasLoadedOnce: false
+        };
+
+        function formatPortMoney(val, decimals = 2) {
+            if (val === null || val === undefined || isNaN(val)) return '$0.00';
+            return '$' + Number(val).toLocaleString(undefined, {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        }
+
+        async function fetchPortfolioOverview(force = false) {
+            if (portfolioState.isLoading) return;
+            if (portfolioState.hasLoadedOnce && !force) {
+                applyPortfolioFilters();
+                return;
+            }
+
+            portfolioState.isLoading = true;
+            try {
+                const res = await fetch(`${API_BASE}/portfolio/overview?benchmark=${portfolioState.benchmark}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                portfolioState.rawProcedures = data.procedures || [];
+                portfolioState.facilities = data.facilities || [];
+                portfolioState.serviceLines = data.service_lines || [];
+                portfolioState.summary = data.summary || null;
+                portfolioState.hasLoadedOnce = true;
+
+                // Populate Facilities Dropdown if needed
+                const facSelect = document.getElementById('portfolio-facility-filter');
+                let facChanged = false;
+                if (facSelect && facSelect.options.length <= 1) {
+                    portfolioState.facilities.forEach(fac => {
+                        const opt = document.createElement('option');
+                        opt.value = fac;
+                        opt.textContent = fac;
+                        facSelect.appendChild(opt);
+                    });
+                    facChanged = true;
+                }
+
+                // Populate Service Lines Dropdown if needed
+                const specSelect = document.getElementById('portfolio-specialty-filter');
+                let specChanged = false;
+                if (specSelect && specSelect.options.length <= 1) {
+                    portfolioState.serviceLines.forEach(sl => {
+                        const opt = document.createElement('option');
+                        opt.value = sl;
+                        opt.textContent = sl;
+                        specSelect.appendChild(opt);
+                    });
+                    specChanged = true;
+                }
+
+                if (window.$) {
+                    if (facChanged) $('#portfolio-facility-filter').trigger('change.select2');
+                    if (specChanged) $('#portfolio-specialty-filter').trigger('change.select2');
+                }
+
+                applyPortfolioFilters();
+            } catch (err) {
+                console.error('Failed to fetch portfolio overview:', err);
+                const tbody = document.getElementById('portfolio-matrix-tbody');
+                if (tbody) {
+                    tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--brand-red); padding: 30px;">
+                        ⚠️ Failed to load portfolio analytics. Please retry.
+                    </td></tr>`;
+                }
+            } finally {
+                portfolioState.isLoading = false;
+            }
+        }
+
+        function setPortfolioBenchmark(bench) {
+            portfolioState.benchmark = Number(bench) || 25;
+            applyPortfolioFilters();
+        }
+
+        function onPortfolioFilterChange() {
+            const fac = document.getElementById('portfolio-facility-filter')?.value || 'All';
+            const spec = document.getElementById('portfolio-specialty-filter')?.value || 'All';
+            const spend = document.getElementById('portfolio-spend-band')?.value || 'All';
+            portfolioState.facility = fac;
+            portfolioState.serviceLine = spec;
+            portfolioState.spendBand = spend;
+            applyPortfolioFilters();
+        }
+
+        function onPortfolioVolumeSlider(val) {
+            const num = parseInt(val, 10) || 0;
+            portfolioState.minVolume = num;
+            const badge = document.getElementById('portfolio-min-volume-badge');
+            if (badge) badge.textContent = `${num}+`;
+            applyPortfolioFilters();
+        }
+
+        let portSearchTimer = null;
+        function onPortfolioSearchInput() {
+            if (portSearchTimer) clearTimeout(portSearchTimer);
+            portSearchTimer = setTimeout(() => {
+                portfolioState.searchQuery = (document.getElementById('portfolio-search-input')?.value || '').trim().toLowerCase();
+                applyPortfolioFilters();
+            }, 120);
+        }
+
+        function resetPortfolioFilters() {
+            portfolioState.facility = 'All';
+            portfolioState.serviceLine = 'All';
+            portfolioState.spendBand = 'All';
+            portfolioState.benchmark = 25;
+            portfolioState.minVolume = 0;
+            portfolioState.searchQuery = '';
+            portfolioState.sortKey = 'total_spend';
+            portfolioState.sortAsc = false;
+
+            if (window.$) {
+                $('#portfolio-facility-filter').val('All').trigger('change.select2');
+                $('#portfolio-specialty-filter').val('All').trigger('change.select2');
+                $('#portfolio-spend-band').val('All').trigger('change.select2');
+            } else {
+                if (document.getElementById('portfolio-facility-filter')) document.getElementById('portfolio-facility-filter').value = 'All';
+                if (document.getElementById('portfolio-specialty-filter')) document.getElementById('portfolio-specialty-filter').value = 'All';
+                if (document.getElementById('portfolio-spend-band')) document.getElementById('portfolio-spend-band').value = 'All';
+            }
+            if (document.getElementById('portfolio-min-volume')) document.getElementById('portfolio-min-volume').value = 0;
+            if (document.getElementById('portfolio-min-volume-badge')) document.getElementById('portfolio-min-volume-badge').textContent = '0+';
+            if (document.getElementById('portfolio-search-input')) document.getElementById('portfolio-search-input').value = '';
+
+            applyPortfolioFilters();
+        }
+
+        function applyPortfolioFilters() {
+            const fac = portfolioState.facility;
+            const spec = portfolioState.serviceLine;
+            const spendBand = portfolioState.spendBand;
+            const minVol = portfolioState.minVolume;
+            const q = portfolioState.searchQuery;
+
+            let filtered = portfolioState.rawProcedures.map(p => {
+                const target = p.p25_target !== undefined ? p.p25_target : (p.benchmark_target || 0);
+                const opp = p.savings_opp !== undefined ? p.savings_opp : (p.savings_opp_p25 || 0);
+                const pct = p.total_spend > 0 ? (opp / p.total_spend) * 100 : 0;
+                return {
+                    ...p,
+                    benchmark_target: target,
+                    savings_opp: opp,
+                    savings_pct: pct
+                };
+            });
+
+            if (fac && fac !== 'All') {
+                const facClean = fac.trim().toUpperCase();
+                filtered = filtered.filter(p => (p.facilities || []).some(f => f.trim().toUpperCase() === facClean));
+            }
+
+            if (spec && spec !== 'All') {
+                const specClean = spec.trim().toUpperCase();
+                filtered = filtered.filter(p => (p.service_line || '').trim().toUpperCase() === specClean);
+            }
+
+            if (minVol > 0) {
+                filtered = filtered.filter(p => (p.cases || 0) >= minVol);
+            }
+
+            if (spendBand === 'Tier1') {
+                filtered = filtered.filter(p => (p.total_spend || 0) >= 2000000);
+            } else if (spendBand === 'Tier2') {
+                filtered = filtered.filter(p => (p.total_spend || 0) >= 500000 && (p.total_spend || 0) < 2000000);
+            } else if (spendBand === 'Tier3') {
+                filtered = filtered.filter(p => (p.total_spend || 0) < 500000);
+            }
+
+            if (q) {
+                filtered = filtered.filter(p => 
+                    (p.procedure || '').toLowerCase().includes(q) ||
+                    (p.service_line || '').toLowerCase().includes(q) ||
+                    (p.top_commodity || '').toLowerCase().includes(q)
+                );
+            }
+
+            // Summary metrics
+            let totalSpend = 0;
+            let totalSavings = 0;
+            let totalCases = 0;
+            let totalOutliers = 0;
+            const surgeonSet = new Set();
+
+            filtered.forEach(p => {
+                totalSpend += p.total_spend || 0;
+                totalSavings += p.savings_opp || 0;
+                totalCases += p.cases || 0;
+                totalOutliers += p.outlier_cases || 0;
+            });
+
+            const savingsPct = totalSpend > 0 ? (totalSavings / totalSpend) * 100 : 0;
+            const outlierPct = totalCases > 0 ? (totalOutliers / totalCases) * 100 : 0;
+
+            // Update KPI cards
+            const elSpend = document.getElementById('kpi-port-spend');
+            const elProcs = document.getElementById('kpi-port-procs');
+            const elSavings = document.getElementById('kpi-port-savings');
+            const elSavingsPct = document.getElementById('kpi-port-savings-pct');
+            const elCases = document.getElementById('kpi-port-cases');
+            const elSurgeons = document.getElementById('kpi-port-surgeons');
+            const elOutliers = document.getElementById('kpi-port-outliers');
+            const elOutlierPct = document.getElementById('kpi-port-outlier-pct');
+
+            if (elSpend) elSpend.textContent = formatPortMoney(totalSpend, 2);
+            if (elProcs) elProcs.textContent = `${filtered.length.toLocaleString()} Procedures`;
+            if (elSavings) elSavings.textContent = formatPortMoney(totalSavings, 2);
+            if (elSavingsPct) elSavingsPct.textContent = `${savingsPct.toFixed(2)}%`;
+            if (elCases) elCases.textContent = totalCases.toLocaleString();
+            if (elSurgeons) elSurgeons.textContent = `${(portfolioState.summary?.total_surgeons || 340).toLocaleString()} Surgeons`;
+            if (elOutliers) elOutliers.textContent = totalOutliers.toLocaleString();
+            if (elOutlierPct) elOutlierPct.textContent = `${outlierPct.toFixed(2)}%`;
+
+            // Active filter badge & table count badge
+            const elFilterSummary = document.getElementById('portfolio-active-filter-summary');
+            const elTableBadge = document.getElementById('portfolio-table-count-badge');
+            if (elFilterSummary) {
+                elFilterSummary.innerHTML = `Showing <strong>${filtered.length.toLocaleString()}</strong> of ${portfolioState.rawProcedures.length.toLocaleString()} Procedures across UC Health System`;
+            }
+            if (elTableBadge) {
+                elTableBadge.textContent = `${filtered.length.toLocaleString()} Procedures`;
+            }
+
+            // Sort procedures
+            filtered.sort((a, b) => {
+                let vA = a[portfolioState.sortKey];
+                let vB = b[portfolioState.sortKey];
+                if (typeof vA === 'string') {
+                    vA = vA.toLowerCase();
+                    vB = (vB || '').toLowerCase();
+                    return portfolioState.sortAsc ? vA.localeCompare(vB) : vB.localeCompare(vA);
+                } else {
+                    vA = Number(vA) || 0;
+                    vB = Number(vB) || 0;
+                    return portfolioState.sortAsc ? (vA - vB) : (vB - vA);
+                }
+            });
+
+            portfolioState.filteredProcedures = filtered;
+
+            renderPortfolioTable();
+            renderPortfolioBubbleMatrix();
+            renderPortfolioParetoWaterfall();
+        }
+
+        function sortPortfolioTable(colKey) {
+            if (portfolioState.sortKey === colKey) {
+                portfolioState.sortAsc = !portfolioState.sortAsc;
+            } else {
+                portfolioState.sortKey = colKey;
+                portfolioState.sortAsc = (colKey === 'procedure' || colKey === 'service_line');
+            }
+
+            // Update column header icons
+            document.querySelectorAll('.portfolio-table th .sort-icon').forEach(icon => {
+                icon.textContent = '↕';
+                icon.classList.remove('sorted-asc', 'sorted-desc');
+            });
+
+            const activeIcon = document.getElementById(`sort-icon-${colKey}`);
+            if (activeIcon) {
+                activeIcon.textContent = portfolioState.sortAsc ? '▲' : '▼';
+                activeIcon.classList.add(portfolioState.sortAsc ? 'sorted-asc' : 'sorted-desc');
+            }
+
+            applyPortfolioFilters();
+        }
+
+        function renderPortfolioTable() {
+            const tbody = document.getElementById('portfolio-matrix-tbody');
+            if (!tbody) return;
+
+            if (portfolioState.filteredProcedures.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="12" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                    No procedures match your selected filter criteria.
+                </td></tr>`;
+                return;
+            }
+
+            let html = '';
+
+            portfolioState.filteredProcedures.forEach(p => {
+                const escapedProc = p.procedure.replace(/'/g, "\\'");
+                
+                // Outlier pill color
+                let outlierBg = '#f0fdf4';
+                let outlierColor = '#15803d';
+                let outlierBorder = '#bbf7d0';
+                if (p.outlier_pct >= 40) {
+                    outlierBg = '#fef2f2';
+                    outlierColor = '#b91c1c';
+                    outlierBorder = '#fecaca';
+                } else if (p.outlier_pct >= 20) {
+                    outlierBg = '#fffbeb';
+                    outlierColor = '#b45309';
+                    outlierBorder = '#fde68a';
+                }
+
+                // Service Line Pill Color
+                const slClass = 'portfolio-badge-pill';
+                const slStyle = 'background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;';
+
+                html += `
+                <tr>
+                    <td style="font-weight: 700; color: #0f172a;">
+                        <a href="javascript:void(0)" onclick="drilldownToCostVariance('${escapedProc}')" style="color: #0f172a; text-decoration: none; border-bottom: 1px dashed #94a3b8;">
+                            ${p.procedure}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="${slClass}" style="${slStyle}">${p.service_line || 'General'}</span>
+                    </td>
+                    <td style="text-align: right; font-weight: 600;">
+                        ${(p.cases || 0).toLocaleString()}
+                    </td>
+                    <td style="text-align: right; color: #475569;">
+                        ${p.surgeons || 0}
+                    </td>
+                    <td style="text-align: right; font-weight: 700; color: #1e293b;">
+                        ${formatPortMoney(p.total_spend)}
+                    </td>
+                    <td style="text-align: right; font-weight: 600; color: #334155;">
+                        ${formatPortMoney(p.avg_cpc)}
+                    </td>
+                    <td style="text-align: right; color: #0284c7; font-weight: 600;">
+                        ${formatPortMoney(p.benchmark_target)}
+                    </td>
+                    <td style="text-align: right;">
+                        <div style="font-weight: 700; color: #15803d;">${formatPortMoney(p.savings_opp)}</div>
+                    </td>
+                    <td style="text-align: right;">
+                        <span class="portfolio-badge-pill" style="background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 700;">
+                            ${(p.savings_pct || 0).toFixed(2)}%
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        <span class="portfolio-badge-pill" style="background: ${outlierBg}; color: ${outlierColor}; border: 1px solid ${outlierBorder}; font-weight: 700;">
+                            ${(p.outlier_pct || 0).toFixed(2)}%
+                        </span>
+                    </td>
+                    <td>
+                        <div style="font-size: 11.5px; color: #475569; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.top_commodity || 'General Surgical Supplies'}">
+                            ${p.top_commodity || 'General Supplies'}
+                        </div>
+                    </td>
+                    <td style="text-align: center;">
+                        <div style="display: inline-flex; gap: 4px;">
+                            <button class="portfolio-drilldown-btn primary" title="View in Cost & Variance Dashboard" onclick="drilldownToCostVariance('${escapedProc}')">📈 Variance</button>
+                            <button class="portfolio-drilldown-btn" title="Compare Surgeon Preference Cards" onclick="drilldownToCompareCards('${escapedProc}')">⚖️ Cards</button>
+                            <button class="portfolio-drilldown-btn" title="Site of Service Migration Feasibility" onclick="drilldownSiteOfService('${escapedProc}')">🏥 ASC</button>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function renderPortfolioBubbleMatrix() {
+            const plotDiv = document.getElementById('portfolio-bubble-plot');
+            if (!plotDiv || !window.Plotly) return;
+
+            const procs = portfolioState.filteredProcedures;
+            if (procs.length === 0) {
+                Plotly.purge(plotDiv);
+                return;
+            }
+
+            const x = procs.map(p => p.cases || 0);
+            const y = procs.map(p => p.avg_cpc || 0);
+            const sizes = procs.map(p => {
+                const sp = p.total_spend || 0;
+                return Math.max(12, Math.min(52, Math.sqrt(sp) / 40));
+            });
+            const savings = procs.map(p => p.savings_opp || 0);
+            const names = procs.map(p => p.procedure);
+
+            const hoverText = procs.map(p => 
+                `<b>${p.procedure}</b><br>` +
+                `Service Line: ${p.service_line}<br>` +
+                `Encounters: ${(p.cases || 0).toLocaleString()}<br>` +
+                `Avg CPC: ${formatPortMoney(p.avg_cpc)}<br>` +
+                `Total Spend: ${formatPortMoney(p.total_spend)}<br>` +
+                `Realizable Savings: <b>${formatPortMoney(p.savings_opp)} (${(p.savings_pct || 0).toFixed(2)}%)</b><br>` +
+                `<span style="color:#38bdf8; font-size:10px;">Click bubble to open Cost & Variance</span>`
+            );
+
+            const trace = {
+                x: x,
+                y: y,
+                text: hoverText,
+                customdata: names,
+                mode: 'markers',
+                hoverinfo: 'text',
+                marker: {
+                    size: sizes,
+                    color: savings,
+                    colorscale: [
+                        [0.0, '#3b82f6'],
+                        [0.35, '#8b5cf6'],
+                        [0.7, '#f59e0b'],
+                        [1.0, '#e64552']
+                    ],
+                    colorbar: {
+                        title: 'Savings ($)',
+                        titleside: 'top',
+                        tickprefix: '$',
+                        thickness: 12,
+                        len: 0.75,
+                        tickfont: { size: 10, family: "'Mulish', sans-serif" }
+                    },
+                    opacity: 0.85,
+                    line: { color: '#ffffff', width: 1.5 }
+                }
+            };
+
+            const layout = {
+                xaxis: {
+                    title: 'Case Volume (Encounters)',
+                    gridcolor: '#f1f5f9',
+                    zeroline: false,
+                    font: { size: 11, family: "'Mulish', sans-serif" }
+                },
+                yaxis: {
+                    title: 'Avg Supply Cost Per Case ($)',
+                    tickprefix: '$',
+                    gridcolor: '#f1f5f9',
+                    zeroline: false,
+                    font: { size: 11, family: "'Mulish', sans-serif" }
+                },
+                hovermode: 'closest',
+                margin: { t: 25, r: 25, b: 50, l: 75 },
+                font: { family: "'Mulish', sans-serif", size: 11, color: '#334155' },
+                paper_bgcolor: '#ffffff',
+                plot_bgcolor: '#ffffff'
+            };
+
+            Plotly.newPlot(plotDiv, [trace], layout, { responsive: true, displayModeBar: false });
+
+            // Click-to-drilldown handler
+            plotDiv.removeAllListeners && plotDiv.removeAllListeners('plotly_click');
+            plotDiv.on('plotly_click', function(data) {
+                if (data && data.points && data.points.length > 0) {
+                    const proc = data.points[0].customdata;
+                    if (proc) drilldownToCostVariance(proc);
+                }
+            });
+        }
+
+        function renderPortfolioParetoWaterfall() {
+            const plotDiv = document.getElementById('portfolio-pareto-plot');
+            if (!plotDiv || !window.Plotly) return;
+
+            // Sort top 12 by savings opportunity descending
+            const sortedBySavings = [...portfolioState.filteredProcedures]
+                .sort((a, b) => (b.savings_opp || 0) - (a.savings_opp || 0))
+                .slice(0, 12);
+
+            if (sortedBySavings.length === 0) {
+                Plotly.purge(plotDiv);
+                return;
+            }
+
+            const totalSavingsPool = sortedBySavings.reduce((acc, p) => acc + (p.savings_opp || 0), 0);
+            let runningSum = 0;
+            const cumPcts = [];
+            sortedBySavings.forEach(p => {
+                runningSum += (p.savings_opp || 0);
+                cumPcts.push(totalSavingsPool > 0 ? (runningSum / totalSavingsPool) * 100 : 0);
+            });
+
+            // Truncate labels for chart x-axis
+            const xLabels = sortedBySavings.map(p => {
+                const name = p.procedure;
+                return name.length > 18 ? name.substring(0, 16) + '...' : name;
+            });
+            const fullNames = sortedBySavings.map(p => p.procedure);
+            const savingsVals = sortedBySavings.map(p => p.savings_opp || 0);
+
+            const barTrace = {
+                x: xLabels,
+                y: savingsVals,
+                customdata: fullNames,
+                name: 'Savings Opp ($)',
+                type: 'bar',
+                marker: {
+                    color: '#e64552',
+                    opacity: 0.88,
+                    line: { color: '#b91c1c', width: 1 }
+                },
+                hovertemplate: '<b>%{customdata}</b><br>Savings Opp: $%{y:,.0f}<extra></extra>'
+            };
+
+            const lineTrace = {
+                x: xLabels,
+                y: cumPcts,
+                name: 'Cumulative %',
+                type: 'scatter',
+                mode: 'lines+markers',
+                yaxis: 'y2',
+                line: { color: '#3b82f6', width: 2.5 },
+                marker: { color: '#1d4ed8', size: 6 },
+                hovertemplate: 'Cumulative: %{y:.1f}%<extra></extra>'
+            };
+
+            const layout = {
+                yaxis: {
+                    title: 'Savings Opp ($)',
+                    tickprefix: '$',
+                    gridcolor: '#f1f5f9',
+                    font: { size: 11, family: "'Mulish', sans-serif" }
+                },
+                yaxis2: {
+                    title: 'Cumulative %',
+                    ticksuffix: '%',
+                    range: [0, 105],
+                    overlaying: 'y',
+                    side: 'right',
+                    showgrid: false,
+                    font: { size: 11, family: "'Mulish', sans-serif" }
+                },
+                xaxis: {
+                    tickangle: -30,
+                    tickfont: { size: 10, family: "'Mulish', sans-serif" }
+                },
+                legend: {
+                    orientation: 'h',
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: 1.15
+                },
+                shapes: [
+                    {
+                        type: 'line',
+                        xref: 'paper',
+                        x0: 0,
+                        x1: 1,
+                        yref: 'y2',
+                        y0: 80,
+                        y1: 80,
+                        line: { color: '#f59e0b', width: 1.5, dash: 'dash' }
+                    }
+                ],
+                annotations: [
+                    {
+                        xref: 'paper',
+                        x: 0.05,
+                        yref: 'y2',
+                        y: 83,
+                        text: '80% Pareto Frontier',
+                        showarrow: false,
+                        font: { size: 10.5, color: '#b45309', weight: 'bold' }
+                    }
+                ],
+                margin: { t: 30, r: 50, b: 75, l: 75 },
+                font: { family: "'Mulish', sans-serif", size: 11, color: '#334155' },
+                paper_bgcolor: '#ffffff',
+                plot_bgcolor: '#ffffff'
+            };
+
+            Plotly.newPlot(plotDiv, [barTrace, lineTrace], layout, { responsive: true, displayModeBar: false });
+
+            // Click on bar drills down to procedure
+            plotDiv.removeAllListeners && plotDiv.removeAllListeners('plotly_click');
+            plotDiv.on('plotly_click', function(data) {
+                if (data && data.points && data.points.length > 0) {
+                    const proc = data.points[0].customdata;
+                    if (proc) drilldownToCostVariance(proc);
+                }
+            });
+        }
+
+        // Drilldown Actions
+        function drilldownToCostVariance(procName) {
+            if (procName) {
+                $('#procedure-select').val(procName).trigger('change');
+            }
+            openTabDirect('DashboardTab', 'group-clinical');
+        }
+
+        function drilldownToCompareCards(procName) {
+            if (procName) {
+                $('#procedure-select').val(procName).trigger('change');
+            }
+            openTabDirect('CompareCardsTab', 'group-cards');
+        }
+
+        function drilldownSiteOfService(procName) {
+            if (procName) {
+                $('#procedure-select').val(procName).trigger('change');
+            }
+            if (typeof openSiteOfServiceModal === 'function') {
+                openSiteOfServiceModal();
+            }
+        }
+
+        function exportPortfolioCSV() {
+            const data = portfolioState.filteredProcedures;
+            if (!data || data.length === 0) {
+                alert('No portfolio data available to export.');
+                return;
+            }
+
+            const bench = `P${portfolioState.benchmark}`;
+            const headers = [
+                'Procedure Name',
+                'Service Line',
+                'Encounters',
+                'Surgeons',
+                'Total Spend ($)',
+                'Avg Cost Per Case ($)',
+                `Target CPC ${bench} ($)`,
+                `Savings Opportunity ${bench} ($)`,
+                'Savings %',
+                'Outlier Encounters',
+                'Outlier %',
+                'Primary Commodity Driver',
+                'Operating Facilities'
+            ];
+
+            const rows = data.map(p => [
+                `"${(p.procedure || '').replace(/"/g, '""')}"`,
+                `"${(p.service_line || '').replace(/"/g, '""')}"`,
+                p.cases || 0,
+                p.surgeons || 0,
+                (p.total_spend || 0).toFixed(2),
+                (p.avg_cpc || 0).toFixed(2),
+                (p.benchmark_target || 0).toFixed(2),
+                (p.savings_opp || 0).toFixed(2),
+                (p.savings_pct || 0).toFixed(2),
+                p.outlier_cases || 0,
+                (p.outlier_pct || 0).toFixed(2),
+                `"${(p.top_commodity || '').replace(/"/g, '""')}"`,
+                `"${(p.facilities || []).join('; ').replace(/"/g, '""')}"`
+            ]);
+
+            const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `uchealth_procedures_savings_portfolio_${bench.toLowerCase()}_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function printPortfolioReport() {
+            window.print();
         }
 
         function resetBudgetScenario() {
